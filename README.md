@@ -1,4 +1,4 @@
-# SnackSafe AI
+# PlateGuard AI
 
 Point your camera at a packaged food label and get an instant verdict —
 safe, caution, or do-not-eat — checked against your own allergies and

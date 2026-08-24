@@ -34,13 +34,13 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SnackSafe AI — Scan any food label for your allergies" },
+      { title: "PlateGuard AI — Scan any food label for your allergies" },
       {
         name: "description",
         content:
           "Point your camera at a packaged food label and get an instant green or red light, with the exact ingredient that puts you or your child at risk.",
       },
-      { property: "og:title", content: "SnackSafe AI — Instant allergen label scanner" },
+      { property: "og:title", content: "PlateGuard AI — Instant allergen label scanner" },
       {
         property: "og:description",
         content:
@@ -90,7 +90,7 @@ function SiteNav() {
             <ShieldCheck className="size-4 text-primary" />
           </span>
           <span className="font-display text-base font-bold tracking-tight sm:text-lg">
-            SnackSafe <span className="hidden text-muted-foreground sm:inline">AI</span>
+            PlateGuard <span className="hidden text-muted-foreground sm:inline">AI</span>
           </span>
         </a>
 
@@ -745,7 +745,7 @@ function SiteFooter() {
           <div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="size-6" />
-              <span className="font-display text-lg font-bold">SnackSafe AI</span>
+              <span className="font-display text-lg font-bold">PlateGuard AI</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-brand-amber-foreground/80">
               A camera, a profile, and a plain answer — built for the ten seconds before you decide
@@ -796,14 +796,14 @@ function SiteFooter() {
                 <Languages className="size-3.5" /> Auto-detected on scan
               </p>
               <p className="text-brand-amber-foreground/80">
-                SnackSafe assists, it doesn't replace the printed label or medical advice.
+                PlateGuard assists, it doesn't replace the printed label or medical advice.
               </p>
             </div>
           </div>
         </div>
 
         <div className="mt-12 flex flex-col gap-2 border-t border-brand-amber-foreground/15 pt-6 text-xs text-brand-amber-foreground/70 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} SnackSafe AI. Not a substitute for medical advice.</p>
+          <p>© {new Date().getFullYear()} PlateGuard AI. Not a substitute for medical advice.</p>
           <p>When in doubt, don't eat it.</p>
         </div>
       </div>

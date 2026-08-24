@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/history")({
   head: () => ({
     meta: [
-      { title: "SnackSafe AI — Scan history" },
+      { title: "PlateGuard AI — Scan history" },
       {
         name: "description",
         content: "Your recent food and medicine label verdicts, on this device.",

@@ -43,13 +43,13 @@ import {
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Your health profile — SnackSafe AI" },
+      { title: "Your health profile — PlateGuard AI" },
       {
         name: "description",
         content:
           "A complete clinical health questionnaire — allergies, conditions, medications, and dietary needs — so every label scan is judged against your full picture, not just one detail.",
       },
-      { property: "og:title", content: "Your health profile — SnackSafe AI" },
+      { property: "og:title", content: "Your health profile — PlateGuard AI" },
       {
         property: "og:description",
         content: "Set your complete profile once; every scan is judged against all of it together.",

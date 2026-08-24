@@ -687,7 +687,7 @@ function ScannerPage() {
               )}
 
               <p className="px-1 text-xs text-muted-foreground">
-                SnackSafe AI assists, it does not replace the printed label
+                PlateGuard AI assists, it does not replace the printed label
                 {mode === "medicine" ? ", pharmacist, or doctor" : " or medical advice"}. When in
                 doubt, {mode === "medicine" ? "check with a pharmacist" : "don't eat it"}.
               </p>

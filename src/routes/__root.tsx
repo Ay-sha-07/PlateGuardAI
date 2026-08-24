@@ -78,12 +78,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SnackSafe AI" },
+      { title: "PlateGuard AI" },
       {
         name: "description",
         content: "Instant allergen and nutrition label scanning for your medical profile.",
       },
-      { property: "og:title", content: "SnackSafe AI" },
+      { property: "og:title", content: "PlateGuard AI" },
       {
         property: "og:description",
         content: "Instant allergen and nutrition label scanning for your medical profile.",

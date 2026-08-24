@@ -1,4 +1,4 @@
-// SnackSafe AI — minimal app-shell service worker.
+// PlateGuard AI — minimal app-shell service worker.
 // Caches the shell for instant loads + basic offline fallback.
 // Does NOT cache scan API calls — those always need the network.
 

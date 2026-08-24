@@ -234,7 +234,7 @@ export function profileIsSet(profile: SafetyProfile | null): profile is SafetyPr
 /* ------------------------------------------------------------------ */
 /* Multi-profile store                                                 */
 /*                                                                      */
-/* SnackSafe now supports one profile per family member. Everything    */
+/* PlateGuard now supports one profile per family member. Everything    */
 /* lives in localStorage as a map of id -> profile, plus a pointer to  */
 /* whichever profile is currently active (shown in the scanner/header  */
 /* switcher). Old single-profile data (v1–v3) is migrated in as the    */
