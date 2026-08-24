@@ -222,7 +222,7 @@ function ScannerPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* living background */}
+      {/* Living background */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div className="animate-aurora absolute -left-24 -top-24 size-[22rem] rounded-full bg-primary/25 blur-[90px]" />
         <div
@@ -239,7 +239,7 @@ function ScannerPage() {
         <header className="animate-rise-in flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Snack<span className="text-primary">Safe</span> AI
+              Plate<span className="text-primary">Guard</span> AI
             </h1>
             <p className="text-xs text-muted-foreground">
               <span className="mr-1.5 inline-block size-2 animate-pulse rounded-full bg-primary align-middle" />
@@ -271,8 +271,11 @@ function ScannerPage() {
           </div>
         </header>
 
-        {/* profile switcher */}
-        <div className="animate-rise-in relative mt-4" style={{ animationDelay: "40ms" }}>
+        {/* Profile switcher */}
+        <div
+          className="animate-rise-in relative z-30 mt-4"
+          style={{ animationDelay: "40ms" }}
+        >
           <button
             type="button"
             onClick={() => setSwitcherOpen((v) => !v)}
@@ -287,7 +290,7 @@ function ScannerPage() {
             />
           </button>
           {switcherOpen && (
-            <div className="animate-rise-in absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+            <div className="animate-rise-in absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
               {profiles.map((p) => (
                 <button
                   key={p.id}
@@ -311,7 +314,7 @@ function ScannerPage() {
           )}
         </div>
 
-        {/* food / medicine mode toggle */}
+        {/* Food / Medicine mode toggle */}
         <div
           className="animate-rise-in mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card/60 p-1"
           style={{ animationDelay: "60ms" }}
@@ -465,7 +468,7 @@ function ScannerPage() {
               </button>
             )}
 
-            {/* viewfinder corners */}
+            {/* Viewfinder corners */}
             {!image && (
               <div aria-hidden className="pointer-events-none absolute inset-4">
                 {[
@@ -742,6 +745,7 @@ function CameraCapture({
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
         }
         setStatus("ready");
       })
@@ -772,11 +776,15 @@ function CameraCapture({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <div className="relative flex-1">
-        {status === "ready" && (
-          <video ref={videoRef} autoPlay playsInline muted className="size-full object-cover" />
-        )}
+    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-black">
+      <div className="relative size-full">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`size-full object-cover ${status === "ready" ? "" : "hidden"}`}
+        />
 
         {status === "requesting" && (
           <div className="flex size-full flex-col items-center justify-center gap-3 text-white">
@@ -824,28 +832,30 @@ function CameraCapture({
           </div>
         )}
 
+        {/* Top-right close button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur"
+          className="absolute right-4 top-4 z-20 flex size-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-transform active:scale-95"
           aria-label="Close camera"
         >
           <X className="size-5" />
         </button>
-      </div>
 
-      {status === "ready" && (
-        <div className="flex items-center justify-center gap-6 bg-black py-6">
-          <button
-            type="button"
-            onClick={capture}
-            className="flex size-16 items-center justify-center rounded-full border-4 border-white bg-primary transition-transform active:scale-95"
-            aria-label="Capture photo"
-          >
-            <span className="size-11 rounded-full bg-primary-foreground" />
-          </button>
-        </div>
-      )}
+        {/* Floating Capture Shutter Button directly positioned over the video */}
+        {status === "ready" && (
+          <div className="absolute inset-x-0 bottom-8 z-20 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={capture}
+              className="group flex size-20 items-center justify-center rounded-full border-4 border-white bg-black/30 shadow-2xl backdrop-blur-sm transition-transform active:scale-90"
+              aria-label="Capture photo"
+            >
+              <span className="size-14 rounded-full bg-primary ring-2 ring-white/50 transition-all group-hover:scale-105" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -874,13 +884,6 @@ async function fileToImageDataUrl(file: File, max = 1200): Promise<string> {
   return canvas.toDataURL("image/jpeg", 0.85);
 }
 
-// Renders the first page of a PDF to an ImageBitmap so it can flow through
-// the same downscale/encode path as a photo. Ingredient panels are almost
-// always a single page, so we don't bother with multi-page handling.
-//
-// pdfjs-dist touches browser-only globals (DOMMatrix, Canvas) as soon as
-// its module body runs, so it must be a dynamic import kept out of the
-// server render path — a static top-level import breaks SSR.
 async function renderFirstPdfPage(file: File): Promise<ImageBitmap> {
   const pdfjsLib = await import("pdfjs-dist");
   pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
@@ -888,8 +891,6 @@ async function renderFirstPdfPage(file: File): Promise<ImageBitmap> {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const page = await pdf.getPage(1);
-  // Render at a higher intrinsic resolution than the page's default point
-  // size so small print stays legible after the downscale step above.
   const viewport = page.getViewport({ scale: 2.5 });
   const canvas = document.createElement("canvas");
   canvas.width = viewport.width;
