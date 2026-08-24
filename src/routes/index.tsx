@@ -520,7 +520,7 @@ function SnackCarousel() {
     setIndex(wrapped);
     cardRefs.current[wrapped]?.scrollIntoView({
       behavior: "smooth",
-      inline: "start",
+      inline: "center",
       block: "nearest",
     });
   }
@@ -537,9 +537,10 @@ function SnackCarousel() {
         </p>
       </div>
 
+      {/* Added justify-center / md:justify-center below 👇 */}
       <div
         ref={scrollerRef}
-        className="mt-10 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mt-10 flex snap-x snap-mandatory justify-start md:justify-center gap-5 overflow-x-auto px-5 pb-4 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {SNACKS.map((s, i) => (
           <div
@@ -547,7 +548,7 @@ function SnackCarousel() {
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
-            className={`flex w-40 shrink-0 snap-start flex-col items-center gap-3 rounded-3xl border p-6 text-center shadow-sm transition-colors ${
+            className={`flex w-40 shrink-0 snap-center flex-col items-center gap-3 rounded-3xl border p-6 text-center shadow-sm transition-colors ${
               i === index ? "border-primary bg-card" : "border-border bg-card/70"
             }`}
           >
