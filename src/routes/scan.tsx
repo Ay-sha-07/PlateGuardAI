@@ -36,24 +36,70 @@ export const Route = createFileRoute("/scan")({
       },
     ],
   }),
-  component: () => (
-    <ClientOnly fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>}>
-      {() => <ScannerPage />}
-    </ClientOnly>
-  ),
+  component: ScanRouteWrapper,
 });
+
+function ScanRouteWrapper() {
+  return (
+    <ClientOnly
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <Loader2 className="size-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <ScannerPage />
+    </ClientOnly>
+  );
+}
 
 type ScanMode = "food" | "medicine";
 
 const RATING_STYLE: Record<
   number,
-  { bg: string; text: string; fg: string; glow: string; Icon: typeof CheckCircle2 }
+  {
+    bg: string;
+    text: string;
+    fg: string;
+    glow: string;
+    Icon: typeof CheckCircle2;
+  }
 > = {
-  1: { bg: "bg-safe", text: "text-safe", fg: "text-safe-foreground", glow: "glow-safe", Icon: CheckCircle2 },
-  2: { bg: "bg-rating-2", text: "text-rating-2", fg: "text-rating-2-foreground", glow: "glow-safe", Icon: CheckCircle2 },
-  3: { bg: "bg-caution", text: "text-caution", fg: "text-caution-foreground", glow: "glow-caution", Icon: AlertTriangle },
-  4: { bg: "bg-rating-4", text: "text-rating-4", fg: "text-rating-4-foreground", glow: "glow-danger", Icon: AlertTriangle },
-  5: { bg: "bg-danger", text: "text-danger", fg: "text-danger-foreground", glow: "glow-danger", Icon: ShieldAlert },
+  1: {
+    bg: "bg-safe",
+    text: "text-safe",
+    fg: "text-safe-foreground",
+    glow: "glow-safe",
+    Icon: CheckCircle2,
+  },
+  2: {
+    bg: "bg-rating-2",
+    text: "text-rating-2",
+    fg: "text-rating-2-foreground",
+    glow: "glow-safe",
+    Icon: CheckCircle2,
+  },
+  3: {
+    bg: "bg-caution",
+    text: "text-caution",
+    fg: "text-caution-foreground",
+    glow: "glow-caution",
+    Icon: AlertTriangle,
+  },
+  4: {
+    bg: "bg-rating-4",
+    text: "text-rating-4",
+    fg: "text-rating-4-foreground",
+    glow: "glow-danger",
+    Icon: AlertTriangle,
+  },
+  5: {
+    bg: "bg-danger",
+    text: "text-danger",
+    fg: "text-danger-foreground",
+    glow: "glow-danger",
+    Icon: ShieldAlert,
+  },
 };
 
 function ratingTheme(rating: number) {
@@ -148,7 +194,8 @@ function ScannerPage() {
       console.error("[scan] failed:", e);
       const rawMessage = e instanceof Error ? e.message : "";
       const looksLikeHtml = /^\s*<(!doctype|html)/i.test(rawMessage);
-      const detail = rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
+      const detail =
+        rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
       setError(
         detail && !/^\s*<(!doctype|html)/i.test(detail)
           ? "Scan failed — please try again. " + detail.slice(0, 140)
@@ -460,7 +507,9 @@ function ScannerPage() {
             )}
 
             {result && theme && (
-              <div className={`animate-pop-verdict absolute inset-x-0 bottom-0 ${theme.bg} px-4 py-3`}>
+              <div
+                className={`animate-pop-verdict absolute inset-x-0 bottom-0 ${theme.bg} px-4 py-3`}
+              >
                 <div className={`flex items-center gap-2 ${theme.fg}`}>
                   <span
                     className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-black/10 font-display text-sm font-bold ${
@@ -690,7 +739,10 @@ function CameraCapture({
     }
 
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false })
+      .getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      })
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
