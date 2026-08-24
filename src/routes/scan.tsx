@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, ClientOnly } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -19,7 +19,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { scanLabel } from "@/lib/scan.functions";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { addProfile, loadProfileStore, setActiveProfile, type StoredProfile } from "@/lib/profile";
@@ -30,23 +29,18 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/scan")({
   head: () => ({
     meta: [
-      { title: "SnackSafe AI — Scan any food label for your allergies" },
+      { title: "PlateGuard AI — Scan food & medicine labels" },
       {
         name: "description",
-        content:
-          "Point your camera at a packaged food label and get an instant green or red light, with the exact ingredient that puts you or your child at risk.",
+        content: "Scan any food or medicine label for allergen and health risk checks.",
       },
-      { property: "og:title", content: "SnackSafe AI — Instant allergen label scanner" },
-      {
-        property: "og:description",
-        content:
-          "Set your allergy and health profile once, then scan any label for a green or red light with a plain-English reason.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: ScannerPage,
+  component: () => (
+    <ClientOnly fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>}>
+      {() => <ScannerPage />}
+    </ClientOnly>
+  ),
 });
 
 type ScanMode = "food" | "medicine";
@@ -55,41 +49,11 @@ const RATING_STYLE: Record<
   number,
   { bg: string; text: string; fg: string; glow: string; Icon: typeof CheckCircle2 }
 > = {
-  1: {
-    bg: "bg-safe",
-    text: "text-safe",
-    fg: "text-safe-foreground",
-    glow: "glow-safe",
-    Icon: CheckCircle2,
-  },
-  2: {
-    bg: "bg-rating-2",
-    text: "text-rating-2",
-    fg: "text-rating-2-foreground",
-    glow: "glow-safe",
-    Icon: CheckCircle2,
-  },
-  3: {
-    bg: "bg-caution",
-    text: "text-caution",
-    fg: "text-caution-foreground",
-    glow: "glow-caution",
-    Icon: AlertTriangle,
-  },
-  4: {
-    bg: "bg-rating-4",
-    text: "text-rating-4",
-    fg: "text-rating-4-foreground",
-    glow: "glow-danger",
-    Icon: AlertTriangle,
-  },
-  5: {
-    bg: "bg-danger",
-    text: "text-danger",
-    fg: "text-danger-foreground",
-    glow: "glow-danger",
-    Icon: ShieldAlert,
-  },
+  1: { bg: "bg-safe", text: "text-safe", fg: "text-safe-foreground", glow: "glow-safe", Icon: CheckCircle2 },
+  2: { bg: "bg-rating-2", text: "text-rating-2", fg: "text-rating-2-foreground", glow: "glow-safe", Icon: CheckCircle2 },
+  3: { bg: "bg-caution", text: "text-caution", fg: "text-caution-foreground", glow: "glow-caution", Icon: AlertTriangle },
+  4: { bg: "bg-rating-4", text: "text-rating-4", fg: "text-rating-4-foreground", glow: "glow-danger", Icon: AlertTriangle },
+  5: { bg: "bg-danger", text: "text-danger", fg: "text-danger-foreground", glow: "glow-danger", Icon: ShieldAlert },
 };
 
 function ratingTheme(rating: number) {
@@ -184,8 +148,7 @@ function ScannerPage() {
       console.error("[scan] failed:", e);
       const rawMessage = e instanceof Error ? e.message : "";
       const looksLikeHtml = /^\s*<(!doctype|html)/i.test(rawMessage);
-      const detail =
-        rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
+      const detail = rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
       setError(
         detail && !/^\s*<(!doctype|html)/i.test(detail)
           ? "Scan failed — please try again. " + detail.slice(0, 140)
@@ -222,7 +185,6 @@ function ScannerPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Living background */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div className="animate-aurora absolute -left-24 -top-24 size-[22rem] rounded-full bg-primary/25 blur-[90px]" />
         <div
@@ -271,11 +233,7 @@ function ScannerPage() {
           </div>
         </header>
 
-        {/* Profile switcher */}
-        <div
-          className="animate-rise-in relative z-30 mt-4"
-          style={{ animationDelay: "40ms" }}
-        >
+        <div className="animate-rise-in relative z-30 mt-4" style={{ animationDelay: "40ms" }}>
           <button
             type="button"
             onClick={() => setSwitcherOpen((v) => !v)}
@@ -314,7 +272,6 @@ function ScannerPage() {
           )}
         </div>
 
-        {/* Food / Medicine mode toggle */}
         <div
           className="animate-rise-in mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card/60 p-1"
           style={{ animationDelay: "60ms" }}
@@ -468,7 +425,6 @@ function ScannerPage() {
               </button>
             )}
 
-            {/* Viewfinder corners */}
             {!image && (
               <div aria-hidden className="pointer-events-none absolute inset-4">
                 {[
@@ -504,9 +460,7 @@ function ScannerPage() {
             )}
 
             {result && theme && (
-              <div
-                className={`animate-pop-verdict absolute inset-x-0 bottom-0 ${theme.bg} px-4 py-3`}
-              >
+              <div className={`animate-pop-verdict absolute inset-x-0 bottom-0 ${theme.bg} px-4 py-3`}>
                 <div className={`flex items-center gap-2 ${theme.fg}`}>
                   <span
                     className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-black/10 font-display text-sm font-bold ${
@@ -832,7 +786,6 @@ function CameraCapture({
           </div>
         )}
 
-        {/* Top-right close button */}
         <button
           type="button"
           onClick={onClose}
@@ -842,7 +795,6 @@ function CameraCapture({
           <X className="size-5" />
         </button>
 
-        {/* Floating Capture Shutter Button directly positioned over the video */}
         {status === "ready" && (
           <div className="absolute inset-x-0 bottom-8 z-20 flex items-center justify-center">
             <button
@@ -886,7 +838,7 @@ async function fileToImageDataUrl(file: File, max = 1200): Promise<string> {
 
 async function renderFirstPdfPage(file: File): Promise<ImageBitmap> {
   const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
