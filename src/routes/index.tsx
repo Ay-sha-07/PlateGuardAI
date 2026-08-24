@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Camera,
   Candy,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Coffee,
@@ -25,7 +24,6 @@ import {
   Menu,
   Twitter,
   X,
-  LogOut,
   CheckCircle2,
   AlertTriangle,
   ShieldAlert,
@@ -43,7 +41,10 @@ export const Route = createFileRoute("/")({
         content:
           "Point your camera at a packaged food label and get an instant green or red light, with the exact ingredient that puts you or your child at risk.",
       },
-      { property: "og:title", content: "PlateGuard AI — Instant allergen label scanner" },
+      {
+        property: "og:title",
+        content: "PlateGuard AI — Instant allergen label scanner",
+      },
       {
         property: "og:description",
         content:
@@ -85,8 +86,26 @@ function HomePage() {
 function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  useEffect(() => { supabase?.auth.getUser().then(({data})=>setLoggedIn(!!data.user)); }, []);
-  const logout = async () => { await signOut(); setLoggedIn(false); };
+
+  useEffect(() => {
+    supabase?.auth.getUser().then(({ data }) => {
+      setLoggedIn(!!data.user);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    await signOut();
+    setLoggedIn(false);
+    setMenuOpen(false);
+  };
 
   return (
     <div className="fixed inset-x-0 top-4 z-50 px-4">
@@ -102,6 +121,7 @@ function SiteNav() {
           </span>
         </a>
 
+        {/* Desktop Navigation */}
         <nav className="hidden items-center gap-7 md:flex">
           {NAV_LINKS.map((l) => (
             <a
@@ -112,13 +132,29 @@ function SiteNav() {
               {l.label}
             </a>
           ))}
+
           <Link
             to="/profile"
             className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
           >
             Profile
           </Link>
-          {loggedIn ? <button onClick={logout} className="text-sm font-medium text-foreground/75 hover:text-foreground">Logout</button> : <Link to="/login" className="text-sm font-medium text-foreground/75 hover:text-foreground">Login</Link>}
+
+          {loggedIn ? (
+            <button
+              onClick={logout}
+              className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
+            >
+              Login
+            </Link>
+          )}
         </nav>
 
         <div className="hidden md:block">
@@ -129,15 +165,17 @@ function SiteNav() {
           </Button>
         </div>
 
+        {/* Mobile Menu Button */}
         <button
           className="flex size-9 items-center justify-center rounded-full text-foreground md:hidden"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => setMenuOpen((prev) => !prev)}
           aria-label="Toggle menu"
         >
           {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
       </header>
 
+      {/* Mobile Navigation */}
       {menuOpen && (
         <div className="animate-rise-in mx-auto mt-2 max-w-5xl rounded-3xl border border-white/10 bg-background/95 p-5 shadow-2xl backdrop-blur-xl md:hidden">
           <nav className="flex flex-col gap-1">
@@ -146,21 +184,42 @@ function SiteNav() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent"
+                className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
                 {l.label}
               </a>
             ))}
+
             <Link
               to="/profile"
               onClick={() => setMenuOpen(false)}
-              className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent"
+              className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
             >
               Profile
             </Link>
+
+            {loggedIn ? (
+              <button
+                onClick={logout}
+                className="rounded-lg px-2 py-2.5 text-left text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
+              >
+                Login
+              </Link>
+            )}
           </nav>
+
           <Button asChild className="mt-3 w-full justify-center rounded-full">
-            <Link to="/scan">Start Scanning</Link>
+            <Link to="/scan" onClick={() => setMenuOpen(false)}>
+              Start Scanning
+            </Link>
           </Button>
         </div>
       )}
@@ -197,6 +256,7 @@ function HeroVideo() {
         <p className="animate-rise-in text-center text-xs font-semibold uppercase tracking-[0.35em] text-foreground/60 sm:text-left">
           The taste of certainty
         </p>
+
         <h1
           className="animate-rise-in mt-4 text-center font-display text-[13vw] font-bold uppercase leading-[0.95] tracking-tight sm:text-left sm:text-6xl lg:text-7xl"
           style={{ animationDelay: "80ms" }}
@@ -232,10 +292,12 @@ function HeroWordmark() {
           <h2 className="flex items-center font-mascot text-[18vw] font-extrabold leading-none tracking-tight text-primary sm:text-8xl md:text-8xl lg:text-9xl">
             Snack ⛶
           </h2>
+
           <p className="mt-3 max-w-md text-base text-muted-foreground sm:text-lg">
             Smarter scans. Safer bites. Every label decoded in plain English, for every aisle in the
             store.
           </p>
+
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="h-14 rounded-full px-7 text-base">
               <Link to="/scan">
@@ -243,6 +305,7 @@ function HeroWordmark() {
                 Start scanning
               </Link>
             </Button>
+
             <Button
               asChild
               size="lg"
@@ -265,6 +328,7 @@ function HeroWordmark() {
               className="size-full object-cover"
             />
           </div>
+
           <div className="absolute -bottom-4 -left-4 flex items-center gap-2 rounded-2xl bg-safe px-4 py-2.5 shadow-xl">
             <CheckCircle2 className="size-4 text-safe-foreground" />
             <span className="text-sm font-bold text-safe-foreground">SAFE</span>
@@ -308,7 +372,7 @@ function StatsStrip() {
   );
 }
 
-/* -------------------------------- Coverage (dark) -------------------------------- */
+/* -------------------------------- Coverage -------------------------------- */
 
 const CATEGORIES = [
   { label: "Chips & crisps", Icon: Popcorn },
@@ -336,6 +400,7 @@ function Coverage() {
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
           What we scan
         </p>
+
         <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight sm:text-4xl">
           One camera, every packaged category
         </h2>
@@ -365,7 +430,7 @@ const STEPS = [
   {
     n: "01",
     title: "Set your profile",
-    body: "Add your allergies, medical conditions, or things you're just avoiding. Takes under a minute, and it stays on your device.",
+    body: "Add your allergies, medical conditions, or things you're just avoiding. Takes under a minute.",
     Icon: SlidersHorizontal,
   },
   {
@@ -377,7 +442,7 @@ const STEPS = [
   {
     n: "03",
     title: "Get a plain verdict",
-    body: "Safe, caution, or do-not-eat — with the exact ingredient responsible, in language you don't have to decode.",
+    body: "Safe, caution, or do-not-eat — with the exact ingredient responsible.",
     Icon: ShieldCheck,
   },
 ];
@@ -414,7 +479,7 @@ function HowItWorks() {
   );
 }
 
-/* ------------------------------ Recent verdicts (light) ------------------------------ */
+/* ------------------------------ Recent verdicts ------------------------------ */
 
 const VERDICTS = [
   {
@@ -445,6 +510,7 @@ function RecentVerdicts() {
     <section id="verdicts" className="bg-card/40 py-24">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Real scans</p>
+
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           What a verdict actually looks like
         </h2>
@@ -475,6 +541,7 @@ function RecentVerdicts() {
                   }`}
                 />
               </div>
+
               <div className="flex flex-1 flex-col p-6">
                 <span
                   className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
@@ -487,6 +554,7 @@ function RecentVerdicts() {
                 >
                   {v.tag}
                 </span>
+
                 <h3 className="mt-3 text-base font-semibold leading-snug">{v.title}</h3>
                 <p className="mt-2 flex-1 text-sm text-muted-foreground">{v.detail}</p>
               </div>
@@ -506,7 +574,7 @@ function RecentVerdicts() {
   );
 }
 
-/* ------------------------------ Snack carousel (light green) ------------------------------ */
+/* ------------------------------ Snack carousel ------------------------------ */
 
 const SNACKS = [
   { label: "Peanut butter granola", Icon: Cookie },
@@ -518,13 +586,13 @@ const SNACKS = [
 ];
 
 function SnackCarousel() {
-  const scrollerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [index, setIndex] = useState(0);
 
   function goTo(next: number) {
     const wrapped = (next + SNACKS.length) % SNACKS.length;
     setIndex(wrapped);
+
     cardRefs.current[wrapped]?.scrollIntoView({
       behavior: "smooth",
       inline: "center",
@@ -538,17 +606,13 @@ function SnackCarousel() {
         <h2 className="font-mascot text-3xl font-bold tracking-tight sm:text-4xl">
           Snacks we catch <span className="text-primary">every day</span>
         </h2>
+
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          A rotating look at the everyday packaged foods people scan most — and the hidden
-          ingredients that most often trip a warning.
+          A rotating look at the everyday packaged foods people scan most.
         </p>
       </div>
 
-      {/* Added justify-center / md:justify-center below 👇 */}
-      <div
-        ref={scrollerRef}
-        className="mt-10 flex snap-x snap-mandatory justify-start md:justify-center gap-5 overflow-x-auto px-5 pb-4 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
+      <div className="mt-10 flex snap-x snap-mandatory justify-start gap-5 overflow-x-auto px-5 pb-4 md:justify-center md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {SNACKS.map((s, i) => (
           <div
             key={s.label}
@@ -575,6 +639,7 @@ function SnackCarousel() {
         >
           <ChevronLeft className="size-4" />
         </button>
+
         <button
           onClick={() => goTo(index + 1)}
           aria-label="Scroll right"
@@ -587,26 +652,26 @@ function SnackCarousel() {
   );
 }
 
-/* ------------------------------ Safety process (wave/amber) ------------------------------ */
+/* ------------------------------ Safety process ------------------------------ */
 
 const PROCESS_TABS = [
   {
     n: "01",
     label: "Label scan",
     title: "Every ingredient, read in place",
-    body: "Vision AI reads the printed ingredients panel exactly as it's written — including fine print, sub-ingredients in parentheses, and regional spellings.",
+    body: "Vision AI reads the printed ingredients panel exactly as it's written.",
   },
   {
     n: "02",
     label: "Cross-check",
     title: "Matched against your profile",
-    body: "Every ingredient is checked against your saved allergens and conditions, including known derivatives and less obvious aliases.",
+    body: "Every ingredient is checked against your saved allergens and conditions.",
   },
   {
     n: "03",
     label: "Instant verdict",
     title: "One plain answer, one reason",
-    body: "Safe, caution, or do-not-eat — always paired with the specific ingredient responsible, never a vague warning.",
+    body: "Safe, caution, or do-not-eat — paired with the specific ingredient responsible.",
   },
 ];
 
@@ -630,6 +695,7 @@ function SafetyProcess() {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
             Built for trust
           </p>
+
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
             How a scan becomes a verdict
           </h2>
@@ -669,14 +735,14 @@ function SafetyProcess() {
   );
 }
 
-/* ------------------------------ One profile (dark card) ------------------------------ */
+/* ------------------------------ One profile ------------------------------ */
 
 const PROFILE_FEATURES = [
   { label: "Allergy match", body: "Checked against your exact list", Icon: ShieldCheck },
   { label: "Condition check", body: "Sodium, sugar, gluten and more", Icon: ListChecks },
   { label: "Multi-label OCR", body: "Reads dense, small-print panels", Icon: ScanLine },
   { label: "Instant verdict", body: "Green, caution, or red — no delay", Icon: Sparkles },
-  { label: "Private by design", body: "Your profile stays on your device", Icon: Lock },
+  { label: "Private by design", body: "Your profile stays protected", Icon: Lock },
   { label: "Scan memory", body: "Revisit what you've already checked", Icon: History },
 ];
 
@@ -715,9 +781,10 @@ function OneProfile() {
             <br />
             <span className="text-primary">Every aisle, covered.</span>
           </h2>
+
           <p className="mt-4 max-w-lg text-white/70">
-            Your allergies and conditions are your all-access pass to a safe decision — set once,
-            checked automatically on every single scan from then on.
+            Your allergies and conditions are saved to your account and checked automatically on
+            every scan.
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -758,10 +825,12 @@ function SiteFooter() {
               />
               <span className="font-display text-lg font-bold">PlateGuard AI</span>
             </div>
+
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-brand-amber-foreground/80">
               A camera, a profile, and a plain answer — built for the ten seconds before you decide
               to eat something.
             </p>
+
             <div className="mt-5 flex gap-3">
               {[Facebook, Instagram, Twitter, Linkedin].map((Icon, i) => (
                 <span
@@ -789,18 +858,20 @@ function SiteFooter() {
                 What we scan
               </a>
             </div>
+
             <div className="space-y-2.5 text-sm">
               <p className="font-semibold">Account</p>
               <Link to="/profile" className="block hover:underline">
                 Your profile
               </Link>
+              <Link to="/login" className="block hover:underline">
+                Login
+              </Link>
               <a href="#verdicts" className="block hover:underline">
                 Recent verdicts
               </a>
-              <a href="#safety" className="block hover:underline">
-                How it verifies
-              </a>
             </div>
+
             <div className="space-y-2.5 text-sm">
               <p className="font-semibold">Languages supported</p>
               <p className="flex items-center gap-1.5 text-brand-amber-foreground/80">
