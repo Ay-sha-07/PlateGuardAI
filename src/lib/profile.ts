@@ -248,9 +248,9 @@ export type ProfileStore = {
   activeId: string;
 };
 
-const STORE_KEY = "snacksafe.profiles.v1";
-const LEGACY_KEY = "snacksafe.profile.v3";
-const LEGACY_PRIOR_KEYS = ["snacksafe.profile.v2", "snacksafe.profile.v1"];
+const STORE_KEY = "PlateGuard.profiles.v1";
+const LEGACY_KEY = "PlateGuard.profile.v3";
+const LEGACY_PRIOR_KEYS = ["PlateGuard.profile.v2", "PlateGuard.profile.v1"];
 
 function makeId(): string {
   return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;

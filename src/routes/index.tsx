@@ -85,10 +85,12 @@ function SiteNav() {
   return (
     <div className="fixed inset-x-0 top-4 z-50 px-4">
       <header className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border border-white/10 bg-background/70 pl-4 pr-2 shadow-2xl shadow-black/30 backdrop-blur-xl">
-        <a href="#top" className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-full bg-primary/15">
-            <ShieldCheck className="size-4 text-primary" />
-          </span>
+        <a href="#top" className="flex items-center gap-2.5">
+          <img
+            src="/icons/logo.png"
+            alt="PlateGuard AI"
+            className="size-8 rounded-full object-contain"
+          />
           <span className="font-display text-base font-bold tracking-tight sm:text-lg">
             PlateGuard <span className="hidden text-muted-foreground sm:inline">AI</span>
           </span>
@@ -221,7 +223,7 @@ function HeroWordmark() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-16 pt-20 md:grid-cols-[1.15fr_0.85fr] md:px-8 md:pt-28">
         <div className="animate-rise-in">
           <h2 className="flex items-center font-mascot text-[18vw] font-extrabold leading-none tracking-tight text-primary sm:text-8xl md:text-8xl lg:text-9xl">
-            Snack
+            Plate
             <span className="ml-1 flex size-[0.62em] shrink-0 items-center justify-center rounded-[28%] bg-foreground text-background sm:ml-2">
               <ShieldCheck className="size-[0.6em]" strokeWidth={2.4} />
             </span>
@@ -737,14 +739,18 @@ function SiteFooter() {
         aria-hidden
         className="wordmark-outline pointer-events-none -mb-6 select-none whitespace-nowrap px-5 pt-10 text-center font-display text-[15vw] font-bold uppercase leading-none sm:text-[8rem] md:px-8"
       >
-        SnackSafe
+        PlateGuard
       </p>
 
       <div className="relative mx-auto max-w-6xl px-5 pb-10 pt-16 md:px-8">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_2fr]">
           <div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="size-6" />
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/icons/logo.png"
+                alt="PlateGuard AI"
+                className="size-7 rounded-full object-contain"
+              />
               <span className="font-display text-lg font-bold">PlateGuard AI</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-brand-amber-foreground/80">

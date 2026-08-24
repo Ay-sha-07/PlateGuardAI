@@ -12,7 +12,7 @@ export type ScanHistoryEntry = {
   createdAt: number;
 };
 
-const KEY = "snacksafe.history.v1";
+const KEY = "PlateGuard.history.v1";
 const MAX_ENTRIES = 60;
 
 export function loadHistory(): ScanHistoryEntry[] {

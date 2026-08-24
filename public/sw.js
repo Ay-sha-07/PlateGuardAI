@@ -2,7 +2,7 @@
 // Caches the shell for instant loads + basic offline fallback.
 // Does NOT cache scan API calls — those always need the network.
 
-const CACHE_VERSION = "snacksafe-shell-v1";
+const CACHE_VERSION = "PlateGuard-shell-v1";
 const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
