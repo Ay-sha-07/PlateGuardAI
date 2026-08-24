@@ -92,7 +92,7 @@ function SiteNav() {
             className="size-8 rounded-full object-contain"
           />
           <span className="font-display text-base font-bold tracking-tight sm:text-lg">
-            PlateGuard <span className="hidden text-muted-foreground sm:inline">AI</span>
+            PlateGuard <span className="text-muted-foreground sm:inline">AI</span>
           </span>
         </a>
 
