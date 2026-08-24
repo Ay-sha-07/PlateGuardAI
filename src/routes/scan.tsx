@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
+  ArrowLeft,
   Camera,
   Check,
   CheckCircle2,
@@ -246,15 +247,30 @@ function ScannerPage() {
 
       <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-10 pt-6">
         <header className="animate-rise-in flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Plate<span className="text-primary">Guard</span> AI
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              <span className="mr-1.5 inline-block size-2 animate-pulse rounded-full bg-primary align-middle" />
-              Label check in one second
-            </p>
+          <div className="flex items-center gap-3">
+            {/* Back to Home Button 👇 */}
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="size-9 rounded-full border border-border/50 bg-card/60 transition-transform active:scale-95"
+            >
+              <Link to="/" title="Back to Home">
+                <ArrowLeft className="size-4 text-foreground" />
+              </Link>
+            </Button>
+
+            <div>
+              <h1 className="text-xl font-bold text-foreground sm:text-2xl">
+                Plate<span className="text-primary">Guard</span> AI
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                <span className="mr-1.5 inline-block size-2 animate-pulse rounded-full bg-primary align-middle" />
+                Label check in one second
+              </p>
+            </div>
           </div>
+
           <div className="flex items-center gap-2">
             <Button
               asChild
