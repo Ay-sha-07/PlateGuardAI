@@ -1,4 +1,5 @@
 import type { ScanResult } from "./scan.server";
+import { pushHistory } from "./cloud-sync";
 
 export type ScanHistoryEntry = {
   id: string;
@@ -31,6 +32,7 @@ function saveHistory(entries: ScanHistoryEntry[]) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
+    void pushHistory(entries.slice(0, MAX_ENTRIES));
   } catch {
     // localStorage full (likely from image thumbnails) — drop the oldest
     // half and try once more before giving up silently.

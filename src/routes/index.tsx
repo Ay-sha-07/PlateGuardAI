@@ -25,11 +25,14 @@ import {
   Menu,
   Twitter,
   X,
+  LogOut,
   CheckCircle2,
   AlertTriangle,
   ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { signOut } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -81,6 +84,9 @@ function HomePage() {
 
 function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  useEffect(() => { supabase?.auth.getUser().then(({data})=>setLoggedIn(!!data.user)); }, []);
+  const logout = async () => { await signOut(); setLoggedIn(false); };
 
   return (
     <div className="fixed inset-x-0 top-4 z-50 px-4">
@@ -112,6 +118,7 @@ function SiteNav() {
           >
             Profile
           </Link>
+          {loggedIn ? <button onClick={logout} className="text-sm font-medium text-foreground/75 hover:text-foreground">Logout</button> : <Link to="/login" className="text-sm font-medium text-foreground/75 hover:text-foreground">Login</Link>}
         </nav>
 
         <div className="hidden md:block">

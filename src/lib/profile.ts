@@ -248,6 +248,8 @@ export type ProfileStore = {
   activeId: string;
 };
 
+import { pushProfileStore } from "./cloud-sync";
+
 const STORE_KEY = "PlateGuard.profiles.v1";
 const LEGACY_KEY = "PlateGuard.profile.v3";
 const LEGACY_PRIOR_KEYS = ["PlateGuard.profile.v2", "PlateGuard.profile.v1"];
@@ -308,6 +310,7 @@ export function loadProfileStore(): ProfileStore {
 export function saveProfileStore(store: ProfileStore) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
+  void pushProfileStore(store);
 }
 
 /** Convenience: the profile currently active in the switcher, or null if none exist. */

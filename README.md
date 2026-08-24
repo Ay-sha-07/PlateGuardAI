@@ -69,3 +69,7 @@ browser for a native-app-like experience — no app store required.
 - `src/lib/ai-provider.server.ts` — picks an AI provider from your `.env`
 - `src/components/ui/` — shadcn/ui components
 - `public/` — static assets, manifest, service worker, hero media
+
+
+## Cloud login and database
+This version uses Supabase Authentication and PostgreSQL. Copy `.env.example` to `.env`, add your Supabase URL and anon key, run `supabase-schema.sql` in the Supabase SQL Editor, and enable Email/Password authentication in Supabase. Existing local profiles/history are migrated to the account on first login.
