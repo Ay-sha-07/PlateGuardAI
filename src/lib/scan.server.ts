@@ -1,6 +1,6 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { getVisionProviders, isRetryableProviderError } from "./ai-provider.server";
+import { getVisionProviders, diagnoseProviderError } from "./ai-provider.server";
 
 const DiabetesDetailSchema = z.object({
   type: z.string().default(""),
@@ -178,16 +178,20 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
       : `Scan this food label for the following person.\n\n${profileText}`;
 
   let result: Awaited<ReturnType<typeof generateText>> | null = null;
-  let lastErr: unknown = null;
+  let lastDiagnosis: ReturnType<typeof diagnoseProviderError> | null = null;
 
-  // Failover: try each configured provider in order. Only move on to the
-  // next one for errors that look transient/rate-limit related — a real
-  // auth or validation error should surface immediately rather than burn
-  // through every provider first. Within a single provider, also retry
-  // once after a short delay before giving up on it — a lot of "rate
-  // limited" responses are just a momentary burst, not an exhausted
-  // daily quota, and a 1.5s pause alone often clears it.
-  for (const provider of providers) {
+  // Failover strategy, using the REAL diagnosis (HTTP status + response
+  // body via APICallError, see ai-provider.server.ts) rather than guessing
+  // from error text:
+  //  - image_size / request_format: the problem is the request itself, not
+  //    the provider — it would fail identically on every provider, so stop
+  //    immediately instead of burning through the whole list.
+  //  - rate_limit / server_overload / network: transient, worth one retry
+  //    on the SAME provider after a short delay before moving on.
+  //  - auth / quota / model_not_found / unknown: specific to that provider
+  //    or key — no point retrying it, but a different provider may well
+  //    work, so move on immediately.
+  providerLoop: for (const provider of providers) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         result = await generateText({
@@ -204,53 +208,72 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
             },
           ],
         });
-        break;
+        break providerLoop;
       } catch (err) {
-        lastErr = err;
-        console.error(`[scan] provider "${provider.name}" attempt ${attempt + 1} failed:`, err);
-        if (!isRetryableProviderError(err)) {
-          throw new Error(describeProviderError(err));
+        const diagnosis = diagnoseProviderError(err);
+        lastDiagnosis = diagnosis;
+        console.error(
+          `[scan] provider "${provider.name}" attempt ${attempt + 1} failed ` +
+            `[category=${diagnosis.category}]: ${diagnosis.detail}`,
+        );
+
+        if (diagnosis.category === "image_size" || diagnosis.category === "request_format") {
+          throw new Error(describeProviderError(diagnosis, provider.name));
         }
-        if (attempt === 0) {
+        if (diagnosis.retryable && attempt === 0) {
           await new Promise((r) => setTimeout(r, 1500));
+          continue; // retry the same provider once
         }
-        // otherwise fall through and try the next provider
+        break; // move on to the next provider
       }
     }
-    if (result) break;
   }
 
   if (!result) {
     const triedNames = providers.map((p) => p.name).join(", ");
     const hint =
       providers.length === 1
-        ? " Only one AI provider is configured — add a second key (e.g. GROQ_API_KEY, free) " +
-          "so scans can fail over instead of stopping here."
-        : ` All configured providers (${triedNames}) were rate-limited or unavailable — try again shortly.`;
-    throw new Error(describeProviderError(lastErr) + hint);
+        ? " Only one AI provider is configured — set both GOOGLE_GENERATIVE_AI_API_KEY (Gemini) " +
+          "and XAI_API_KEY (Grok) so scans can fail over instead of stopping here."
+        : ` All configured providers (${triedNames}) failed — see the server logs for the ` +
+          "specific reason each one gave.";
+    throw new Error(
+      (lastDiagnosis ? describeProviderError(lastDiagnosis) : "No AI provider was reachable.") +
+        hint,
+    );
   }
 
   return ScanResultSchema.parse(await result.output);
 }
 
-// AI SDK provider errors (auth, rate limit, network, etc.) often carry a
-// deeply nested or verbose `.message`. Surface something short and actually
-// actionable instead of dumping the raw SDK error at the user.
-function describeProviderError(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err);
-  const lower = raw.toLowerCase();
-
-  if (lower.includes("api key") || lower.includes("unauthorized") || lower.includes("401")) {
-    return "The AI provider rejected the API key. Check the key in your .env file.";
+// Builds a short, actionable message from a structured diagnosis instead of
+// a generic "something went wrong" — the category comes from the real HTTP
+// status code + response body where the provider gave us one (see
+// diagnoseProviderError in ai-provider.server.ts), not from string-matching
+// on `.message`.
+function describeProviderError(
+  diagnosis: ReturnType<typeof diagnoseProviderError>,
+  providerName?: string,
+): string {
+  const who = providerName ? ` (${providerName})` : "";
+  switch (diagnosis.category) {
+    case "auth":
+      return `The AI provider${who} rejected the API key — it's missing, wrong, or lacks access to this model. [${diagnosis.detail}]`;
+    case "quota":
+      return `The AI provider${who} has run out of quota (not just a momentary rate limit — the account/key needs a billing or plan check). [${diagnosis.detail}]`;
+    case "rate_limit":
+      return `The AI provider${who} is rate-limiting requests right now. Wait a moment and try again. [${diagnosis.detail}]`;
+    case "model_not_found":
+      return `The AI provider${who} doesn't recognize the configured model name — check the *_MODEL override in .env. [${diagnosis.detail}]`;
+    case "image_size":
+      return `The photo is too large or in an unsupported format for the AI provider${who} to accept. Try retaking it closer/at lower resolution. [${diagnosis.detail}]`;
+    case "request_format":
+      return `The AI provider${who} rejected the request as malformed. [${diagnosis.detail}]`;
+    case "server_overload":
+      return `The AI provider${who} is temporarily overloaded on their end. Try again shortly. [${diagnosis.detail}]`;
+    case "network":
+      return `Couldn't reach the AI provider${who} — check your network connection. [${diagnosis.detail}]`;
+    default:
+      return `The AI provider${who} returned an error we haven't specifically classified yet. [${diagnosis.detail}]`;
   }
-  if (lower.includes("rate limit") || lower.includes("429") || lower.includes("quota")) {
-    return "The AI provider is rate-limiting requests right now. Wait a moment and try again.";
-  }
-  if (lower.includes("fetch failed") || lower.includes("network") || lower.includes("enotfound")) {
-    return "Couldn't reach the AI provider — check your internet connection and try again.";
-  }
-  if (lower.includes("no ai provider configured")) {
-    return raw; // already a clean, actionable message
-  }
-  return "The AI provider returned an unexpected error. Try again in a moment.";
 }
