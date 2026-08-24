@@ -183,36 +183,51 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   // Failover: try each configured provider in order. Only move on to the
   // next one for errors that look transient/rate-limit related — a real
   // auth or validation error should surface immediately rather than burn
-  // through every provider first.
+  // through every provider first. Within a single provider, also retry
+  // once after a short delay before giving up on it — a lot of "rate
+  // limited" responses are just a momentary burst, not an exhausted
+  // daily quota, and a 1.5s pause alone often clears it.
   for (const provider of providers) {
-    try {
-      result = await generateText({
-        model: provider.model,
-        system,
-        output: Output.object({ schema: ScanResultSchema }),
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: instruction },
-              { type: "file", data: data.image, mediaType: "image/jpeg" },
-            ],
-          },
-        ],
-      });
-      break;
-    } catch (err) {
-      lastErr = err;
-      console.error(`[scan] provider "${provider.name}" failed:`, err);
-      if (!isRetryableProviderError(err)) {
-        throw new Error(describeProviderError(err));
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        result = await generateText({
+          model: provider.model,
+          system,
+          output: Output.object({ schema: ScanResultSchema }),
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: instruction },
+                { type: "file", data: data.image, mediaType: "image/jpeg" },
+              ],
+            },
+          ],
+        });
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.error(`[scan] provider "${provider.name}" attempt ${attempt + 1} failed:`, err);
+        if (!isRetryableProviderError(err)) {
+          throw new Error(describeProviderError(err));
+        }
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+        // otherwise fall through and try the next provider
       }
-      // otherwise fall through and try the next provider
     }
+    if (result) break;
   }
 
   if (!result) {
-    throw new Error(describeProviderError(lastErr));
+    const triedNames = providers.map((p) => p.name).join(", ");
+    const hint =
+      providers.length === 1
+        ? " Only one AI provider is configured — add a second key (e.g. GROQ_API_KEY, free) " +
+          "so scans can fail over instead of stopping here."
+        : ` All configured providers (${triedNames}) were rate-limited or unavailable — try again shortly.`;
+    throw new Error(describeProviderError(lastErr) + hint);
   }
 
   return ScanResultSchema.parse(await result.output);

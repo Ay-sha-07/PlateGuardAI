@@ -88,7 +88,8 @@ function SiteNav() {
   const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
-    supabase?.auth.getUser().then(({ data }) => {
+    if (!supabase) return;
+    supabase.auth.getUser().then(({ data }) => {
       setLoggedIn(!!data.user);
     });
 

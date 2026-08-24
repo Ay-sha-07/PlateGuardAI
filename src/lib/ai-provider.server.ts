@@ -2,6 +2,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGroq } from "@ai-sdk/groq";
 import type { LanguageModel } from "ai";
 
 /**
@@ -13,17 +14,23 @@ import type { LanguageModel } from "ai";
  * each one in turn and only surfaces an error once all of them fail —
  * that's the failover behavior.
  *
- * Set as many of these as you like. Only one is required for the scanner
- * to work; setting two or more just adds redundancy against rate limits.
+ * IMPORTANT: failover only helps if more than one key is actually set.
+ * If you're only seeing "the AI provider is rate-limiting requests" over
+ * and over, you very likely have just ONE of these configured — add a
+ * second (Groq's free tier is the easiest: no credit card, 30 req/min).
  *
- *   GOOGLE_GENERATIVE_AI_API_KEY   → Gemini (free tier via https://aistudio.google.com/apikey)
+ *   GROQ_API_KEY                  → Groq/Llama 4 Scout — free tier via https://console.groq.com/keys
+ *   GOOGLE_GENERATIVE_AI_API_KEY  → Gemini — free tier via https://aistudio.google.com/apikey
  *   OPENAI_API_KEY                → OpenAI (gpt-4o-mini)
  *   ANTHROPIC_API_KEY             → Claude (claude-3-5-haiku)
- *   OPENAI_COMPATIBLE_API_KEY     → any OpenAI-compatible endpoint (Groq, OpenRouter, etc.)
+ *   OPENAI_COMPATIBLE_API_KEY     → any other OpenAI-compatible endpoint (OpenRouter, etc.)
  *                                   — also set OPENAI_COMPATIBLE_BASE_URL and,
  *                                   optionally, OPENAI_COMPATIBLE_MODEL
  *
- * All four support image input, which the scanner requires.
+ * All five support image input, which the scanner requires. Set as many
+ * as you like — order below is priority, and it's chosen to put the two
+ * generous free tiers (Groq, then Gemini) first so paid keys are only
+ * touched as a last resort.
  */
 export type VisionProvider = {
   /** Short, human-readable name used in logs/error messages. */
@@ -34,12 +41,22 @@ export type VisionProvider = {
 export function getVisionProviders(): VisionProvider[] {
   const providers: VisionProvider[] = [];
 
+  const groq = process.env["GROQ_API_KEY"];
+  if (groq) {
+    providers.push({
+      name: "Groq",
+      model: createGroq({ apiKey: groq })(
+        process.env["GROQ_MODEL"] || "meta-llama/llama-4-scout-17b-16e-instruct",
+      ),
+    });
+  }
+
   const google = process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
   if (google) {
     providers.push({
       name: "Google Gemini",
       model: createGoogleGenerativeAI({ apiKey: google })(
-        process.env["GOOGLE_MODEL"] || "gemini-3.6-flash",
+        process.env["GOOGLE_MODEL"] || "gemini-2.5-flash",
       ),
     });
   }
@@ -79,9 +96,17 @@ export function getVisionProviders(): VisionProvider[] {
 
   if (providers.length === 0) {
     throw new Error(
-      "No AI provider configured. Set one of GOOGLE_GENERATIVE_AI_API_KEY, OPENAI_API_KEY, " +
-        "ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_API_KEY + OPENAI_COMPATIBLE_BASE_URL in your " +
-        ".env file. See .env.example for details.",
+      "No AI provider configured. Set one of GROQ_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, " +
+        "OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_API_KEY + " +
+        "OPENAI_COMPATIBLE_BASE_URL in your .env file. See .env.example for details.",
+    );
+  }
+
+  if (providers.length === 1) {
+    console.warn(
+      `[scan] only one AI provider configured (${providers[0]!.name}). ` +
+        "Rate limits will surface as scan failures with no fallback — add a second key " +
+        "(GROQ_API_KEY is free and quick to get) to enable real failover.",
     );
   }
 

@@ -17,6 +17,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.41",
     "@ai-sdk/google": "^4.0.50",
+    "@ai-sdk/groq": "^4.0.30",
     "@ai-sdk/openai": "^4.0.46",
     "@ai-sdk/openai-compatible": "^3.0.34",
     "@hookform/resolvers": "^5.2.2",
