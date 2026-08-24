@@ -223,12 +223,7 @@ function HeroWordmark() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-16 pt-20 md:grid-cols-[1.15fr_0.85fr] md:px-8 md:pt-28">
         <div className="animate-rise-in">
           <h2 className="flex items-center font-mascot text-[18vw] font-extrabold leading-none tracking-tight text-primary sm:text-8xl md:text-8xl lg:text-9xl">
-            Snack
-            <img
-              src="/icons/logo.png"
-              alt="PlateGuard AI"
-              className="size-8 rounded-full object-contain"
-            />
+            Snack ⛶
           </h2>
           <p className="mt-3 max-w-md text-base text-muted-foreground sm:text-lg">
             Smarter scans. Safer bites. Every label decoded in plain English, for every aisle in the
