@@ -765,11 +765,11 @@ function ScannerPage() {
             }}
           />
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2">
             {!result && !cameraOpen && (
               <Button
                 size="lg"
-                className="relative h-14 flex-1 overflow-hidden rounded-2xl bg-gradient-to-b from-primary to-[oklch(0.66_0.13_58)] text-base font-semibold text-primary-foreground shadow-sm transition-transform active:scale-[0.98]"
+                className="relative h-14 overflow-hidden rounded-2xl bg-gradient-to-b from-primary to-[oklch(0.66_0.13_58)] text-base font-semibold text-primary-foreground shadow-sm transition-transform active:scale-[0.98]"
                 disabled={pending || preparing}
                 onClick={() => setCameraOpen(true)}
               >
@@ -781,12 +781,13 @@ function ScannerPage() {
               <Button
                 size="lg"
                 variant="secondary"
-                className="h-14 rounded-2xl px-4 transition-transform active:scale-95"
+                className="h-14 rounded-2xl border border-border bg-card/80 px-3 text-sm font-semibold transition-transform active:scale-95"
                 disabled={pending || preparing}
                 onClick={() => galleryRef.current?.click()}
-                title="Upload a photo or PDF"
+                title="Add an image or document"
               >
                 <FileImage className="size-5" />
+                <span>Add image / document</span>
               </Button>
             )}
             {result && (
