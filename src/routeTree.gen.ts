@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as NewsRouteImport } from './routes/news'
+import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -32,9 +32,9 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewsRoute = NewsRouteImport.update({
-  id: '/news',
-  path: '/news',
+const SafetyRoute = SafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -58,7 +58,7 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
-  '/news': typeof NewsRoute
+  '/safety': typeof SafetyRoute
   '/profile': typeof ProfileRoute
   '/scan': typeof ScanRoute
 }
@@ -67,7 +67,7 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
-  '/news': typeof NewsRoute
+  '/safety': typeof SafetyRoute
   '/profile': typeof ProfileRoute
   '/scan': typeof ScanRoute
 }
@@ -77,16 +77,16 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
-  '/news': typeof NewsRoute
+  '/safety': typeof SafetyRoute
   '/profile': typeof ProfileRoute
   '/scan': typeof ScanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history' | '/home' | '/login' | '/news' | '/profile' | '/scan'
+  fullPaths: '/' | '/history' | '/home' | '/login' | '/safety' | '/profile' | '/scan'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history' | '/home' | '/login' | '/news' | '/profile' | '/scan'
-  id: '__root__' | '/' | '/history' | '/home' | '/login' | '/news' | '/profile' | '/scan'
+  to: '/' | '/history' | '/home' | '/login' | '/safety' | '/profile' | '/scan'
+  id: '__root__' | '/' | '/history' | '/home' | '/login' | '/safety' | '/profile' | '/scan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,7 +94,7 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
-  NewsRoute: typeof NewsRoute
+  SafetyRoute: typeof SafetyRoute
   ProfileRoute: typeof ProfileRoute
   ScanRoute: typeof ScanRoute
 }
@@ -129,11 +129,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/news': {
-      id: '/news'
-      path: '/news'
-      fullPath: '/news'
-      preLoaderRoute: typeof NewsRouteImport
+    '/safety': {
+      id: '/safety'
+      path: '/safety'
+      fullPath: '/safety'
+      preLoaderRoute: typeof SafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -158,7 +158,7 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
-  NewsRoute: NewsRoute,
+  SafetyRoute: SafetyRoute,
   ProfileRoute: ProfileRoute,
   ScanRoute: ScanRoute,
 }

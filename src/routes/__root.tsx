@@ -240,10 +240,10 @@ function ThemeToggle() {
       aria-label={`Switch to ${dark ? "light" : "dark"} mode`}
       aria-pressed={dark}
       title={`Switch to ${dark ? "light" : "dark"} mode`}
-      className="fixed right-3 top-3 z-[100] inline-flex h-10 items-center gap-2 rounded-full border border-border bg-background/90 px-3 text-foreground shadow-lg backdrop-blur-xl transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:right-5 sm:top-5"
+      className="fixed right-20 top-7 z-[100] inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 p-0 text-foreground shadow-lg backdrop-blur-xl transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:right-5 sm:top-7"
     >
       {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-      <span className="hidden text-xs font-semibold sm:inline">{dark ? "Light" : "Dark"}</span>
+      <span className="sr-only">{dark ? "Light" : "Dark"}</span>
     </button>
   );
 }
