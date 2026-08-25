@@ -1,6 +1,7 @@
-import { createFileRoute, Link, ClientOnly } from "@tanstack/react-router";
+import { createFileRoute, Link, ClientOnly, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -167,9 +168,20 @@ function ScannerPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const run = useServerFn(scanLabel);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const store = loadProfileStore();
+    // First-time visitor — no profile has ever been created on this device.
+    // Send them to set up their full health profile before they can scan,
+    // since every scan verdict depends on it.
+    if (store.profiles.length === 0) {
+      toast.info("Let's set up your health profile first", {
+        description: "Every scan is judged against it, so we need it before your first scan.",
+      });
+      void navigate({ to: "/profile" });
+      return;
+    }
     setProfiles(store.profiles);
     setActiveId(store.activeId);
   }, []);

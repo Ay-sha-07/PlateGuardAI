@@ -308,7 +308,7 @@ function ProfilePage() {
                 type="button"
                 onClick={() => handleDeleteProfile(p.id)}
                 aria-label={`Delete ${p.name}`}
-                className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-danger group-hover:opacity-100 focus-visible:opacity-100"
+                className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-danger focus-visible:opacity-100"
               >
                 <Trash2 className="size-3" />
               </button>
@@ -350,6 +350,17 @@ function ProfilePage() {
         {step === 3 && <StepSensitivities profile={profile} patch={patch} />}
         {step === 4 && <StepLifestyle profile={profile} patch={patch} />}
       </div>
+
+      {profiles.length > 1 && (
+        <button
+          type="button"
+          onClick={() => handleDeleteProfile(activeId)}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
+        >
+          <Trash2 className="size-4" />
+          Delete "{profile.name || "this"}" profile
+        </button>
+      )}
 
       <div
         className="fixed inset-x-0 z-30 mx-auto max-w-md border-t border-border bg-background/95 px-5 py-4 backdrop-blur"
