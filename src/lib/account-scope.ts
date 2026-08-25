@@ -25,12 +25,23 @@ export function getActiveScope(): string {
   }
 }
 
+// Fired whenever the active scope changes (sign-in/out, or switching which
+// account is active on this device). Pages that cached data under the old
+// scoped key (e.g. /history) should re-read under the new one rather than
+// keep showing whatever was in React state from before the switch.
+export const SCOPE_CHANGED_EVENT = "plateguard:scope-changed";
+
 export function setActiveScope(scope: string | null | undefined) {
   if (typeof window === "undefined") return;
+  const next = scope || GUEST_SCOPE;
+  const prev = getActiveScope();
   try {
-    window.localStorage.setItem(SCOPE_KEY, scope || GUEST_SCOPE);
+    window.localStorage.setItem(SCOPE_KEY, next);
   } catch {
     /* ignore — worst case this device falls back to the guest scope */
+  }
+  if (next !== prev) {
+    window.dispatchEvent(new Event(SCOPE_CHANGED_EVENT));
   }
 }
 

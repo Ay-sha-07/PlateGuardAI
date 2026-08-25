@@ -3,6 +3,25 @@ import { z } from "zod";
 import { getVisionProviders, diagnoseProviderError } from "./ai-provider.server";
 import { markProviderFailure, markProviderSuccess, shouldSkipProvider } from "./ai-health.server";
 
+// --- Scan-speed tuning ------------------------------------------------
+// These three knobs are the main levers on end-to-end scan latency:
+//  - PROVIDER_TIMEOUT_MS: without this, a slow/hung provider would block
+//    the whole request indefinitely instead of failing over. Bounding it
+//    means a stuck provider costs at most this long, not "forever".
+//  - PROVIDER_RETRY_DELAY_MS: how long we pause before retrying the SAME
+//    provider on a transient (rate-limit/network) error. Shorter means we
+//    get to a working provider faster; kept non-zero so we don't hammer a
+//    provider that's mid-rate-limit-window.
+//  - MAX_OUTPUT_TOKENS: the structured JSON response (summary, evidence
+//    lists, per-reason breakdowns, etc.) is the single biggest driver of
+//    latency, since output-token generation is far slower than input
+//    processing. Capping it — together with the "be concise" instructions
+//    added to both system prompts below — cuts typical response time
+//    substantially without truncating a normal answer.
+const PROVIDER_TIMEOUT_MS = 20_000;
+const PROVIDER_RETRY_DELAY_MS = 600;
+const MAX_OUTPUT_TOKENS = 1100;
+
 const DiabetesDetailSchema = z.object({
   type: z.string().default(""),
   treatment: z.string().default(""),
@@ -139,7 +158,9 @@ Rules:
 - Consider medications only for well-established food-drug interactions; never invent one you're not confident about.
 - A violated dietary/religious pattern (halal, kosher, vegan, Jain, etc.) is its own reason, rated on the same 1–5 scale, independent of medical reasons.
 - If the label is blurry, cropped, or not a food label, set labelReadable=false, rating 3, and say what to re-shoot.
-- Never guess an ingredient that is not visible. Each reason is one plain sentence a stressed parent can read in 2 seconds.`;
+- Never guess an ingredient that is not visible. Each reason is one plain sentence a stressed parent can read in 2 seconds.
+
+Be concise so the scan returns quickly — this does not mean skipping safety-relevant detail, it means not padding: summary max 3 sentences; labelEvidence and nutritionHighlights max 4 items each; reasons max 5 items; every string field one short sentence, no filler.`;
 
 const SYSTEM_MEDICINE = `You are PlateGuard AI's medicine-label mode. You read a photo of an over-the-counter or prescription medicine package/label — front-of-pack, patient info leaflet, or blister strip — and assess it against ONE person's FULL clinical profile.
 
@@ -177,7 +198,9 @@ Rules:
 - Consider the "medications" field on the profile for drug-drug interactions only where well-established and clearly identifiable (e.g. two NSAIDs, an SSRI plus another serotonergic drug, warfarin plus NSAIDs/aspirin) — never invent an interaction you're not confident about.
 - If the label is blurry, cropped, or not a medicine label, set labelReadable=false, rating 3, and say what to re-shoot.
 - Always include, as your final "reasons" entry, a rating-appropriate reminder that this is not a substitute for a pharmacist or doctor, phrased as a normal reason (not a disclaimer footer).
-- Never guess an ingredient or dose that is not visible. Each reason is one plain sentence a stressed person can read in 2 seconds.`;
+- Never guess an ingredient or dose that is not visible. Each reason is one plain sentence a stressed person can read in 2 seconds.
+
+Be concise so the scan returns quickly — this does not mean skipping safety-relevant detail, it means not padding: summary max 3 sentences; labelEvidence max 4 items; reasons max 5 items; every string field one short sentence, no filler.`;
 
 /**
  * Keep product naming generic in the UI. AI/barcode identity is still used
@@ -361,6 +384,10 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
           model: provider.model,
           system,
           output: Output.object({ schema: ScanResultSchema }),
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          // Bounds worst-case latency: a provider that hangs instead of
+          // erroring would otherwise stall the whole scan indefinitely.
+          abortSignal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
           messages: [
             {
               role: "user",
@@ -389,7 +416,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
           throw new Error(describeProviderError(diagnosis, provider.name));
         }
         if (diagnosis.retryable && attempt === 0) {
-          await new Promise((r) => setTimeout(r, 1500));
+          await new Promise((r) => setTimeout(r, PROVIDER_RETRY_DELAY_MS));
           continue; // retry the same provider once
         }
         break; // move on to the next provider

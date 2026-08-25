@@ -19,6 +19,29 @@ const KEY_BASE = "PlateGuard.history.v1";
 const RATING_MIGRATION_KEY_BASE = "PlateGuard.history.ratingScale.v2";
 const MAX_ENTRIES = 60;
 
+// Cross-device sync fix: when you sign in, the root layout pulls your
+// account's cloud history in the background (see __root.tsx) and calls
+// saveHistory() once it's merged in — but that happens on a network round
+// trip, AFTER pages like /history have already read localStorage once on
+// mount. Without this event, a page that mounted before the pull finished
+// would keep showing its stale/empty snapshot forever, which is exactly
+// why "history from my phone doesn't show up on my laptop" could happen
+// even though the cloud data was there and DID get pulled — the UI just
+// never re-read it. Every saveHistory() call (local edits AND the cloud
+// merge) fires this event so any mounted page can refresh itself.
+const HISTORY_CHANGED_EVENT = "plateguard:history-changed";
+
+export function subscribeHistoryChanges(onChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(HISTORY_CHANGED_EVENT, onChange);
+  return () => window.removeEventListener(HISTORY_CHANGED_EVENT, onChange);
+}
+
+function notifyHistoryChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(HISTORY_CHANGED_EVENT));
+}
+
 function invertRating(value: number): number {
   return 6 - value;
 }
@@ -76,6 +99,7 @@ export function saveHistory(entries: ScanHistoryEntry[]) {
   // account sees the same scan history on every device.
   try {
     window.localStorage.setItem(scopedKey(KEY_BASE), JSON.stringify(entries.slice(0, MAX_ENTRIES)));
+    notifyHistoryChanged();
   } catch {
     // localStorage full (likely from image thumbnails) — drop the oldest
     // half and try once more before giving up silently.
@@ -84,6 +108,7 @@ export function saveHistory(entries: ScanHistoryEntry[]) {
         scopedKey(KEY_BASE),
         JSON.stringify(entries.slice(0, Math.floor(MAX_ENTRIES / 2))),
       );
+      notifyHistoryChanged();
     } catch {
       /* give up quietly — history is a convenience, not critical data */
     }
