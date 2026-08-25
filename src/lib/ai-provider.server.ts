@@ -54,7 +54,7 @@ export function getVisionProviders(): VisionProvider[] {
       name: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       baseURL,
       apiKey,
-      headers,
+      ...(headers ? { headers } : {}),
       supportsStructuredOutputs: true,
     });
 

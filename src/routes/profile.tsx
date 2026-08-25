@@ -1,6 +1,16 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Camera, Check, ImagePlus, Plus, ShieldCheck, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  Check,
+  ImagePlus,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   ACTIVITY_LEVELS,
@@ -242,8 +252,8 @@ function ProfilePage() {
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-foreground">Profile photo</h2>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Add a photo so family members are easier to identify when switching profiles.
-              The image is resized before it is saved.
+              Add a photo so family members are easier to identify when switching profiles. The
+              image is resized before it is saved.
             </p>
             <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3.5 py-2 text-sm font-medium transition-colors hover:bg-accent">
               <ImagePlus className="size-4" />
@@ -260,7 +270,9 @@ function ProfilePage() {
                     patch({ avatarUrl: await resizeProfilePhoto(file) });
                     toast.success("Profile photo updated.");
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Could not upload the photo.");
+                    toast.error(
+                      error instanceof Error ? error.message : "Could not upload the photo.",
+                    );
                   }
                 }}
               />
@@ -282,7 +294,13 @@ function ProfilePage() {
                   : "border-border bg-card/70 text-foreground hover:bg-accent"
               }`}
             >
-              <ProfileAvatar name={p.name} avatarUrl={p.avatarUrl} size="size-7" textSize="text-xs" active={p.id === activeId} />
+              <ProfileAvatar
+                name={p.name}
+                avatarUrl={p.avatarUrl}
+                size="size-7"
+                textSize="text-xs"
+                active={p.id === activeId}
+              />
               <span className="min-w-0 truncate">{p.name || "Unnamed"}</span>
             </button>
             {profiles.length > 1 && (
@@ -471,16 +489,7 @@ function StepAbout({ profile, patch }: StepProps) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="height">Height (cm, optional)</Label>
-          <Input
-            id="height"
-            type="number"
-            inputMode="decimal"
-            placeholder="e.g. 165"
-            value={profile.heightCm}
-            onChange={(e) => patch({ heightCm: e.target.value })}
-            className="h-11 rounded-xl"
-          />
+          <HeightField profile={profile} patch={patch} />
         </div>
       </div>
 
@@ -503,6 +512,107 @@ function StepAbout({ profile, patch }: StepProps) {
         </Select>
       </div>
     </div>
+  );
+}
+
+/**
+ * Height input with a cm / ft+in unit toggle. `profile.heightCm` stays the
+ * single source of truth (in centimeters) — the ft+in mode just converts
+ * on the way in and out, so nothing downstream (AI prompt, BMI calc,
+ * history) needs to know which unit the person prefers to type in.
+ */
+function HeightField({ profile, patch }: StepProps) {
+  const [unit, setUnit] = useState<"cm" | "ft">("cm");
+  const cmValue = parseFloat(profile.heightCm);
+  const hasCm = Number.isFinite(cmValue) && cmValue > 0;
+
+  const totalInches = hasCm ? cmValue / 2.54 : 0;
+  const feet = hasCm ? Math.floor(totalInches / 12) : 0;
+  const inches = hasCm ? Math.round(totalInches - feet * 12) : 0;
+  // Rounding inches up to 12 should carry over into a whole extra foot.
+  const feetDisplay = inches === 12 ? feet + 1 : feet;
+  const inchesDisplay = inches === 12 ? 0 : inches;
+
+  function setFromFeetInches(nextFeet: number, nextInches: number) {
+    if (!Number.isFinite(nextFeet) && !Number.isFinite(nextInches)) {
+      patch({ heightCm: "" });
+      return;
+    }
+    const totalIn =
+      (Number.isFinite(nextFeet) ? nextFeet : 0) * 12 +
+      (Number.isFinite(nextInches) ? nextInches : 0);
+    const cm = totalIn * 2.54;
+    patch({ heightCm: cm > 0 ? Math.round(cm * 10) / 10 + "" : "" });
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <Label htmlFor="height">Height (optional)</Label>
+        <div className="flex rounded-full border border-border p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => setUnit("cm")}
+            className={`rounded-full px-2.5 py-1 font-medium transition-colors ${
+              unit === "cm" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            cm
+          </button>
+          <button
+            type="button"
+            onClick={() => setUnit("ft")}
+            className={`rounded-full px-2.5 py-1 font-medium transition-colors ${
+              unit === "ft" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+            }`}
+          >
+            ft/in
+          </button>
+        </div>
+      </div>
+
+      {unit === "cm" ? (
+        <Input
+          id="height"
+          type="number"
+          inputMode="decimal"
+          placeholder="e.g. 165"
+          value={profile.heightCm}
+          onChange={(e) => patch({ heightCm: e.target.value })}
+          className="h-11 rounded-xl"
+        />
+      ) : (
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Input
+              id="height"
+              type="number"
+              inputMode="numeric"
+              placeholder="e.g. 5"
+              value={hasCm ? feetDisplay : ""}
+              onChange={(e) => setFromFeetInches(parseFloat(e.target.value), inchesDisplay)}
+              className="h-11 rounded-xl pr-9"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              ft
+            </span>
+          </div>
+          <div className="relative flex-1">
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder="e.g. 5"
+              value={hasCm ? inchesDisplay : ""}
+              onChange={(e) => setFromFeetInches(feetDisplay, parseFloat(e.target.value))}
+              className="h-11 rounded-xl pr-9"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              in
+            </span>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

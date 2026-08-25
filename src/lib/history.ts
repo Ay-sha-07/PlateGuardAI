@@ -30,14 +30,22 @@ function migrateRatingScale(entries: ScanHistoryEntry[]): ScanHistoryEntry[] {
   const migrated = entries.map((entry) => ({
     ...entry,
     rating: invertRating(entry.rating),
-    aiResult: entry.aiResult
+    ...(entry.aiResult
       ? {
-          ...entry.aiResult,
-          rating: invertRating(entry.aiResult.rating),
-          profileImpact: entry.aiResult.profileImpact.map((item) => ({ ...item, rating: invertRating(item.rating) })),
-          reasons: entry.aiResult.reasons.map((item) => ({ ...item, rating: invertRating(item.rating) })),
+          aiResult: {
+            ...entry.aiResult,
+            rating: invertRating(entry.aiResult.rating),
+            profileImpact: entry.aiResult.profileImpact.map((item) => ({
+              ...item,
+              rating: invertRating(item.rating),
+            })),
+            reasons: entry.aiResult.reasons.map((item) => ({
+              ...item,
+              rating: invertRating(item.rating),
+            })),
+          },
         }
-      : entry.aiResult,
+      : {}),
   }));
 
   try {

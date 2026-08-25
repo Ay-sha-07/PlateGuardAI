@@ -227,8 +227,7 @@ function ScannerPage() {
     console.error("[scan] failed:", e);
     const rawMessage = e instanceof Error ? e.message : "";
     const looksLikeHtml = /^\s*<(!doctype|html)/i.test(rawMessage);
-    const detail =
-      rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
+    const detail = rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
     setError(
       detail && !/^\s*<(!doctype|html)/i.test(detail)
         ? "Scan failed — please try again. " + detail.slice(0, 140)
@@ -473,7 +472,9 @@ function ScannerPage() {
               ) : (
                 <Users className="size-4 shrink-0 text-primary" />
               )}
-              <span className="truncate">{hasProfile ? activeProfile!.name : "No profile yet"}</span>
+              <span className="truncate">
+                {hasProfile ? activeProfile!.name : "No profile yet"}
+              </span>
             </span>
             <ChevronDown
               className={`size-4 text-muted-foreground transition-transform ${switcherOpen ? "rotate-180" : ""}`}
@@ -819,7 +820,9 @@ function ScannerPage() {
                 className="flex w-full items-center justify-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline"
               >
                 <ClipboardPaste className="size-3.5" />
-                {manualOpen ? "Hide barcode / paste-text entry" : "Or scan a barcode / paste ingredient text"}
+                {manualOpen
+                  ? "Hide barcode / paste-text entry"
+                  : "Or scan a barcode / paste ingredient text"}
               </button>
 
               {manualOpen && (
@@ -834,6 +837,22 @@ function ScannerPage() {
                       placeholder="e.g. Harvest Oat Granola"
                       className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground"
                     />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Or upload a photo / PDF
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-1 h-10 w-full rounded-xl"
+                      disabled={pending || preparing}
+                      onClick={() => galleryRef.current?.click()}
+                    >
+                      <FileImage className="size-4" />
+                      Choose a file
+                    </Button>
                   </div>
 
                   <div>
@@ -901,7 +920,9 @@ function ScannerPage() {
                                   barcodeIngredientText: lookup.ingredientText,
                                 });
                               } else {
-                                setBarcodeError(`Barcode ${value} was detected, but it was not found in the free catalog. You can still analyze the label text.`);
+                                setBarcodeError(
+                                  `Barcode ${value} was detected, but it was not found in the free catalog. You can still analyze the label text.`,
+                                );
                               }
                             } finally {
                               setBarcodePending(false);
@@ -911,11 +932,10 @@ function ScannerPage() {
                       />
                     )}
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      A verified barcode is enough to analyze the product. If the catalog has label text or nutrition data, that evidence is included too.
+                      A verified barcode is enough to analyze the product. If the catalog has label
+                      text or nutrition data, that evidence is included too.
                     </p>
-                    {barcodeError && (
-                      <p className="mt-1 text-xs text-danger">{barcodeError}</p>
-                    )}
+                    {barcodeError && <p className="mt-1 text-xs text-danger">{barcodeError}</p>}
                   </div>
 
                   <div>
@@ -934,7 +954,12 @@ function ScannerPage() {
                   <Button
                     size="lg"
                     className="h-12 w-full rounded-xl text-sm font-semibold"
-                    disabled={pending || (!ingredientText.trim() && !productName.trim() && !(barcode.trim() && productName.trim()))}
+                    disabled={
+                      pending ||
+                      (!ingredientText.trim() &&
+                        !productName.trim() &&
+                        !(barcode.trim() && productName.trim()))
+                    }
                     onClick={() => void runTextScan()}
                   >
                     {pending ? (
@@ -945,7 +970,8 @@ function ScannerPage() {
                     {pending ? "Analyzing…" : "Analyze product"}
                   </Button>
                   <p className="text-center text-[11px] text-muted-foreground">
-                    Paste text, enter a product, or use a verified barcode. A successful barcode scan analyzes automatically and does not require label text.
+                    Paste text, enter a product, or use a verified barcode. A successful barcode
+                    scan analyzes automatically and does not require label text.
                   </p>
                 </div>
               )}
@@ -982,7 +1008,11 @@ function ScannerPage() {
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                    {mode === "medicine" ? "Medicine" : result.itemType === "non_food" ? "Non-food item" : "Product"}
+                    {mode === "medicine"
+                      ? "Medicine"
+                      : result.itemType === "non_food"
+                        ? "Non-food item"
+                        : "Product"}
                   </p>
                   {mode === "food" && result.itemType === "non_food" && (
                     <Badge variant="destructive">Do not eat</Badge>
@@ -1026,13 +1056,16 @@ function ScannerPage() {
                   )}
                   {result.whatItIs && (
                     <div className="mt-3">
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground">What it is</p>
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                        What it is
+                      </p>
                       <p className="mt-1 text-sm text-foreground">{result.whatItIs}</p>
                     </div>
                   )}
                   {result.confidence && (
                     <p className="mt-3 text-xs text-muted-foreground">
-                      Identification confidence: <span className="font-semibold text-foreground">{result.confidence}</span>
+                      Identification confidence:{" "}
+                      <span className="font-semibold text-foreground">{result.confidence}</span>
                     </p>
                   )}
                 </div>
@@ -1040,10 +1073,14 @@ function ScannerPage() {
 
               {result.labelEvidence.length > 0 && (
                 <div className="rounded-2xl border border-border bg-card/80 p-4 backdrop-blur">
-                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Label evidence</p>
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Label evidence
+                  </p>
                   <ul className="mt-2 space-y-2">
                     {result.labelEvidence.map((item, i) => (
-                      <li key={i} className="text-sm leading-5 text-foreground">• {item}</li>
+                      <li key={i} className="text-sm leading-5 text-foreground">
+                        • {item}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -1051,10 +1088,14 @@ function ScannerPage() {
 
               {result.nutritionHighlights.length > 0 && (
                 <div className="rounded-2xl border border-border bg-card/80 p-4 backdrop-blur">
-                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Nutrition & ingredient highlights</p>
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    Nutrition & ingredient highlights
+                  </p>
                   <ul className="mt-2 space-y-2">
                     {result.nutritionHighlights.map((item, i) => (
-                      <li key={i} className="text-sm leading-5 text-foreground">• {item}</li>
+                      <li key={i} className="text-sm leading-5 text-foreground">
+                        • {item}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -1062,14 +1103,18 @@ function ScannerPage() {
 
               {result.profileImpact.length > 0 && (
                 <div className="rounded-2xl border border-border bg-card/80 p-4 backdrop-blur">
-                  <p className="text-xs uppercase tracking-widest text-muted-foreground">How it affects this profile</p>
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    How it affects this profile
+                  </p>
                   <div className="mt-2 space-y-3">
                     {result.profileImpact.map((item, i) => {
                       const t = ratingTheme(item.rating);
                       return (
                         <div key={i}>
                           <div className={`flex items-center gap-2 ${t.text}`}>
-                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-current/15 text-[11px] font-bold">{item.rating}</span>
+                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-current/15 text-[11px] font-bold">
+                              {item.rating}
+                            </span>
                             <p className="text-sm font-semibold">{item.trigger}</p>
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">{item.detail}</p>
@@ -1158,17 +1203,21 @@ function BarcodeCameraCapture({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanningRef = useRef(false);
-  const [status, setStatus] = useState<"requesting" | "ready" | "unsupported" | "denied">("requesting");
+  const [status, setStatus] = useState<"requesting" | "ready" | "unsupported" | "denied">(
+    "requesting",
+  );
 
   useEffect(() => {
     let cancelled = false;
 
     async function start() {
-      const Detector = (globalThis as typeof globalThis & {
-        BarcodeDetector?: new (options?: { formats?: string[] }) => {
-          detect(source: CanvasImageSource): Promise<Array<{ rawValue?: string }>>;
-        };
-      }).BarcodeDetector;
+      const Detector = (
+        globalThis as typeof globalThis & {
+          BarcodeDetector?: new (options?: { formats?: string[] }) => {
+            detect(source: CanvasImageSource): Promise<Array<{ rawValue?: string }>>;
+          };
+        }
+      ).BarcodeDetector;
 
       if (!Detector || !navigator.mediaDevices?.getUserMedia) {
         setStatus("unsupported");
@@ -1243,15 +1292,21 @@ function BarcodeCameraCapture({
         {status === "unsupported" && (
           <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
             <Barcode className="size-8 text-caution" />
-            <p className="text-sm font-medium">Live barcode scanning isn't supported by this browser.</p>
-            <p className="text-xs text-white/70">Use Chrome on Android or type the barcode manually.</p>
+            <p className="text-sm font-medium">
+              Live barcode scanning isn't supported by this browser.
+            </p>
+            <p className="text-xs text-white/70">
+              Use Chrome on Android or type the barcode manually.
+            </p>
           </div>
         )}
         {status === "denied" && (
           <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
             <ShieldAlert className="size-8 text-caution" />
             <p className="text-sm font-medium">Camera access was blocked.</p>
-            <p className="text-xs text-white/70">Allow camera access for this site and try again.</p>
+            <p className="text-xs text-white/70">
+              Allow camera access for this site and try again.
+            </p>
           </div>
         )}
         {status === "ready" && (
@@ -1397,7 +1452,10 @@ function CameraCapture({
         )}
 
         {status === "ready" && (
-          <div aria-hidden className={`pointer-events-none absolute ${embedded ? "inset-4" : "inset-8 sm:inset-16"}`}>
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute ${embedded ? "inset-4" : "inset-8 sm:inset-16"}`}
+          >
             {[
               "left-0 top-0 border-l-2 border-t-2 rounded-tl-xl",
               "right-0 top-0 border-r-2 border-t-2 rounded-tr-xl",
@@ -1420,7 +1478,9 @@ function CameraCapture({
         </button>
 
         {status === "ready" && (
-          <div className={`absolute inset-x-0 z-20 flex items-center justify-center ${embedded ? "bottom-5" : "bottom-8"}`}>
+          <div
+            className={`absolute inset-x-0 z-20 flex items-center justify-center ${embedded ? "bottom-5" : "bottom-8"}`}
+          >
             <button
               type="button"
               onClick={capture}
