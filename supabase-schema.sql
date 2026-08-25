@@ -1,3 +1,9 @@
+-- NOTE: no longer used by the app. Profiles and scan history now live only
+-- in each device's localStorage, namespaced per signed-in account — nothing
+-- is synced to these tables anymore. Supabase is still used for
+-- authentication (email/password + Google) only. Kept here for reference
+-- in case cloud sync is reintroduced later.
+--
 -- Run in Supabase SQL Editor
 create table if not exists public.user_profiles (
   id text primary key,

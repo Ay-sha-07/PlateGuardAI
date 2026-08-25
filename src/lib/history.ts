@@ -1,5 +1,5 @@
 import type { ScanResult } from "./scan.server";
-import { pushHistory } from "./cloud-sync";
+import { scopedKey } from "./account-scope";
 
 export type ScanHistoryEntry = {
   id: string;
@@ -15,8 +15,8 @@ export type ScanHistoryEntry = {
   createdAt: number;
 };
 
-const KEY = "PlateGuard.history.v1";
-const RATING_MIGRATION_KEY = "PlateGuard.history.ratingScale.v2";
+const KEY_BASE = "PlateGuard.history.v1";
+const RATING_MIGRATION_KEY_BASE = "PlateGuard.history.ratingScale.v2";
 const MAX_ENTRIES = 60;
 
 function invertRating(value: number): number {
@@ -25,7 +25,7 @@ function invertRating(value: number): number {
 
 function migrateRatingScale(entries: ScanHistoryEntry[]): ScanHistoryEntry[] {
   if (typeof window === "undefined") return entries;
-  if (window.localStorage.getItem(RATING_MIGRATION_KEY) === "done") return entries;
+  if (window.localStorage.getItem(scopedKey(RATING_MIGRATION_KEY_BASE)) === "done") return entries;
 
   const migrated = entries.map((entry) => ({
     ...entry,
@@ -49,8 +49,8 @@ function migrateRatingScale(entries: ScanHistoryEntry[]): ScanHistoryEntry[] {
   }));
 
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(migrated.slice(0, MAX_ENTRIES)));
-    window.localStorage.setItem(RATING_MIGRATION_KEY, "done");
+    window.localStorage.setItem(scopedKey(KEY_BASE), JSON.stringify(migrated.slice(0, MAX_ENTRIES)));
+    window.localStorage.setItem(scopedKey(RATING_MIGRATION_KEY_BASE), "done");
   } catch {
     // If storage is unavailable, keep the in-memory migrated copy.
   }
@@ -60,7 +60,7 @@ function migrateRatingScale(entries: ScanHistoryEntry[]): ScanHistoryEntry[] {
 export function loadHistory(): ScanHistoryEntry[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(scopedKey(KEY_BASE));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? migrateRatingScale(parsed) : [];
@@ -71,15 +71,16 @@ export function loadHistory(): ScanHistoryEntry[] {
 
 function saveHistory(entries: ScanHistoryEntry[]) {
   if (typeof window === "undefined") return;
+  // Local to this device only, scoped to whichever account is active —
+  // never synced to a server database.
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(entries.slice(0, MAX_ENTRIES)));
-    void pushHistory(entries.slice(0, MAX_ENTRIES));
+    window.localStorage.setItem(scopedKey(KEY_BASE), JSON.stringify(entries.slice(0, MAX_ENTRIES)));
   } catch {
     // localStorage full (likely from image thumbnails) — drop the oldest
     // half and try once more before giving up silently.
     try {
       window.localStorage.setItem(
-        KEY,
+        scopedKey(KEY_BASE),
         JSON.stringify(entries.slice(0, Math.floor(MAX_ENTRIES / 2))),
       );
     } catch {

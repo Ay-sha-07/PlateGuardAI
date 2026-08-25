@@ -3,9 +3,8 @@ import { useState } from "react";
 import { LogIn, UserPlus, ShieldCheck, Accessibility } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireSupabase } from "@/lib/supabase";
-import { loadProfileStore, saveProfileStore } from "@/lib/profile";
-import { loadHistory } from "@/lib/history";
-import { pushProfileStore, pushHistory, pullProfileStore, pullHistory } from "@/lib/cloud-sync";
+import { setActiveScope } from "@/lib/account-scope";
+import { grantAccessibilityEntry } from "@/lib/access-gate";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -39,11 +38,11 @@ function LoginPage() {
         : await s.auth.signUp({email,password});
       if(result.error) throw result.error;
       if(mode==="signup" && !result.data.session) { setError("Account created. Check your email to confirm, then log in."); return; }
-      // First preserve existing device data in the cloud, then hydrate from cloud when it exists.
-      const cloud=await pullProfileStore();
-      if(cloud) saveProfileStore(cloud); else await pushProfileStore(loadProfileStore());
-      const cloudHistory=await pullHistory();
-      if(cloudHistory) localStorage.setItem("PlateGuard.history.v1",JSON.stringify(cloudHistory)); else await pushHistory(loadHistory());
+      // Everything (profiles, scan history) lives only in this device's
+      // localStorage, namespaced per account — switch to this account's
+      // namespace so it never sees another account's data on this device.
+      const userId = result.data.user?.id ?? result.data.session?.user.id;
+      setActiveScope(userId);
       await nav({to:"/"});
     } catch(err:any) { setError(err?.message ?? "Unable to continue."); } finally { setBusy(false); }
   }
@@ -83,6 +82,7 @@ function LoginPage() {
       <div className="mt-5 border-t pt-5">
         <a
           href="/scan"
+          onClick={() => grantAccessibilityEntry()}
           className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 overflow-hidden rounded-xl border border-input bg-background px-4 py-3 text-left transition-colors hover:bg-accent"
         >
           <Accessibility className="size-5 shrink-0 text-primary" />

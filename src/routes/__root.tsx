@@ -13,6 +13,7 @@ import { Moon, Sun } from "lucide-react";
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { reportError } from "../lib/error-reporting";
+import { startAccountScopeSync } from "../lib/account-scope";
 
 function NotFoundComponent() {
   return (
@@ -218,6 +219,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function ThemeSync() {
   useEffect(() => {
+    // Make sure locally-stored profiles/history are read under the right
+    // account as early as possible, before any route reads them.
+    startAccountScopeSync();
+
     const saved = window.localStorage.getItem("plateguard-theme");
     const nextDark = saved ? saved === "dark" : true;
     document.documentElement.classList.toggle("dark", nextDark);

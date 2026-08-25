@@ -22,6 +22,7 @@ import {
 } from "@/lib/profile";
 import { Button } from "@/components/ui/button";
 import { BottomNav } from "@/components/bottom-nav";
+import { RequireEntry } from "@/components/require-entry";
 
 export const Route = createFileRoute("/card")({
   head: () => ({
@@ -42,6 +43,14 @@ function labelFor(list: { value: string; label: string }[], value: string): stri
 }
 
 function CardPage() {
+  return (
+    <RequireEntry>
+      <CardPageContent />
+    </RequireEntry>
+  );
+}
+
+function CardPageContent() {
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState("");
   const [switcherOpen, setSwitcherOpen] = useState(false);

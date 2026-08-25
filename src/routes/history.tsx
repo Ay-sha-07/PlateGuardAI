@@ -21,6 +21,7 @@ import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/bottom-nav";
+import { RequireEntry } from "@/components/require-entry";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -52,6 +53,14 @@ const RATING_TEXT: Record<number, string> = {
 };
 
 function HistoryPage() {
+  return (
+    <RequireEntry>
+      <HistoryPageContent />
+    </RequireEntry>
+  );
+}
+
+function HistoryPageContent() {
   const [entries, setEntries] = useState<ScanHistoryEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);

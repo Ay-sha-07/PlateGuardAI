@@ -38,6 +38,7 @@ import {
   updateProfile,
 } from "@/lib/profile";
 import { Button } from "@/components/ui/button";
+import { RequireEntry } from "@/components/require-entry";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -133,6 +134,14 @@ function ProfileAvatar({
 }
 
 function ProfilePage() {
+  return (
+    <RequireEntry>
+      <ProfilePageContent />
+    </RequireEntry>
+  );
+}
+
+function ProfilePageContent() {
   const router = useRouter();
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState<string>("");

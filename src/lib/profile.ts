@@ -250,9 +250,9 @@ export type ProfileStore = {
   activeId: string;
 };
 
-import { pushProfileStore } from "./cloud-sync";
+import { scopedKey, getActiveScope, GUEST_SCOPE } from "./account-scope";
 
-const STORE_KEY = "PlateGuard.profiles.v1";
+const STORE_KEY_BASE = "PlateGuard.profiles.v1";
 const LEGACY_KEY = "PlateGuard.profile.v3";
 const LEGACY_PRIOR_KEYS = ["PlateGuard.profile.v2", "PlateGuard.profile.v1"];
 
@@ -262,6 +262,9 @@ function makeId(): string {
 
 function migrateLegacyProfile(): StoredProfile | null {
   if (typeof window === "undefined") return null;
+  // Old pre-account data belongs to whoever is using the device with nobody
+  // logged in — never hand it to a freshly signed-in account.
+  if (getActiveScope() !== GUEST_SCOPE) return null;
   try {
     for (const key of [LEGACY_KEY, ...LEGACY_PRIOR_KEYS]) {
       const raw = window.localStorage.getItem(key);
@@ -284,7 +287,7 @@ function migrateLegacyProfile(): StoredProfile | null {
 export function loadProfileStore(): ProfileStore {
   if (typeof window === "undefined") return { profiles: [], activeId: "" };
   try {
-    const raw = window.localStorage.getItem(STORE_KEY);
+    const raw = window.localStorage.getItem(scopedKey(STORE_KEY_BASE));
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ProfileStore>;
       const profiles = Array.isArray(parsed.profiles) ? parsed.profiles : [];
@@ -311,8 +314,9 @@ export function loadProfileStore(): ProfileStore {
 
 export function saveProfileStore(store: ProfileStore) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
-  void pushProfileStore(store);
+  // Everything stays local to this device, scoped to whichever account is
+  // currently active — never synced to a server database.
+  window.localStorage.setItem(scopedKey(STORE_KEY_BASE), JSON.stringify(store));
 }
 
 /** Convenience: the profile currently active in the switcher, or null if none exist. */
