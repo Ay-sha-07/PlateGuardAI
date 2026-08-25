@@ -73,18 +73,18 @@ const RATING_STYLE: Record<
   }
 > = {
   1: {
-    bg: "bg-safe",
-    text: "text-safe",
-    fg: "text-safe-foreground",
-    glow: "glow-safe",
-    Icon: CheckCircle2,
+    bg: "bg-danger",
+    text: "text-danger",
+    fg: "text-danger-foreground",
+    glow: "glow-danger",
+    Icon: ShieldAlert,
   },
   2: {
-    bg: "bg-rating-2",
-    text: "text-rating-2",
-    fg: "text-rating-2-foreground",
-    glow: "glow-safe",
-    Icon: CheckCircle2,
+    bg: "bg-rating-4",
+    text: "text-rating-4",
+    fg: "text-rating-4-foreground",
+    glow: "glow-danger",
+    Icon: AlertTriangle,
   },
   3: {
     bg: "bg-caution",
@@ -94,18 +94,18 @@ const RATING_STYLE: Record<
     Icon: AlertTriangle,
   },
   4: {
-    bg: "bg-rating-4",
-    text: "text-rating-4",
-    fg: "text-rating-4-foreground",
-    glow: "glow-danger",
-    Icon: AlertTriangle,
+    bg: "bg-rating-2",
+    text: "text-rating-2",
+    fg: "text-rating-2-foreground",
+    glow: "glow-safe",
+    Icon: CheckCircle2,
   },
   5: {
-    bg: "bg-danger",
-    text: "text-danger",
-    fg: "text-danger-foreground",
-    glow: "glow-danger",
-    Icon: ShieldAlert,
+    bg: "bg-safe",
+    text: "text-safe",
+    fg: "text-safe-foreground",
+    glow: "glow-safe",
+    Icon: CheckCircle2,
   },
 };
 
@@ -161,6 +161,7 @@ function ScannerPage() {
   const [barcode, setBarcode] = useState("");
   const [barcodePending, setBarcodePending] = useState(false);
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
+  const [barcodeCameraOpen, setBarcodeCameraOpen] = useState(false);
   const [ingredientText, setIngredientText] = useState("");
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -696,12 +697,12 @@ function ScannerPage() {
                 <div className={`flex items-center gap-2 ${theme.fg}`}>
                   <span
                     className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-black/10 font-display text-sm font-bold ${
-                      result.rating >= 4 ? "animate-pulse" : ""
+                      result.rating <= 2 ? "animate-pulse" : ""
                     }`}
                   >
                     {result.rating}
                   </span>
-                  <theme.Icon className={`size-6 ${result.rating >= 4 ? "animate-pulse" : ""}`} />
+                  <theme.Icon className={`size-6 ${result.rating <= 2 ? "animate-pulse" : ""}`} />
                   <span className="font-display text-xl font-bold uppercase tracking-tight">
                     {theme.label}
                   </span>
@@ -806,11 +807,11 @@ function ScannerPage() {
                       Scan barcode
                     </label>
                     <div className="mt-1 flex gap-2">
-                      <div className="relative flex-1">
+                      <div className="relative min-w-0 flex-1">
                         <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                         <input
                           value={barcode}
-                          onChange={(e) => setBarcode(e.target.value)}
+                          onChange={(e) => setBarcode(e.target.value.replace(/[^0-9]/g, ""))}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") void runBarcodeLookup();
                           }}
@@ -834,6 +835,40 @@ function ScannerPage() {
                         Look up
                       </Button>
                     </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-2 h-10 w-full rounded-xl"
+                      onClick={() => setBarcodeCameraOpen(true)}
+                      disabled={barcodePending || pending}
+                    >
+                      <Camera className="size-4" />
+                      Scan barcode with camera
+                    </Button>
+                    {barcodeCameraOpen && (
+                      <BarcodeCameraCapture
+                        onClose={() => setBarcodeCameraOpen(false)}
+                        onDetected={(value) => {
+                          setBarcode(value);
+                          setBarcodeCameraOpen(false);
+                          setBarcodeError(null);
+                          void (async () => {
+                            setBarcodePending(true);
+                            try {
+                              const lookup = await lookupBarcode(value);
+                              if (lookup.found) {
+                                setProductName(lookup.productName);
+                                setIngredientText(lookup.ingredientText);
+                              } else {
+                                setBarcodeError(`Barcode ${value} was detected, but it was not found in the free catalog. You can still analyze the label text.`);
+                              }
+                            } finally {
+                              setBarcodePending(false);
+                            }
+                          })();
+                        }}
+                      />
+                    )}
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       Looks up the free Open Food Facts catalog and fills in ingredients below.
                     </p>
@@ -1007,7 +1042,7 @@ function ScannerPage() {
                   <div
                     key={i}
                     className={`animate-rise-in rounded-2xl border border-border bg-card/80 p-4 backdrop-blur transition-transform hover:-translate-y-0.5 ${
-                      r.rating >= 4 ? "glow-danger" : ""
+                      r.rating <= 2 ? "glow-danger" : ""
                     }`}
                     style={{ animationDelay: `${120 + i * 90}ms` }}
                   >
@@ -1068,6 +1103,137 @@ function ScannerPage() {
 }
 
 /* ------------------------------- Live camera ------------------------------ */
+
+function BarcodeCameraCapture({
+  onClose,
+  onDetected,
+}: {
+  onClose: () => void;
+  onDetected: (barcode: string) => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanningRef = useRef(false);
+  const [status, setStatus] = useState<"requesting" | "ready" | "unsupported" | "denied">("requesting");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function start() {
+      const Detector = (globalThis as typeof globalThis & {
+        BarcodeDetector?: new (options?: { formats?: string[] }) => {
+          detect(source: CanvasImageSource): Promise<Array<{ rawValue?: string }>>;
+        };
+      }).BarcodeDetector;
+
+      if (!Detector || !navigator.mediaDevices?.getUserMedia) {
+        setStatus("unsupported");
+        return;
+      }
+
+      try {
+        const detector = new Detector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e"] });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        const video = videoRef.current;
+        if (!video) return;
+        video.srcObject = stream;
+        await video.play();
+        setStatus("ready");
+        scanningRef.current = true;
+
+        const scanLoop = async () => {
+          if (cancelled || !scanningRef.current || !video.videoWidth) return;
+          try {
+            const codes = await detector.detect(video);
+            const value = codes.find((code) => code.rawValue?.trim())?.rawValue?.trim();
+            if (value) {
+              scanningRef.current = false;
+              onDetected(value);
+              return;
+            }
+          } catch {
+            // Keep scanning; a transient detector error should not close the camera.
+          }
+          window.setTimeout(() => void scanLoop(), 180);
+        };
+        void scanLoop();
+      } catch (error) {
+        console.error("[barcode-camera] failed:", error);
+        if (!cancelled) setStatus("denied");
+      }
+    }
+
+    void start();
+    return () => {
+      cancelled = true;
+      scanningRef.current = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, [onDetected]);
+
+  return (
+    <div className="relative mt-3 overflow-hidden rounded-2xl border border-primary/30 bg-black">
+      <div className="relative aspect-[4/3] w-full">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`size-full object-cover ${status === "ready" ? "" : "hidden"}`}
+        />
+        {status === "requesting" && (
+          <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
+            <Loader2 className="size-7 animate-spin text-primary" />
+            <p className="text-sm">Opening barcode camera…</p>
+          </div>
+        )}
+        {status === "unsupported" && (
+          <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
+            <Barcode className="size-8 text-caution" />
+            <p className="text-sm font-medium">Live barcode scanning isn't supported by this browser.</p>
+            <p className="text-xs text-white/70">Use Chrome on Android or type the barcode manually.</p>
+          </div>
+        )}
+        {status === "denied" && (
+          <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
+            <ShieldAlert className="size-8 text-caution" />
+            <p className="text-sm font-medium">Camera access was blocked.</p>
+            <p className="text-xs text-white/70">Allow camera access for this site and try again.</p>
+          </div>
+        )}
+        {status === "ready" && (
+          <div aria-hidden className="pointer-events-none absolute inset-5">
+            <span className="absolute left-0 top-0 size-10 rounded-tl-xl border-l-2 border-t-2 border-primary" />
+            <span className="absolute right-0 top-0 size-10 rounded-tr-xl border-r-2 border-t-2 border-primary" />
+            <span className="absolute bottom-0 left-0 size-10 rounded-bl-xl border-b-2 border-l-2 border-primary" />
+            <span className="absolute bottom-0 right-0 size-10 rounded-br-xl border-b-2 border-r-2 border-primary" />
+            <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-primary/80 shadow-[0_0_18px_3px_var(--primary)]" />
+          </div>
+        )}
+        <div className="absolute inset-x-0 bottom-3 text-center text-xs font-medium text-white drop-shadow">
+          {status === "ready" ? "Point the barcode inside the box — scanning automatically" : ""}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur"
+          aria-label="Close barcode camera"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function CameraCapture({
   embedded = false,

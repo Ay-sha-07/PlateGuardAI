@@ -53,11 +53,11 @@ export const ScanInputSchema = z
 // verdict misidentifies borderline cases as often as it protects, so 2–4
 // give room for "technically fine but worth a second look" type verdicts.
 export const RATING_LABELS: Record<number, string> = {
-  1: "Safe",
-  2: "Mostly safe",
+  1: "Avoid",
+  2: "Risky",
   3: "Use caution",
-  4: "Risky",
-  5: "Avoid",
+  4: "Mostly safe",
+  5: "Safe",
 };
 
 export const ScanResultSchema = z.object({
@@ -221,6 +221,31 @@ function genericProductName(value: string): string {
 
 function withoutBrandName(result: ScanResult): ScanResult {
   return { ...result, productGuess: genericProductName(result.productGuess) };
+}
+
+/**
+ * The model internally reasons on the original risk scale (1 = safest, 5 =
+ * highest risk). PlateGuard's public UI uses the more intuitive safety scale:
+ * 1 = avoid/unsafe and 5 = safe. Convert every rating-bearing field at the
+ * server boundary so the UI, history, and persisted results all use one scale.
+ */
+function toSafetyRating(value: number): number {
+  return 6 - value;
+}
+
+function toSafetyScale(result: ScanResult): ScanResult {
+  return {
+    ...result,
+    rating: toSafetyRating(result.rating),
+    profileImpact: result.profileImpact.map((item) => ({
+      ...item,
+      rating: toSafetyRating(item.rating),
+    })),
+    reasons: result.reasons.map((item) => ({
+      ...item,
+      rating: toSafetyRating(item.rating),
+    })),
+  };
 }
 
 export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promise<ScanResult> {
@@ -400,7 +425,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
           ) || /ckd|kidney|dialysis/i.test(data.kidney.status);
         const waterRating = profileMayRestrictFluids ? 3 : 1;
 
-        return {
+        return toSafetyScale({
           ...parsed,
           rating: waterRating,
           headline: profileMayRestrictFluids
@@ -423,10 +448,10 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
                 }]
               : []),
           ],
-        };
+        });
       }
 
-      return {
+      return toSafetyScale({
         ...parsed,
         rating: 3,
         headline: "Product identity could not be confirmed",
@@ -440,7 +465,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
             detail: "The verified barcode and image analysis disagree. Please rescan the label clearly before relying on the result.",
           },
         ],
-      };
+      });
     }
   }
 
@@ -463,7 +488,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     const filteredReasons = parsed.reasons.filter(
       (reason) => !/not (a )?food|non[- ]?food|cosmetic|lotion|perfume|soap|detergent|shampoo/i.test(`${reason.trigger} ${reason.detail}`),
     );
-    return {
+    return toSafetyScale({
       ...parsed,
       itemType: "food",
       rating: filteredReasons.length > 0 ? Math.min(5, Math.max(1, Math.max(...filteredReasons.map((reason) => reason.rating)))) : 1,
@@ -473,7 +498,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
         trigger: "Verified food product",
         detail: "The label appears to be an edible food product intended for human consumption.",
       }],
-    };
+    });
   }
 
   // Deterministic non-food guard: if the model or the shopper's typed name
@@ -492,7 +517,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   // Never allow a non-edible product to be reported as safe in food mode.
   // This is a deterministic safety gate in addition to the model instruction.
   if (isClearlyNonFood) {
-    return {
+    return toSafetyScale({
       ...parsed,
       rating: 5,
       headline: "Not edible — do not eat",
@@ -504,11 +529,11 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
         },
         ...parsed.reasons.filter((reason) => !/not (a )?food|non[- ]?food|cosmetic|lotion|perfume|soap|detergent|shampoo/i.test(`${reason.trigger} ${reason.detail}`)),
       ],
-    };
+    });
   }
 
   if (data.mode === "food" && parsed.itemType === "unclear") {
-    return {
+    return toSafetyScale({
       ...parsed,
       rating: Math.max(3, parsed.rating),
       headline: "Product type unclear — do not eat until verified",
@@ -520,10 +545,10 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
         },
         ...parsed.reasons,
       ],
-    };
+    });
   }
 
-  return withoutBrandName(parsed);
+  return toSafetyScale(withoutBrandName(parsed));
 }
 
 // Builds a short, actionable message from a structured diagnosis instead of

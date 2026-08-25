@@ -26,19 +26,19 @@ export const Route = createFileRoute("/history")({
 });
 
 const RATING_DOT: Record<number, string> = {
-  1: "bg-safe",
-  2: "bg-rating-2",
+  1: "bg-danger",
+  2: "bg-rating-4",
   3: "bg-caution",
-  4: "bg-rating-4",
-  5: "bg-danger",
+  4: "bg-rating-2",
+  5: "bg-safe",
 };
 
 const RATING_TEXT: Record<number, string> = {
-  1: "text-safe",
-  2: "text-rating-2",
+  1: "text-danger",
+  2: "text-rating-4",
   3: "text-caution",
-  4: "text-rating-4",
-  5: "text-danger",
+  4: "text-rating-2",
+  5: "text-safe",
 };
 
 function HistoryPage() {

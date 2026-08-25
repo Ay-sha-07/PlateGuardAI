@@ -41,3 +41,7 @@ No new dependencies were added — barcode lookup uses a plain `fetch()` to the 
 - Clicking a history item opens a dedicated detail view showing the saved scan image, verdict, detailed AI explanation, flagged ingredients, profile impact, reasons, and recommendation.
 - Existing history entries remain usable; entries created before this feature show their saved summary and explain that a full AI response was not captured.
 - If Supabase cloud history is enabled, run the `aiResult` ALTER TABLE statement in `supabase-schema.sql` once.
+
+
+## Rating scale update
+The public PlateGuard rating now follows the intuitive safety convention: **1/5 = Avoid/unsafe, 3/5 = Use caution, 5/5 = Safe**. The server converts the internal risk scale before returning and persisting results, and existing local history is migrated once.

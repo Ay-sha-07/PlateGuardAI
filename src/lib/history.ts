@@ -16,7 +16,38 @@ export type ScanHistoryEntry = {
 };
 
 const KEY = "PlateGuard.history.v1";
+const RATING_MIGRATION_KEY = "PlateGuard.history.ratingScale.v2";
 const MAX_ENTRIES = 60;
+
+function invertRating(value: number): number {
+  return 6 - value;
+}
+
+function migrateRatingScale(entries: ScanHistoryEntry[]): ScanHistoryEntry[] {
+  if (typeof window === "undefined") return entries;
+  if (window.localStorage.getItem(RATING_MIGRATION_KEY) === "done") return entries;
+
+  const migrated = entries.map((entry) => ({
+    ...entry,
+    rating: invertRating(entry.rating),
+    aiResult: entry.aiResult
+      ? {
+          ...entry.aiResult,
+          rating: invertRating(entry.aiResult.rating),
+          profileImpact: entry.aiResult.profileImpact.map((item) => ({ ...item, rating: invertRating(item.rating) })),
+          reasons: entry.aiResult.reasons.map((item) => ({ ...item, rating: invertRating(item.rating) })),
+        }
+      : entry.aiResult,
+  }));
+
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(migrated.slice(0, MAX_ENTRIES)));
+    window.localStorage.setItem(RATING_MIGRATION_KEY, "done");
+  } catch {
+    // If storage is unavailable, keep the in-memory migrated copy.
+  }
+  return migrated;
+}
 
 export function loadHistory(): ScanHistoryEntry[] {
   if (typeof window === "undefined") return [];
@@ -24,7 +55,7 @@ export function loadHistory(): ScanHistoryEntry[] {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? migrateRatingScale(parsed) : [];
   } catch {
     return [];
   }
@@ -92,7 +123,7 @@ export async function makeThumbnail(dataUrl: string, size = 160): Promise<string
 }
 
 export function ratingIsOk(rating: number): boolean {
-  return rating <= 2;
+  return rating >= 4;
 }
 
 export type { ScanResult };
