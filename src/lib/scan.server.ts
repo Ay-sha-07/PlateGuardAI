@@ -11,8 +11,9 @@ const KidneyDetailSchema = z.object({ status: z.string().default("") });
 
 export const ScanInputSchema = z
   .object({
-    // Either an image (data URL) or pasted label text must be given —
-    // enforced below since the two are mutually substitutable inputs.
+    // A scan can come from a label image, pasted label text, or a verified
+    // barcode/catalog match. Barcode identity is a complete scan path even
+    // when the catalog does not provide an ingredient list.
     image: z.string().min(20).optional(), // data URL
     ingredientText: z.string().min(3).optional(), // pasted/typed label text, no photo
     productName: z.string().default(""), // optional user-typed product name, or barcode-lookup result
@@ -44,8 +45,8 @@ export const ScanInputSchema = z
   medications: z.string().default(""),
   notes: z.string().default(""),
   })
-  .refine((v) => !!v.image || !!v.ingredientText, {
-    message: "Provide either a label photo or pasted ingredient text.",
+  .refine((v) => !!v.image || !!v.ingredientText || (!!v.barcode && !!v.barcodeProductName), {
+    message: "Provide a label photo, pasted ingredient text, or a verified barcode match.",
     path: ["image"],
   });
 
@@ -312,9 +313,12 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     : "";
 
   const hasImage = !!data.image;
+  const hasBarcodeMatch = !hasImage && !!data.barcode && !!data.barcodeProductName.trim();
   const source = hasImage
     ? "Scan this label photo"
-    : "Analyze this ingredient/nutrition text the shopper typed or pasted (no photo was provided)";
+    : hasBarcodeMatch
+      ? "Analyze this product using the verified barcode/catalog identity and any catalog evidence provided (no label photo was provided)"
+      : "Analyze this ingredient/nutrition text the shopper typed or pasted (no photo was provided)";
 
   const instruction = [
     `${source} for the following person.`,

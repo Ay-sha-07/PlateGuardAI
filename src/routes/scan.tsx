@@ -347,20 +347,16 @@ function ScannerPage() {
       setProductName(result.productName);
       setIngredientText(result.ingredientText);
 
-      // Barcode lookup is a complete alternative scan path: once the catalog
-      // identifies the item, analyze it immediately instead of requiring the
-      // user to press the separate "Analyze label" button.
-      if (result.ingredientText.trim()) {
-        await runTextScan({
-          ingredientText: result.ingredientText,
-          productName: result.productName,
-          barcode: result.barcode,
-          barcodeProductName: result.productName,
-          barcodeIngredientText: result.ingredientText,
-        });
-      } else {
-        setError("Barcode found, but no label text was available to analyze. Add or paste the label text below.");
-      }
+      // Barcode lookup is a complete alternative scan path. A verified
+      // barcode identifies the product even when the catalog has no
+      // ingredient list, so never require the user to paste label text.
+      await runTextScan({
+        ingredientText: result.ingredientText,
+        productName: result.productName,
+        barcode: result.barcode,
+        barcodeProductName: result.productName,
+        barcodeIngredientText: result.ingredientText,
+      });
     } catch {
       setBarcodeError("Barcode lookup failed — check your connection and try again.");
     } finally {
@@ -884,17 +880,13 @@ function ScannerPage() {
                               if (lookup.found) {
                                 setProductName(lookup.productName);
                                 setIngredientText(lookup.ingredientText);
-                                if (lookup.ingredientText.trim()) {
-                                  await runTextScan({
-                                    ingredientText: lookup.ingredientText,
-                                    productName: lookup.productName,
-                                    barcode: lookup.barcode,
-                                    barcodeProductName: lookup.productName,
-                                    barcodeIngredientText: lookup.ingredientText,
-                                  });
-                                } else {
-                                  setBarcodeError("Barcode found, but no label text was available to analyze. Add or paste the label text below.");
-                                }
+                                await runTextScan({
+                                  ingredientText: lookup.ingredientText,
+                                  productName: lookup.productName,
+                                  barcode: lookup.barcode,
+                                  barcodeProductName: lookup.productName,
+                                  barcodeIngredientText: lookup.ingredientText,
+                                });
                               } else {
                                 setBarcodeError(`Barcode ${value} was detected, but it was not found in the free catalog. You can still analyze the label text.`);
                               }
@@ -906,7 +898,7 @@ function ScannerPage() {
                       />
                     )}
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                      Looks up the free Open Food Facts catalog and fills in ingredients below.
+                      A verified barcode is enough to analyze the product. If the catalog has label text or nutrition data, that evidence is included too.
                     </p>
                     {barcodeError && (
                       <p className="mt-1 text-xs text-danger">{barcodeError}</p>
@@ -940,7 +932,7 @@ function ScannerPage() {
                     {pending ? "Analyzing…" : "Analyze label"}
                   </Button>
                   <p className="text-center text-[11px] text-muted-foreground">
-                    Pasted text is analyzed when you press this button. A successful barcode scan analyzes automatically.
+                    Pasted text is analyzed when you press this button. A successful barcode scan analyzes automatically and does not require label text.
                   </p>
                 </div>
               )}
