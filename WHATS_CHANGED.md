@@ -34,3 +34,10 @@ No new dependencies were added — barcode lookup uses a plain `fetch()` to the 
 - Added global `box-sizing: border-box`, horizontal overflow protection, and mobile touch safeguards.
 - The viewport is fixed to `initial-scale=1`, `maximum-scale=1`, `minimum-scale=1`, and `user-scalable=no`.
 - Added browser-side guards for pinch/gesture zoom and Ctrl/Cmd + wheel/keyboard zoom.
+
+## Detailed AI results + history details
+- Scan responses now include a detailed summary, product identity, label evidence, nutrition/ingredient highlights, profile impact, recommendation, and confidence.
+- The full structured AI response is saved with each new history entry.
+- Clicking a history item opens a dedicated detail view showing the saved scan image, verdict, detailed AI explanation, flagged ingredients, profile impact, reasons, and recommendation.
+- Existing history entries remain usable; entries created before this feature show their saved summary and explain that a full AI response was not captured.
+- If Supabase cloud history is enabled, run the `aiResult` ALTER TABLE statement in `supabase-schema.sql` once.

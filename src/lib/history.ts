@@ -10,6 +10,8 @@ export type ScanHistoryEntry = {
   rating: number;
   headline: string;
   productGuess: string;
+  // Full structured AI response captured at scan time for the History detail page.
+  aiResult?: ScanResult;
   createdAt: number;
 };
 

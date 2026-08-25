@@ -64,6 +64,21 @@ export const ScanResultSchema = z.object({
   rating: z.number().int().min(1).max(5),
   headline: z.string(),
   productGuess: z.string(),
+  // Detailed, user-facing explanation. These fields are persisted with the scan
+  // so the History detail view can reproduce the AI result later.
+  summary: z.string().default(""),
+  whatItIs: z.string().default(""),
+  labelEvidence: z.array(z.string()).default([]),
+  nutritionHighlights: z.array(z.string()).default([]),
+  profileImpact: z.array(
+    z.object({
+      rating: z.number().int().min(1).max(5),
+      trigger: z.string(),
+      detail: z.string(),
+    }),
+  ).default([]),
+  recommendation: z.string().default(""),
+  confidence: z.enum(["high", "medium", "low"]).default("medium"),
   reasons: z.array(
     z.object({
       rating: z.number().int().min(1).max(5),
@@ -91,6 +106,16 @@ Output a RATING from 1 to 5, not a strict eat/don't-eat verdict — this is inte
 4 = Risky — a significant concern that most people in this situation should avoid (e.g. a nutrient well past the person's limit, a likely but not 100%-certain allergen derivative).
 5 = Avoid — a clear, direct match: a declared allergen (especially with severe/anaphylaxis severity), or a condition-defining ingredient at a dangerous level.
 Give the SAME 1–5 rating to each individual "reasons" entry for the specific thing it flags, so the overall rating is a defensible aggregate of the reasons rather than a separate guess.
+
+Detailed result requirements:
+- summary: 2–4 plain-English sentences explaining what was scanned, the main result, and why the rating was reached.
+- whatItIs: identify the product type and brand/name only from visible or verified evidence.
+- labelEvidence: list the important visible label facts that support the result (ingredients, nutrition values, warnings, certification wording, barcode evidence, or readable claims). Never invent a value.
+- nutritionHighlights: list relevant nutrition/ingredient observations, including actual visible quantities when readable; otherwise say that the quantity was not readable.
+- profileImpact: explain how each important part of THIS person's profile affected the decision. Include only meaningful checks; do not pretend every profile field was relevant.
+- recommendation: give a short practical next step in plain English. For safe foods, explain what is safe about it; for caution/risk, say what to limit/avoid or verify.
+- confidence: high only when product identity and label evidence are clear; medium for partial evidence; low when the image or identity is uncertain.
+- Do not hide uncertainty behind confident language. Never invent ingredients, nutrition values, medical interactions, or product facts.
 
 Rules:
 - Identity accuracy is more important than producing a confident-looking answer. Never invent a brand/product from a blurry label. If the visible image and barcode/catalog evidence disagree, set itemType="unclear", rating=3, and ask the user to rescan the label or confirm the product.
@@ -127,6 +152,15 @@ Then output a RATING from 1 to 5 for whether THIS person, given their profile, s
 4 = Risky — a well-established contraindication or interaction that most people in this situation should avoid without medical sign-off (e.g. NSAIDs with significant CKD, decongestants with uncontrolled hypertension, an allergen match in an inactive/active ingredient).
 5 = Avoid — a clear, dangerous match (e.g. a declared drug allergy, a hard contraindication like MAOIs with certain decongestants, aspirin for a child under the Reye's-syndrome age range).
 Give the SAME 1–5 rating to each individual "reasons" entry for the specific thing it flags.
+
+Detailed result requirements:
+- summary: 2–4 plain-English sentences explaining what the medicine is and why the rating was reached.
+- whatItIs: the medicine/product identity from the label.
+- labelEvidence: visible active ingredients, strengths, warnings, age/dose information, and other important label facts; never invent unreadable values.
+- nutritionHighlights: leave empty for medicine scans unless the label contains a meaningful excipient/sugar detail relevant to the decision.
+- profileImpact: explain the important interactions with the person's conditions, allergies, age, pregnancy status, or medicines.
+- recommendation: a practical next step, such as checking with a pharmacist or following the printed directions.
+- confidence: high/medium/low based on label readability and identity certainty.
 
 Rules:
 - Allergy matches: if the person's listed allergens/medications note a known drug allergy or class allergy, and this medicine's active ingredient matches or is in the same class => rating 5.

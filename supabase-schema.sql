@@ -19,3 +19,7 @@ drop policy if exists "own profiles" on public.user_profiles;
 drop policy if exists "own history" on public.scan_history;
 create policy "own profiles" on public.user_profiles for all using (auth.uid()=user_id) with check (auth.uid()=user_id);
 create policy "own history" on public.scan_history for all using (auth.uid()=user_id) with check (auth.uid()=user_id);
+
+-- Stores the complete structured AI response for each scan so the History
+-- detail view can reproduce what the AI concluded at scan time.
+alter table public.scan_history add column if not exists "aiResult" jsonb;

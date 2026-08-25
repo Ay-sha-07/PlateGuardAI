@@ -273,6 +273,7 @@ function ScannerPage() {
         rating: res.rating,
         headline: res.headline,
         productGuess: res.productGuess,
+        aiResult: res,
       });
     } catch (e) {
       reportScanFailure(e);
@@ -306,6 +307,7 @@ function ScannerPage() {
         rating: res.rating,
         headline: res.headline,
         productGuess: res.productGuess,
+        aiResult: res,
       });
     } catch (e) {
       reportScanFailure(e);
@@ -907,6 +909,76 @@ function ScannerPage() {
                 )}
               </div>
 
+              {(result.summary || result.whatItIs || result.recommendation) && (
+                <div
+                  className="animate-rise-in rounded-2xl border border-primary/20 bg-primary/5 p-4 backdrop-blur"
+                  style={{ animationDelay: "90ms" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="size-4 text-primary" />
+                    <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+                      Detailed AI result
+                    </p>
+                  </div>
+                  {result.summary && (
+                    <p className="mt-2 text-sm leading-6 text-foreground">{result.summary}</p>
+                  )}
+                  {result.whatItIs && (
+                    <div className="mt-3">
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground">What it is</p>
+                      <p className="mt-1 text-sm text-foreground">{result.whatItIs}</p>
+                    </div>
+                  )}
+                  {result.confidence && (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Identification confidence: <span className="font-semibold text-foreground">{result.confidence}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {result.labelEvidence.length > 0 && (
+                <div className="rounded-2xl border border-border bg-card/80 p-4 backdrop-blur">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Label evidence</p>
+                  <ul className="mt-2 space-y-2">
+                    {result.labelEvidence.map((item, i) => (
+                      <li key={i} className="text-sm leading-5 text-foreground">• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.nutritionHighlights.length > 0 && (
+                <div className="rounded-2xl border border-border bg-card/80 p-4 backdrop-blur">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">Nutrition & ingredient highlights</p>
+                  <ul className="mt-2 space-y-2">
+                    {result.nutritionHighlights.map((item, i) => (
+                      <li key={i} className="text-sm leading-5 text-foreground">• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.profileImpact.length > 0 && (
+                <div className="rounded-2xl border border-border bg-card/80 p-4 backdrop-blur">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">How it affects this profile</p>
+                  <div className="mt-2 space-y-3">
+                    {result.profileImpact.map((item, i) => {
+                      const t = ratingTheme(item.rating);
+                      return (
+                        <div key={i}>
+                          <div className={`flex items-center gap-2 ${t.text}`}>
+                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-current/15 text-[11px] font-bold">{item.rating}</span>
+                            <p className="text-sm font-semibold">{item.trigger}</p>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">{item.detail}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {result.reasons.map((r, i) => {
                 const t = ratingTheme(r.rating);
                 return (
@@ -948,6 +1020,13 @@ function ScannerPage() {
                       </Badge>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {result.recommendation && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-xs uppercase tracking-widest text-primary">Recommendation</p>
+                  <p className="mt-1 text-sm leading-6 text-foreground">{result.recommendation}</p>
                 </div>
               )}
 
