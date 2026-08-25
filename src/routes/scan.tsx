@@ -24,8 +24,10 @@ import {
   ClipboardPaste,
   Search,
   Sparkles,
+  Activity,
 } from "lucide-react";
 import { scanLabel } from "@/lib/scan.functions";
+import { getAIHealthStatus } from "@/lib/ai-health.functions";
 import { detectBarcodeFromDataUrl, lookupBarcode } from "@/lib/barcode";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { addProfile, loadProfileStore, setActiveProfile, type StoredProfile } from "@/lib/profile";
@@ -166,11 +168,21 @@ function ScannerPage() {
   const [barcodePending, setBarcodePending] = useState(false);
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
   const [barcodeCameraOpen, setBarcodeCameraOpen] = useState(false);
+  const [aiHealth, setAiHealth] = useState<{
+    capacity: "High" | "Medium" | "Low";
+    ready: number;
+    total: number;
+    blocked: number;
+    cooldown: number;
+    providers: Array<{ name: string; status: "ready" | "cooldown" | "blocked"; reason: string; retryAt: number | null }>;
+  } | null>(null);
+  const [healthOpen, setHealthOpen] = useState(false);
   const [ingredientText, setIngredientText] = useState("");
 
   const fileRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const run = useServerFn(scanLabel);
+  const getHealth = useServerFn(getAIHealthStatus);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -188,6 +200,26 @@ function ScannerPage() {
     setProfiles(store.profiles);
     setActiveId(store.activeId);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshHealth = async () => {
+      try {
+        const health = await getHealth();
+        if (!cancelled) setAiHealth(health);
+      } catch (healthError) {
+        console.debug("[ai-health] unavailable:", healthError);
+      }
+    };
+
+    void refreshHealth();
+    const timer = window.setInterval(() => void refreshHealth(), 20_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [getHealth]);
 
   // Open the live camera automatically whenever the scanner page is entered.
   // The camera component handles permission prompts, denied access, and
@@ -461,6 +493,38 @@ function ScannerPage() {
                 <HistoryIcon className="size-4" />
               </Link>
             </Button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setHealthOpen((v) => !v)}
+                className="hidden items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-1.5 text-[11px] font-semibold text-foreground backdrop-blur sm:flex"
+                title="AI provider capacity"
+              >
+                <Activity className="size-3.5" />
+                AI {aiHealth?.capacity ?? "…"}
+                {aiHealth && <span className="text-muted-foreground">{aiHealth.ready}/{aiHealth.total}</span>}
+              </button>
+              {healthOpen && aiHealth && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">AI capacity</p>
+                    <span className="text-xs font-bold text-primary">{aiHealth.capacity}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{aiHealth.ready} of {aiHealth.total} providers are ready. Rate-limited or unavailable providers are temporarily skipped.</p>
+                  <div className="mt-3 space-y-1.5">
+                    {aiHealth.providers.map((provider) => (
+                      <div key={provider.name} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate text-foreground">{provider.name}</span>
+                        <span className={provider.status === "ready" ? "text-primary" : provider.status === "cooldown" ? "text-caution" : "text-danger"}>
+                          {provider.status === "ready" ? "Ready" : provider.status === "cooldown" ? "Cooling down" : "Blocked"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Button
               asChild
               variant="secondary"
@@ -522,6 +586,20 @@ function ScannerPage() {
             </div>
           )}
         </div>
+
+        {aiHealth && (
+          <button
+            type="button"
+            onClick={() => setHealthOpen((v) => !v)}
+            className="mt-2 flex w-full items-center justify-between rounded-xl border border-border/70 bg-card/50 px-3 py-2 text-left sm:hidden"
+          >
+            <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Activity className="size-3.5" />
+              AI capacity: <span className="text-primary">{aiHealth.capacity}</span>
+            </span>
+            <span className="text-[11px] text-muted-foreground">{aiHealth.ready}/{aiHealth.total} ready</span>
+          </button>
+        )}
 
         <div
           className="animate-rise-in mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card/60 p-1"

@@ -50,3 +50,13 @@ The public PlateGuard rating now follows the intuitive safety convention: **1/5 
 ## Result/camera control cleanup
 - Hide the external “Scan a label” button while the live camera frame is open; the in-frame shutter is the single capture control.
 - Replace the isolated result-state retry icon with a full-width “Scan another label” button that reopens the camera.
+
+
+## AI provider health + Groq update
+
+- Groq now defaults to `qwen/qwen3.6-27b`, a current vision-capable Groq model.
+- If an existing `.env` still contains the deprecated Llama 4 Scout model ID, the app automatically migrates it to Qwen 3.6 27B.
+- Added server-side provider health memory so providers that return rate-limit, quota, auth, model, overload, or network failures are temporarily skipped instead of being hammered on every scan.
+- Added an AI capacity indicator on the Scan screen (`High`, `Medium`, or `Low`) with a provider-by-provider status panel.
+- The capacity indicator is deliberately based on observed provider health rather than pretending to know an exact remaining scan count; providers expose different quota systems and not all expose a universal remaining-request value.
+- Provider health refreshes every 20 seconds while the Scan screen is open.

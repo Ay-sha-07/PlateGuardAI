@@ -20,7 +20,7 @@ import { APICallError, type LanguageModel } from "ai";
  *
  *   1. GOOGLE_GENERATIVE_AI_API_KEY  → Gemini (default) — https://aistudio.google.com/apikey
  *   2. XAI_API_KEY (or GROK_API_KEY) → xAI Grok (fallback) — https://console.x.ai
- *   3. GROQ_API_KEY                  → Groq/Llama 4 Scout — https://console.groq.com/keys
+ *   3. GROQ_API_KEY                  → Groq/Qwen 3.6 27B vision — https://console.groq.com/keys
  *   4. OPENAI_API_KEY                → OpenAI (gpt-4o-mini)
  *   5. ANTHROPIC_API_KEY             → Claude (claude-3-5-haiku)
  *   6. OPENAI_COMPATIBLE_API_KEY     → any other OpenAI-compatible endpoint (OpenRouter, etc.)
@@ -87,11 +87,19 @@ export function getVisionProviders(): VisionProvider[] {
   // 3. Groq.
   const groq = process.env["GROQ_API_KEY"];
   if (groq) {
+    // Llama 4 Scout was deprecated by Groq. Automatically migrate an old
+    // env value so an existing deployment does not silently keep requesting
+    // a dead model. Qwen 3.6 27B is currently vision-capable on Groq.
+    const configuredGroqModel = process.env["GROQ_MODEL"];
+    const groqModel =
+      !configuredGroqModel ||
+      configuredGroqModel === "meta-llama/llama-4-scout-17b-16e-instruct"
+        ? "qwen/qwen3.6-27b"
+        : configuredGroqModel;
+
     providers.push({
       name: "Groq",
-      model: createGroq({ apiKey: groq })(
-        process.env["GROQ_MODEL"] || "meta-llama/llama-4-scout-17b-16e-instruct",
-      ),
+      model: createGroq({ apiKey: groq })(groqModel),
     });
   }
 

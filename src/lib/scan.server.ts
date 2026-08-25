@@ -1,6 +1,7 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { getVisionProviders, diagnoseProviderError } from "./ai-provider.server";
+import { markProviderFailure, markProviderSuccess, shouldSkipProvider } from "./ai-health.server";
 
 const DiabetesDetailSchema = z.object({
   type: z.string().default(""),
@@ -346,6 +347,13 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   //    or key — no point retrying it, but a different provider may well
   //    work, so move on immediately.
   providerLoop: for (const provider of providers) {
+    // Do not waste requests on a provider that recently proved rate-limited,
+    // out of quota, unauthorized, or otherwise unavailable.
+    if (shouldSkipProvider(provider.name)) {
+      console.info(`[scan] skipping provider "${provider.name}" because it is temporarily unavailable`);
+      continue;
+    }
+
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         result = await generateText({
@@ -364,10 +372,12 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
             },
           ],
         });
+        markProviderSuccess(provider.name);
         break providerLoop;
       } catch (err) {
         const diagnosis = diagnoseProviderError(err);
         lastDiagnosis = diagnosis;
+        markProviderFailure(provider.name, diagnosis);
         console.error(
           `[scan] provider "${provider.name}" attempt ${attempt + 1} failed ` +
             `[category=${diagnosis.category}]: ${diagnosis.detail}`,
