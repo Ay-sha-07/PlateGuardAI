@@ -471,10 +471,6 @@ function HistoryDetail({ entry, onDelete }: { entry: ScanHistoryEntry; onDelete:
           ) : (
             <DetailedResult result={result} />
           )}
-
-          <Button variant="outline" className="w-full" onClick={() => window.history.back()}>
-            Back to history
-          </Button>
         </div>
       </main>
       <BottomNav />
