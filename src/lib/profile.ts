@@ -314,8 +314,9 @@ export function loadProfileStore(): ProfileStore {
 
 export function saveProfileStore(store: ProfileStore) {
   if (typeof window === "undefined") return;
-  // Everything stays local to this device, scoped to whichever account is
-  // currently active — never synced to a server database.
+  // localStorage is the fast local cache, scoped to whichever account is
+  // active. It's also mirrored to Supabase (see cloud-sync) so a signed-in
+  // account sees the same profiles on every device.
   window.localStorage.setItem(scopedKey(STORE_KEY_BASE), JSON.stringify(store));
   void import("./cloud-sync").then(({ pushProfileStore }) => pushProfileStore(store));
 }

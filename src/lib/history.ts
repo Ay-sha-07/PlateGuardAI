@@ -71,8 +71,9 @@ export function loadHistory(): ScanHistoryEntry[] {
 
 export function saveHistory(entries: ScanHistoryEntry[]) {
   if (typeof window === "undefined") return;
-  // Local to this device only, scoped to whichever account is active —
-  // never synced to a server database.
+  // localStorage is the fast local cache, scoped to whichever account is
+  // active. It's also mirrored to Supabase (see cloud-sync) so a signed-in
+  // account sees the same scan history on every device.
   try {
     window.localStorage.setItem(scopedKey(KEY_BASE), JSON.stringify(entries.slice(0, MAX_ENTRIES)));
   } catch {
