@@ -14,7 +14,9 @@ import { Route as CardRouteImport } from './routes/card'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as ScanRouteImport } from './routes/scan'
 
 const IndexRoute = IndexRouteImport.update({
@@ -42,9 +44,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyRoute = SafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScanRoute = ScanRouteImport.update({
@@ -59,7 +71,9 @@ export interface FileRoutesByFullPath {
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/safety': typeof SafetyRoute
   '/scan': typeof ScanRoute
 }
 export interface FileRoutesByTo {
@@ -68,7 +82,9 @@ export interface FileRoutesByTo {
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/safety': typeof SafetyRoute
   '/scan': typeof ScanRoute
 }
 export interface FileRoutesById {
@@ -78,15 +94,34 @@ export interface FileRoutesById {
   '/history': typeof HistoryRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/news': typeof NewsRoute
   '/profile': typeof ProfileRoute
+  '/safety': typeof SafetyRoute
   '/scan': typeof ScanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/card' | '/history' | '/home' | '/login' | '/profile' | '/scan'
+    | '/'
+    | '/card'
+    | '/history'
+    | '/home'
+    | '/login'
+    | '/news'
+    | '/profile'
+    | '/safety'
+    | '/scan'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/card' | '/history' | '/home' | '/login' | '/profile' | '/scan'
+  to:
+    | '/'
+    | '/card'
+    | '/history'
+    | '/home'
+    | '/login'
+    | '/news'
+    | '/profile'
+    | '/safety'
+    | '/scan'
   id:
     | '__root__'
     | '/'
@@ -94,7 +129,9 @@ export interface FileRouteTypes {
     | '/history'
     | '/home'
     | '/login'
+    | '/news'
     | '/profile'
+    | '/safety'
     | '/scan'
   fileRoutesById: FileRoutesById
 }
@@ -104,7 +141,9 @@ export interface RootRouteChildren {
   HistoryRoute: typeof HistoryRoute
   HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
+  NewsRoute: typeof NewsRoute
   ProfileRoute: typeof ProfileRoute
+  SafetyRoute: typeof SafetyRoute
   ScanRoute: typeof ScanRoute
 }
 
@@ -145,11 +184,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety': {
+      id: '/safety'
+      path: '/safety'
+      fullPath: '/safety'
+      preLoaderRoute: typeof SafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/scan': {
@@ -168,7 +221,9 @@ const rootRouteChildren: RootRouteChildren = {
   HistoryRoute: HistoryRoute,
   HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
+  NewsRoute: NewsRoute,
   ProfileRoute: ProfileRoute,
+  SafetyRoute: SafetyRoute,
   ScanRoute: ScanRoute,
 }
 export const routeTree = rootRouteImport

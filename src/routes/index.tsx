@@ -29,6 +29,9 @@ import {
   ShieldAlert,
   Moon,
   Sun,
+  Play,
+  Pause,
+  Gauge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
@@ -62,6 +65,7 @@ export const Route = createFileRoute("/")({
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
+  { label: "User guide", href: "#user-guide" },
   { label: "What we scan", href: "#coverage" },
   { label: "Verdicts", href: "#verdicts" },
   { label: "Safety", href: "#safety" },
@@ -121,6 +125,7 @@ function HomePage() {
       <SiteNav />
       <HeroVideo />
       <HeroWordmark />
+      <UserGuideVideo />
       <Coverage />
       <HowItWorks />
       <RecentVerdicts />
@@ -460,6 +465,149 @@ function StatsStrip() {
         ))}
       </div>
     </div>
+  );
+}
+
+/* ------------------------------ User guide video ------------------------------ */
+
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+function UserGuideVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [progress, setProgress] = useState(0); // 0-100
+
+  function togglePlay() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      void video.play();
+    } else {
+      video.pause();
+    }
+  }
+
+  function setPlaybackSpeed(rate: number) {
+    const video = videoRef.current;
+    if (video) video.playbackRate = rate;
+    setSpeed(rate);
+    setSpeedMenuOpen(false);
+  }
+
+  function seekTo(e: React.MouseEvent<HTMLDivElement>) {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    video.currentTime = ratio * video.duration;
+  }
+
+  return (
+    <section id="user-guide" className="bg-background py-24">
+      <div className="mx-auto max-w-4xl px-5 text-center md:px-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
+          See it in action
+        </p>
+        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          A 5-minute walkthrough of the whole app
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+          From setting up your profile to reading a verdict — watch at your own pace, pause
+          anywhere, or speed through the parts you already know.
+        </p>
+
+        <div className="group relative mx-auto mt-10 max-w-sm overflow-hidden rounded-3xl border border-border bg-black shadow-xl">
+          <video
+            ref={videoRef}
+            className="aspect-[9/16] w-full bg-black object-contain"
+            src="/media/user-guide.mp4"
+            poster="/media/user-guide-poster.jpg"
+            playsInline
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+            onClick={togglePlay}
+            onTimeUpdate={(e) => {
+              const v = e.currentTarget;
+              if (v.duration) setProgress((v.currentTime / v.duration) * 100);
+            }}
+          />
+
+          {/* Center play button — shown when paused, tap anywhere on the video also toggles */}
+          {!playing && (
+            <button
+              type="button"
+              onClick={togglePlay}
+              aria-label="Play video"
+              className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30"
+            >
+              <span className="flex size-16 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition-transform group-hover:scale-105">
+                <Play className="size-7 translate-x-0.5" fill="currentColor" />
+              </span>
+            </button>
+          )}
+
+          {/* Controls bar */}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2.5 pt-8">
+            <div
+              className="mb-2 h-1.5 w-full cursor-pointer rounded-full bg-white/25"
+              onClick={seekTo}
+              role="slider"
+              aria-label="Seek"
+              aria-valuenow={Math.round(progress)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={togglePlay}
+                aria-label={playing ? "Pause" : "Play"}
+                className="flex size-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
+              >
+                {playing ? (
+                  <Pause className="size-4" fill="currentColor" />
+                ) : (
+                  <Play className="size-4 translate-x-0.5" fill="currentColor" />
+                )}
+              </button>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setSpeedMenuOpen((v) => !v)}
+                  className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/15"
+                  aria-label="Playback speed"
+                >
+                  <Gauge className="size-3.5" />
+                  {speed}×
+                </button>
+                {speedMenuOpen && (
+                  <div className="absolute bottom-full right-0 mb-2 overflow-hidden rounded-xl border border-white/10 bg-black/90 py-1 shadow-lg backdrop-blur">
+                    {PLAYBACK_SPEEDS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setPlaybackSpeed(s)}
+                        className={`block w-full whitespace-nowrap px-4 py-1.5 text-left text-xs font-medium transition-colors hover:bg-white/10 ${
+                          s === speed ? "text-primary" : "text-white"
+                        }`}
+                      >
+                        {s}× {s === 1 ? "(normal)" : ""}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

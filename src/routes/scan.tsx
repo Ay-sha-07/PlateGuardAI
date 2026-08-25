@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { scanLabel } from "@/lib/scan.functions";
 import { getAIHealthStatus } from "@/lib/ai-health.functions";
+import type { getAIHealth } from "@/lib/ai-health.server";
 import { detectBarcodeFromDataUrl, lookupBarcode } from "@/lib/barcode";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { addProfile, loadProfileStore, setActiveProfile, type StoredProfile } from "@/lib/profile";
@@ -170,14 +171,7 @@ function ScannerPage() {
   const [barcodePending, setBarcodePending] = useState(false);
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
   const [barcodeCameraOpen, setBarcodeCameraOpen] = useState(false);
-  const [aiHealth, setAiHealth] = useState<{
-    capacity: "High" | "Medium" | "Low";
-    ready: number;
-    total: number;
-    blocked: number;
-    cooldown: number;
-    providers: Array<{ name: string; status: "ready" | "cooldown" | "blocked"; reason: string; retryAt: number | null }>;
-  } | null>(null);
+  const [aiHealth, setAiHealth] = useState<ReturnType<typeof getAIHealth> | null>(null);
   const [ingredientText, setIngredientText] = useState("");
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -832,7 +826,14 @@ function ScannerPage() {
                   </div>
                   <p className="mt-3 text-sm font-semibold text-foreground">{scanStage}</p>
                   <p className="mt-1 text-xs text-muted-foreground">This may take a few seconds</p>
-                  <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted/70" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={scanProgress} aria-label="Scan progress">
+                  <div
+                    className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted/70"
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={scanProgress}
+                    aria-label="Scan progress"
+                  >
                     <div
                       className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
                       style={{ width: `${scanProgress}%` }}
@@ -1556,7 +1557,18 @@ function CameraCapture({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob((blob) => { if (!blob) return; const reader = new FileReader(); reader.onload = () => onCapture(String(reader.result)); reader.readAsDataURL(blob); canvas.width = 1; canvas.height = 1; }, "image/jpeg", 0.72);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        const reader = new FileReader();
+        reader.onload = () => onCapture(String(reader.result));
+        reader.readAsDataURL(blob);
+        canvas.width = 1;
+        canvas.height = 1;
+      },
+      "image/jpeg",
+      0.72,
+    );
   }
 
   return (
@@ -1800,7 +1812,11 @@ async function renderPdfToJpegDataUrl(file: File, max = 896): Promise<string> {
   // Limit the PDF input buffer and rendered page dimensions. PDFs can contain
   // enormous raster pages even when the file itself is small.
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer, disableAutoFetch: true, disableStream: true }).promise;
+  const pdf = await pdfjsLib.getDocument({
+    data: buffer,
+    disableAutoFetch: true,
+    disableStream: true,
+  }).promise;
   try {
     const page = await pdf.getPage(1);
     const baseViewport = page.getViewport({ scale: 1 });
@@ -1822,6 +1838,6 @@ async function renderPdfToJpegDataUrl(file: File, max = 896): Promise<string> {
       page.cleanup();
     }
   } finally {
-    await pdf.destroy();
+    await pdf.cleanup();
   }
 }
