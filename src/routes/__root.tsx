@@ -90,7 +90,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover",
       },
 
       {
@@ -219,6 +219,24 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
+    // Keep the mobile app at a fixed scale. This complements the viewport
+    // meta tag and prevents pinch, gesture, and Ctrl/Cmd+wheel zoom.
+    const preventZoomGesture = (event: Event) => event.preventDefault();
+    const preventCtrlWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) event.preventDefault();
+    };
+    const preventZoomKeys = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && ["+", "-", "=", "0"].includes(event.key)) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener("gesturestart", preventZoomGesture, { passive: false });
+    document.addEventListener("gesturechange", preventZoomGesture, { passive: false });
+    document.addEventListener("gestureend", preventZoomGesture, { passive: false });
+    document.addEventListener("wheel", preventCtrlWheel, { passive: false });
+    document.addEventListener("keydown", preventZoomKeys, { passive: false });
+
     if ("serviceWorker" in navigator) {
       const registerServiceWorker = async () => {
         try {
@@ -241,6 +259,14 @@ function RootComponent() {
         });
       }
     }
+
+    return () => {
+      document.removeEventListener("gesturestart", preventZoomGesture);
+      document.removeEventListener("gesturechange", preventZoomGesture);
+      document.removeEventListener("gestureend", preventZoomGesture);
+      document.removeEventListener("wheel", preventCtrlWheel);
+      document.removeEventListener("keydown", preventZoomKeys);
+    };
   }, []);
 
   return (

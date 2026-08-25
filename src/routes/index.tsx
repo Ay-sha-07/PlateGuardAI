@@ -62,8 +62,8 @@ export const Route = createFileRoute("/")({
 
 function LoginGate() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-5 py-10 text-foreground">
-      <section className="w-full max-w-lg rounded-[2rem] border bg-card p-7 shadow-2xl sm:p-10">
+    <main className="flex min-h-[100dvh] w-full max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
+      <section className="box-border w-full min-w-0 max-w-lg overflow-hidden rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-10">
         <div className="text-center">
           <img
             src="/icons/logo.png"
@@ -80,8 +80,8 @@ function LoginGate() {
         </div>
 
         <div className="mt-8 grid gap-3">
-          <Button asChild size="lg" className="h-12 rounded-2xl text-base">
-            <Link to="/login">
+          <Button asChild size="lg" className="h-12 w-full min-w-0 rounded-2xl text-base">
+            <Link to="/login" className="min-w-0 whitespace-normal">
               <LogIn className="mr-2 size-5" />
               Log in or create an account
             </Link>
@@ -91,13 +91,13 @@ function LoginGate() {
             asChild
             size="lg"
             variant="outline"
-            className="h-auto min-h-14 rounded-2xl border-2 px-5 py-3 text-left"
+            className="h-auto min-h-14 w-full min-w-0 rounded-2xl border-2 px-4 py-3 text-left"
           >
-            <Link to="/scan">
+            <Link to="/scan" className="flex min-w-0 items-center whitespace-normal">
               <Accessibility className="mr-3 size-6 shrink-0 text-primary" />
-              <span>
-                <span className="block text-base font-bold">Accessibility: go straight to scanner</span>
-                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+              <span className="min-w-0 flex-1 break-words">
+                <span className="block text-base font-bold leading-5">Accessibility: go straight to scanner</span>
+                <span className="mt-1 block text-xs font-normal leading-4 text-muted-foreground">
                   Skip account setup and open the scanner with larger, simpler controls.
                 </span>
               </span>

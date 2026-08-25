@@ -25,3 +25,12 @@ npm install   # only if you don't already have deps installed
 npm run dev
 ```
 No new dependencies were added — barcode lookup uses a plain `fetch()` to the free Open Food Facts API.
+
+
+## Mobile fit + zoom lock
+
+- The first-visit login gate is now width-safe on small mobile screens: no child button can force horizontal overflow.
+- Mobile login-gate spacing/padding was tightened while preserving the larger accessibility controls.
+- Added global `box-sizing: border-box`, horizontal overflow protection, and mobile touch safeguards.
+- The viewport is fixed to `initial-scale=1`, `maximum-scale=1`, `minimum-scale=1`, and `user-scalable=no`.
+- Added browser-side guards for pinch/gesture zoom and Ctrl/Cmd + wheel/keyboard zoom.
