@@ -87,7 +87,7 @@ export async function lookupBarcode(barcode: string): Promise<BarcodeLookupResul
 
 function fmtNutrient(label: string, value: number | string | undefined, unit: string): string {
   if (value === undefined || value === null || value === "") return "";
-  return `${label} ${value}${unit.startsWith("kcal") ? "" : ""} ${unit}`;
+  return `${label} ${value} ${unit}`;
 }
 
 

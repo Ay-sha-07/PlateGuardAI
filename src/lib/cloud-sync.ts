@@ -40,13 +40,15 @@ export async function pushProfileStore(store: ProfileStore) {
   const userId = await getUserId();
   if (!userId || !supabase) return false;
 
-  const { error: deleteError } = await supabase.from("user_profiles").delete().eq("user_id", userId);
-  if (deleteError) {
-    console.warn("[cloud-sync] profile delete failed:", deleteError.message);
-    return false;
+  if (!store.profiles.length) {
+    // Nothing to upsert — the user really does have zero profiles now.
+    const { error: deleteError } = await supabase.from("user_profiles").delete().eq("user_id", userId);
+    if (deleteError) {
+      console.warn("[cloud-sync] profile delete failed:", deleteError.message);
+      return false;
+    }
+    return true;
   }
-
-  if (!store.profiles.length) return true;
 
   const rows = store.profiles.map((profile) => ({
     id: profile.id,
@@ -57,10 +59,26 @@ export async function pushProfileStore(store: ProfileStore) {
     data: profile,
   }));
 
-  const { error } = await supabase.from("user_profiles").insert(rows);
-  if (error) {
-    console.warn("[cloud-sync] profile push failed:", error.message);
+  // Upsert current profiles BEFORE deleting anything stale. Deleting first
+  // (the previous approach) meant a failed insert left the account with
+  // zero cloud profiles — full data loss. Upserting first means a failed
+  // step here leaves the previous cloud state intact.
+  const { error: upsertError } = await supabase.from("user_profiles").upsert(rows, { onConflict: "id" });
+  if (upsertError) {
+    console.warn("[cloud-sync] profile push failed:", upsertError.message);
     return false;
+  }
+
+  const currentIds = store.profiles.map((profile) => profile.id);
+  const { error: deleteError } = await supabase
+    .from("user_profiles")
+    .delete()
+    .eq("user_id", userId)
+    .not("id", "in", `(${currentIds.map((id) => `"${id}"`).join(",")})`);
+  if (deleteError) {
+    console.warn("[cloud-sync] stale profile cleanup failed:", deleteError.message);
+    // Non-fatal: the current profiles are safely saved; a deleted-locally
+    // profile may just linger in the cloud until the next successful sync.
   }
   return true;
 }

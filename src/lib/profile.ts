@@ -330,7 +330,14 @@ export function saveProfileStore(store: ProfileStore) {
   // localStorage is the fast local cache, scoped to whichever account is
   // active. It's also mirrored to Supabase (see cloud-sync) so a signed-in
   // account sees the same profiles on every device.
-  window.localStorage.setItem(scopedKey(STORE_KEY_BASE), JSON.stringify(store));
+  try {
+    window.localStorage.setItem(scopedKey(STORE_KEY_BASE), JSON.stringify(store));
+  } catch {
+    // Storage full/unavailable (e.g. a large avatarUrl data URL pushed us
+    // over quota) — don't let this crash addProfile/updateProfile/etc.
+    // The in-memory store returned to the caller is still correct; only
+    // the local cache write was skipped.
+  }
   notifyProfileChanged();
   void import("./cloud-sync").then(({ pushProfileStore }) => pushProfileStore(store));
 }

@@ -447,7 +447,7 @@ function CompareView({
         </div>
 
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          Lower rating = safer. Ratings are personalized to each entry's active profile at scan
+          Higher rating = safer. Ratings are personalized to each entry's active profile at scan
           time.
         </p>
       </main>
