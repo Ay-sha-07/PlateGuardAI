@@ -19,7 +19,7 @@ it anywhere that runs Node.js.
 
 2. **Add an AI provider key.** Copy `.env.example` to `.env` and fill in
    **one** of the provider keys — the app auto-detects whichever is set.
-   The easiest free option is Google Gemini:
+   The easiest free option is Google Gemini. You can also configure multiple providers; the scanner automatically fails over when a provider is rate-limited or unavailable:
 
    ```sh
    cp .env.example .env
@@ -31,8 +31,7 @@ it anywhere that runs Node.js.
    GOOGLE_GENERATIVE_AI_API_KEY=your-key-here
    ```
 
-   See `.env.example` for the OpenAI, Anthropic, and generic
-   OpenAI-compatible alternatives.
+   See `.env.example` for the full provider list, including Groq, Cerebras, Mistral, OpenRouter, Cloudflare Workers AI, Hugging Face, local Ollama, OpenAI, Anthropic, and generic OpenAI-compatible endpoints.
 
 3. **Run it**
 
@@ -73,3 +72,32 @@ browser for a native-app-like experience — no app store required.
 
 ## Cloud login and database
 This version uses Supabase Authentication and PostgreSQL. Copy `.env.example` to `.env`, add your Supabase URL and anon key, run `supabase-schema.sql` in the Supabase SQL Editor, and enable Email/Password authentication in Supabase. Existing local profiles/history are migrated to the account on first login.
+
+
+## Multi-provider AI failover
+
+`src/lib/ai-provider.server.ts` now supports a provider pool instead of a
+single AI backend. Configure any combination of providers in `.env`.
+
+The scan order is:
+
+1. Google Gemini
+2. xAI Grok
+3. Groq
+4. Cerebras
+5. Mistral
+6. OpenRouter
+7. Cloudflare Workers AI
+8. Hugging Face Inference Providers
+9. local Ollama
+10. OpenAI
+11. Anthropic
+12. generic OpenAI-compatible endpoint
+
+Transient rate limits, provider overloads, and network failures are retried
+once and then failed over to the next provider. Provider-specific auth,
+quota, and model errors are skipped so the next configured provider can try.
+
+For the closest thing to unlimited inference, run a vision model through
+Ollama locally. Hosted free tiers still have provider-specific limits.
+

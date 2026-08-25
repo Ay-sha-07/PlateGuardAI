@@ -41,6 +41,30 @@ export type VisionProvider = {
 export function getVisionProviders(): VisionProvider[] {
   const providers: VisionProvider[] = [];
 
+  const addCompatible = (
+    name: string,
+    apiKey: string | undefined,
+    baseURL: string | undefined,
+    model: string,
+    headers?: Record<string, string>,
+  ) => {
+    if (!apiKey || !baseURL) return;
+
+    const provider = createOpenAICompatible({
+      name: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      baseURL,
+      apiKey,
+      headers,
+      supportsStructuredOutputs: true,
+    });
+
+    providers.push({
+      name,
+      model: provider(model),
+    });
+  };
+
+  // 1. Google Gemini — primary.
   const google = process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
   if (google) {
     providers.push({
@@ -51,6 +75,7 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
+  // 2. xAI Grok.
   const xai = process.env["XAI_API_KEY"] || process.env["GROK_API_KEY"];
   if (xai) {
     providers.push({
@@ -59,6 +84,7 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
+  // 3. Groq.
   const groq = process.env["GROQ_API_KEY"];
   if (groq) {
     providers.push({
@@ -69,6 +95,69 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
+  // 4. Cerebras — OpenAI-compatible endpoint.
+  addCompatible(
+    "Cerebras",
+    process.env["CEREBRAS_API_KEY"],
+    process.env["CEREBRAS_BASE_URL"] || "https://api.cerebras.ai/v1",
+    process.env["CEREBRAS_MODEL"] || "llama-4-scout-17b-16e-instruct",
+  );
+
+  // 5. Mistral — OpenAI-compatible endpoint with vision-capable models.
+  addCompatible(
+    "Mistral",
+    process.env["MISTRAL_API_KEY"],
+    process.env["MISTRAL_BASE_URL"] || "https://api.mistral.ai/v1",
+    process.env["MISTRAL_MODEL"] || "mistral-small-2506",
+  );
+
+  // 6. OpenRouter — can use its dynamic free-model router. OpenRouter
+  // automatically filters the free pool for capabilities such as vision
+  // and structured outputs when using "openrouter/free".
+  addCompatible(
+    "OpenRouter",
+    process.env["OPENROUTER_API_KEY"],
+    process.env["OPENROUTER_BASE_URL"] || "https://openrouter.ai/api/v1",
+    process.env["OPENROUTER_MODEL"] || "openrouter/free",
+    {
+      ...(process.env["OPENROUTER_HTTP_REFERER"]
+        ? { "HTTP-Referer": process.env["OPENROUTER_HTTP_REFERER"] }
+        : {}),
+      ...(process.env["OPENROUTER_APP_TITLE"]
+        ? { "X-OpenRouter-Title": process.env["OPENROUTER_APP_TITLE"] }
+        : {}),
+    },
+  );
+
+  // 7. Cloudflare Workers AI — OpenAI-compatible REST endpoint.
+  // Set CLOUDFLARE_BASE_URL to:
+  // https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/v1
+  addCompatible(
+    "Cloudflare Workers AI",
+    process.env["CLOUDFLARE_API_TOKEN"],
+    process.env["CLOUDFLARE_BASE_URL"],
+    process.env["CLOUDFLARE_MODEL"] || "@cf/qwen/qwen3.8-27b",
+  );
+
+  // 8. Hugging Face Inference Providers — OpenAI-compatible router.
+  // Use a vision-capable model and optionally a provider suffix.
+  addCompatible(
+    "Hugging Face",
+    process.env["HF_TOKEN"],
+    process.env["HF_BASE_URL"] || "https://router.huggingface.co/v1",
+    process.env["HF_MODEL"] || "Qwen/Qwen2.5-VL-7B-Instruct:fastest",
+  );
+
+  // 9. Local Ollama — no hosted quota; limited only by local hardware.
+  // Default endpoint: http://127.0.0.1:11434/v1
+  addCompatible(
+    "Ollama (local)",
+    process.env["OLLAMA_API_KEY"] || "ollama",
+    process.env["OLLAMA_BASE_URL"] || "http://127.0.0.1:11434/v1",
+    process.env["OLLAMA_MODEL"] || "qwen3-vl:8b",
+  );
+
+  // 10. OpenAI.
   const openai = process.env["OPENAI_API_KEY"];
   if (openai) {
     providers.push({
@@ -77,6 +166,7 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
+  // 11. Anthropic Claude.
   const anthropic = process.env["ANTHROPIC_API_KEY"];
   if (anthropic) {
     providers.push({
@@ -87,36 +177,31 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
-  const compatibleKey = process.env["OPENAI_COMPATIBLE_API_KEY"];
-  const compatibleUrl = process.env["OPENAI_COMPATIBLE_BASE_URL"];
-  if (compatibleKey && compatibleUrl) {
-    const provider = createOpenAICompatible({
-      name: "custom-openai-compatible",
-      baseURL: compatibleUrl,
-      apiKey: compatibleKey,
-      supportsStructuredOutputs: true,
-    });
-    providers.push({
-      name: "OpenAI-compatible",
-      model: provider(process.env["OPENAI_COMPATIBLE_MODEL"] || "gpt-4o-mini"),
-    });
-  }
+  // 12. Generic custom OpenAI-compatible provider.
+  addCompatible(
+    "Custom OpenAI-compatible",
+    process.env["OPENAI_COMPATIBLE_API_KEY"],
+    process.env["OPENAI_COMPATIBLE_BASE_URL"],
+    process.env["OPENAI_COMPATIBLE_MODEL"] || "gpt-4o-mini",
+  );
 
   if (providers.length === 0) {
     throw new Error(
-      "No AI provider configured. Set one of GROQ_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, " +
-        "XAI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_COMPATIBLE_API_KEY + " +
-        "OPENAI_COMPATIBLE_BASE_URL in your .env file. See .env.example for details.",
+      "No AI provider configured. Set at least one provider key in .env. " +
+        "See .env.example for the full multi-provider configuration.",
     );
   }
 
   if (providers.length === 1) {
     console.warn(
       `[scan] only one AI provider configured (${providers[0]!.name}). ` +
-        "Rate limits will surface as scan failures with no fallback — set a second key " +
-        "(XAI_API_KEY for Grok, alongside GOOGLE_GENERATIVE_AI_API_KEY for Gemini) to enable real failover.",
+        "Add additional provider keys for automatic failover.",
     );
   }
+
+  console.info(
+    `[scan] configured AI providers: ${providers.map((provider) => provider.name).join(" -> ")}`,
+  );
 
   return providers;
 }

@@ -20,6 +20,7 @@ export type KidneyDetail = {
 
 export type SafetyProfile = {
   name: string;
+  avatarUrl: string;
   ageGroup: AgeGroup | "";
   biologicalSex: BiologicalSex | "";
   reproductiveStatus: ReproductiveStatus | "";
@@ -195,6 +196,7 @@ export const DIETARY_PATTERNS = [
 
 export const EMPTY_PROFILE: SafetyProfile = {
   name: "",
+  avatarUrl: "",
   ageGroup: "",
   biologicalSex: "",
   reproductiveStatus: "",

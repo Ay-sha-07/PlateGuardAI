@@ -31,6 +31,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -66,7 +67,7 @@ const NAV_LINKS = [
 
 function HomePage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background pb-20 text-foreground">
       <SiteNav />
       <HeroVideo />
       <HeroWordmark />
@@ -77,6 +78,10 @@ function HomePage() {
       <SafetyProcess />
       <OneProfile />
       <SiteFooter />
+      <div className="md:hidden" style={{ paddingBottom: BOTTOM_NAV_HEIGHT }} />
+      <div className="md:hidden">
+        <BottomNav />
+      </div>
     </div>
   );
 }

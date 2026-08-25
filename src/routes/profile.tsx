@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, Check, ImagePlus, Plus, ShieldCheck, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   ACTIVITY_LEVELS,
@@ -69,6 +69,23 @@ const STEPS = [
   "Sensitivities",
   "Lifestyle & medications",
 ] as const;
+
+async function resizeProfilePhoto(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+  if (file.size > 8 * 1024 * 1024) throw new Error("Please choose an image smaller than 8 MB.");
+
+  const bitmap = await createImageBitmap(file);
+  const size = 512;
+  const scale = Math.min(1, size / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not process the image.");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
 
 function ProfilePage() {
   const router = useRouter();
@@ -159,6 +176,61 @@ function ProfilePage() {
         </div>
       </div>
 
+      <section className="mt-6 rounded-3xl border border-border bg-card/70 p-5 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0">
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt={`${profile.name || "Profile"} photo`}
+                className="size-24 rounded-full border-2 border-border object-cover shadow-sm"
+              />
+            ) : (
+              <div className="flex size-24 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted text-muted-foreground">
+                <Camera className="size-8" />
+              </div>
+            )}
+            {profile.avatarUrl && (
+              <button
+                type="button"
+                onClick={() => patch({ avatarUrl: "" })}
+                className="absolute -right-1 -top-1 flex size-7 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-accent"
+                aria-label="Remove profile photo"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold text-foreground">Profile photo</h2>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Add a photo so family members are easier to identify when switching profiles.
+              The image is resized before it is saved.
+            </p>
+            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3.5 py-2 text-sm font-medium transition-colors hover:bg-accent">
+              <ImagePlus className="size-4" />
+              {profile.avatarUrl ? "Change photo" : "Upload photo"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="sr-only"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  event.currentTarget.value = "";
+                  if (!file) return;
+                  try {
+                    patch({ avatarUrl: await resizeProfilePhoto(file) });
+                    toast.success("Profile photo updated.");
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Could not upload the photo.");
+                  }
+                }}
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
       {/* profile switcher — one card per family member */}
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
         {profiles.map((p) => (
@@ -166,12 +238,19 @@ function ProfilePage() {
             <button
               type="button"
               onClick={() => selectProfile(p.id)}
-              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
                 p.id === activeId
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card/70 text-foreground hover:bg-accent"
               }`}
             >
+              {p.avatarUrl ? (
+                <img src={p.avatarUrl} alt="" className="size-6 rounded-full object-cover" />
+              ) : (
+                <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                  {(p.name || "?").slice(0, 1).toUpperCase()}
+                </span>
+              )}
               {p.name || "Unnamed"}
             </button>
             {profiles.length > 1 && (

@@ -3,7 +3,7 @@ import { Home, ScanLine, History, Newspaper, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { to: "/home", label: "Home", Icon: Home },
+  { to: "/", label: "Home", Icon: Home },
   { to: "/scan", label: "Scan", Icon: ScanLine },
   { to: "/history", label: "History", Icon: History },
   { to: "/news", label: "News", Icon: Newspaper },
@@ -11,7 +11,7 @@ const TABS = [
 ] as const;
 
 /**
- * Fixed bottom tab bar shared by every logged-in screen (Home, Scan,
+ * Fixed bottom tab bar shared by the main app screens (Home, Scan,
  * History, News, Profile). Renders inside a max-w-md shell to match the
  * mobile-first layout the rest of the app uses.
  *
