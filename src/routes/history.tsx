@@ -15,8 +15,10 @@ import {
   clearHistory,
   deleteHistoryEntry,
   loadHistory,
+  subscribeHistoryChanges,
   type ScanHistoryEntry,
 } from "@/lib/history";
+import { SCOPE_CHANGED_EVENT } from "@/lib/account-scope";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,7 +83,22 @@ function HistoryPageContent() {
       setSelectedId(nextId);
     };
     window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+
+    // Re-read from localStorage whenever it changes underneath us. This is
+    // what makes cross-device sync actually show up: signing in kicks off a
+    // background pull from the cloud (see __root.tsx) that can finish well
+    // after this page has already mounted and taken its first snapshot.
+    // Without this, that fresher data would sit in localStorage but never
+    // reach the screen until a manual refresh.
+    const refresh = () => setEntries(loadHistory());
+    const unsubscribeHistory = subscribeHistoryChanges(refresh);
+    window.addEventListener(SCOPE_CHANGED_EVENT, refresh);
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      unsubscribeHistory();
+      window.removeEventListener(SCOPE_CHANGED_EVENT, refresh);
+    };
   }, []);
 
   const selected = useMemo(
