@@ -29,6 +29,8 @@ import {
   ShieldAlert,
   Accessibility,
   LogIn,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
@@ -218,6 +220,36 @@ function HomePage() {
 
 /* ---------------------------------- Nav ---------------------------------- */
 
+function ThemeToggle() {
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("plateguard-theme");
+    setDark(saved ? saved === "dark" : true);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !dark;
+    document.documentElement.classList.toggle("dark", nextDark);
+    window.localStorage.setItem("plateguard-theme", nextDark ? "dark" : "light");
+    setDark(nextDark);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${dark ? "light" : "dark"} mode`}
+      aria-pressed={dark}
+      title={`Switch to ${dark ? "light" : "dark"} mode`}
+      className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-xl transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      <span className="sr-only">{dark ? "Light" : "Dark"}</span>
+    </button>
+  );
+}
+
 function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -293,22 +325,27 @@ function SiteNav() {
           )}
         </nav>
 
-        <div className="hidden md:block">
-          <Button asChild size="sm" className="rounded-full px-5">
-            <Link to="/scan">
-              Start Scanning <ChevronRight className="size-4" />
-            </Link>
-          </Button>
-        </div>
+        <div className="flex items-center gap-2">
+          <div className="hidden md:block">
+            <Button asChild size="sm" className="rounded-full px-5">
+              <Link to="/scan">
+                Start Scanning <ChevronRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="flex size-9 items-center justify-center rounded-full text-foreground md:hidden"
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
+          {/* Theme toggle is intentionally available only on the index page. */}
+          <ThemeToggle />
+
+          {/* Mobile Menu Button */}
+          <button
+            className="flex size-9 items-center justify-center rounded-full text-foreground md:hidden"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
+        </div>
       </header>
 
       {/* Mobile Navigation */}

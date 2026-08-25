@@ -128,6 +128,9 @@ function ProfilePage() {
   const [activeId, setActiveId] = useState<string>("");
   const [profile, setProfile] = useState<SafetyProfile>(EMPTY_PROFILE);
   const [step, setStep] = useState(0);
+  const [heightUnit, setHeightUnit] = useState<"cm" | "ft">("cm");
+  const [heightFeet, setHeightFeet] = useState("");
+  const [heightInches, setHeightInches] = useState("");
 
   useEffect(() => {
     let store = loadProfileStore();
@@ -139,6 +142,35 @@ function ProfilePage() {
     const active = store.profiles.find((p) => p.id === store.activeId);
     if (active) setProfile(active);
   }, []);
+
+  useEffect(() => {
+    const cm = Number.parseFloat(profile.heightCm);
+    if (!Number.isFinite(cm) || cm <= 0) {
+      setHeightFeet("");
+      setHeightInches("");
+      return;
+    }
+    const totalInches = cm / 2.54;
+    const feet = Math.floor(totalInches / 12);
+    const inches = Math.round((totalInches - feet * 12) * 10) / 10;
+    setHeightFeet(String(feet));
+    setHeightInches(inches ? String(inches) : "");
+  }, [profile.heightCm]);
+
+  function updateHeightFromImperial(feetValue: string, inchesValue: string) {
+    const feet = Number.parseFloat(feetValue);
+    const inches = Number.parseFloat(inchesValue);
+    if (!Number.isFinite(feet) && !Number.isFinite(inches)) {
+      patch({ heightCm: "" });
+      return;
+    }
+    const totalInches = (Number.isFinite(feet) ? feet : 0) * 12 + (Number.isFinite(inches) ? inches : 0);
+    if (totalInches <= 0) {
+      patch({ heightCm: "" });
+      return;
+    }
+    patch({ heightCm: String(Math.round(totalInches * 2.54 * 10) / 10) });
+  }
 
   function patch(partial: Partial<SafetyProfile>) {
     setProfile((p) => ({ ...p, ...partial }));
@@ -471,16 +503,72 @@ function StepAbout({ profile, patch }: StepProps) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="height">Height (cm, optional)</Label>
-          <Input
-            id="height"
-            type="number"
-            inputMode="decimal"
-            placeholder="e.g. 165"
-            value={profile.heightCm}
-            onChange={(e) => patch({ heightCm: e.target.value })}
-            className="h-11 rounded-xl"
-          />
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="height">Height (optional)</Label>
+            <Select
+              value={heightUnit}
+              onValueChange={(value) => setHeightUnit(value as "cm" | "ft")}
+            >
+              <SelectTrigger className="h-8 w-[82px] rounded-lg px-2 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cm">cm</SelectItem>
+                <SelectItem value="ft">ft / in</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {heightUnit === "cm" ? (
+            <Input
+              id="height"
+              type="number"
+              inputMode="decimal"
+              placeholder="e.g. 165"
+              value={profile.heightCm}
+              onChange={(e) => patch({ heightCm: e.target.value })}
+              className="h-11 rounded-xl"
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                id="height-feet"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                placeholder="5 ft"
+                value={heightFeet}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setHeightFeet(value);
+                  updateHeightFromImperial(value, heightInches);
+                }}
+                className="h-11 rounded-xl"
+                aria-label="Height in feet"
+              />
+              <Input
+                id="height-inches"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                max="11.9"
+                step="0.1"
+                placeholder="7 in"
+                value={heightInches}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setHeightInches(value);
+                  updateHeightFromImperial(heightFeet, value);
+                }}
+                className="h-11 rounded-xl"
+                aria-label="Height in inches"
+              />
+            </div>
+          )}
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            {heightUnit === "cm"
+              ? "Stored in cm for consistent health calculations."
+              : "Enter feet and inches; PlateGuard converts it to cm automatically."}
+          </p>
         </div>
       </div>
 

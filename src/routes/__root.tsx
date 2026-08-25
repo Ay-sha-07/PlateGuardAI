@@ -216,36 +216,14 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-function ThemeToggle() {
-  const [dark, setDark] = useState(true);
-
+function ThemeSync() {
   useEffect(() => {
     const saved = window.localStorage.getItem("plateguard-theme");
     const nextDark = saved ? saved === "dark" : true;
     document.documentElement.classList.toggle("dark", nextDark);
-    setDark(nextDark);
   }, []);
 
-  const toggleTheme = () => {
-    const nextDark = !dark;
-    document.documentElement.classList.toggle("dark", nextDark);
-    window.localStorage.setItem("plateguard-theme", nextDark ? "dark" : "light");
-    setDark(nextDark);
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={`Switch to ${dark ? "light" : "dark"} mode`}
-      aria-pressed={dark}
-      title={`Switch to ${dark ? "light" : "dark"} mode`}
-      className="fixed right-20 top-7 z-[100] inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 p-0 text-foreground shadow-lg backdrop-blur-xl transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:right-5 sm:top-7"
-    >
-      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-      <span className="sr-only">{dark ? "Light" : "Dark"}</span>
-    </button>
-  );
+  return null;
 }
 
 function RootComponent() {
@@ -304,7 +282,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeToggle />
+      <ThemeSync />
       <Outlet />
       <Toaster position="top-center" />
     </QueryClientProvider>
