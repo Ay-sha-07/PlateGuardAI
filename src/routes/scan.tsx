@@ -156,6 +156,8 @@ function ScannerPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStage, setScanStage] = useState("Starting scan…");
   const [preparing, setPreparing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
 
@@ -295,6 +297,8 @@ function ScannerPage() {
     setResult(null);
     setImage(dataUrl);
     setPending(true);
+    setScanProgress(5);
+    setScanStage("Preparing label…");
     try {
       // Before asking the vision model to identify the product, try the
       // browser's native barcode detector. A verified barcode/catalog match
@@ -304,8 +308,12 @@ function ScannerPage() {
       let barcode = "";
       let barcodeProductName = "";
       let barcodeIngredientText = "";
+      setScanProgress(18);
+      setScanStage("Checking product barcode…");
       const detectedBarcode = await detectBarcodeFromDataUrl(dataUrl);
       if (detectedBarcode) {
+        setScanProgress(28);
+        setScanStage("Looking up product details…");
         const catalog = await lookupBarcode(detectedBarcode);
         if (catalog.found) {
           barcode = catalog.barcode;
@@ -314,6 +322,8 @@ function ScannerPage() {
         }
       }
 
+      setScanProgress(42);
+      setScanStage("Analyzing label with AI…");
       const res = (await run({
         data: {
           image: dataUrl,
@@ -324,9 +334,13 @@ function ScannerPage() {
           ...profilePayload(),
         },
       })) as ScanResult;
+      setScanProgress(82);
+      setScanStage("Building your result…");
       setResult(res);
 
       const thumb = await makeThumbnail(dataUrl);
+      setScanProgress(94);
+      setScanStage("Saving to history…");
       addHistoryEntry({
         profileId: activeProfile?.id ?? "",
         profileName: activeProfile?.name || "Unnamed profile",
@@ -337,6 +351,8 @@ function ScannerPage() {
         productGuess: res.productGuess,
         aiResult: res,
       });
+      setScanProgress(100);
+      setScanStage("Scan complete");
     } catch (e) {
       reportScanFailure(e);
     } finally {
@@ -366,7 +382,11 @@ function ScannerPage() {
     setResult(null);
     setImage(null);
     setPending(true);
+    setScanProgress(15);
+    setScanStage("Preparing product information…");
     try {
+      setScanProgress(45);
+      setScanStage("Analyzing with AI…");
       const res = (await run({
         data: {
           ingredientText: analysisText,
@@ -377,8 +397,12 @@ function ScannerPage() {
           ...profilePayload(),
         },
       })) as ScanResult;
+      setScanProgress(82);
+      setScanStage("Building your result…");
       setResult(res);
 
+      setScanProgress(94);
+      setScanStage("Saving to history…");
       addHistoryEntry({
         profileId: activeProfile?.id ?? "",
         profileName: activeProfile?.name || "Unnamed profile",
@@ -389,6 +413,8 @@ function ScannerPage() {
         productGuess: res.productGuess,
         aiResult: res,
       });
+      setScanProgress(100);
+      setScanStage("Scan complete");
     } catch (e) {
       reportScanFailure(e);
     } finally {
@@ -798,11 +824,24 @@ function ScannerPage() {
             )}
 
             {pending && (
-              <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px]">
+              <div className="absolute inset-0 bg-background/75 backdrop-blur-[3px]">
                 <div className="animate-scanline pointer-events-none absolute inset-x-0 top-0 h-1 bg-primary/80 shadow-[0_0_24px_4px_var(--primary)]" />
-                <div className="flex size-full flex-col items-center justify-center gap-2">
-                  <Loader2 className="size-7 animate-spin text-primary" />
-                  <p className="animate-pulse text-sm text-foreground">Reading label…</p>
+                <div className="flex size-full flex-col items-center justify-center px-8">
+                  <div className="flex size-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
+                    <Loader2 className="size-7 animate-spin text-primary" />
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-foreground">{scanStage}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">This may take a few seconds</p>
+                  <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted/70" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={scanProgress} aria-label="Scan progress">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
+                      style={{ width: `${scanProgress}%` }}
+                    />
+                  </div>
+                  <div className="mt-1.5 flex w-full justify-between text-[11px] text-muted-foreground">
+                    <span>{scanStage}</span>
+                    <span>{scanProgress}%</span>
+                  </div>
                 </div>
               </div>
             )}
