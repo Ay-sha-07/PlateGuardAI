@@ -2,30 +2,128 @@ import type { ProfileStore } from "./profile";
 import type { ScanHistoryEntry } from "./history";
 import { supabase } from "./supabase";
 
-async function uid() {
+async function getUserId() {
   if (!supabase) return null;
-  const { data } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser();
+  if (error) return null;
   return data.user?.id ?? null;
 }
+
+/**
+ * Cloud sync for signed-in users. localStorage remains the fast local cache,
+ * while Supabase is the account-level source of truth so the same account
+ * gets the same profiles/history on every device.
+ */
 export async function pushProfileStore(store: ProfileStore) {
-  const userId = await uid(); if (!userId || !supabase) return;
-  await supabase.from("user_profiles").delete().eq("user_id", userId);
-  if (store.profiles.length) await supabase.from("user_profiles").insert(store.profiles.map(p => ({id:p.id, user_id:userId, createdAt:p.createdAt, active:p.id===store.activeId, name:p.name, data:p})));
+  const userId = await getUserId();
+  if (!userId || !supabase) return false;
+
+  const { error: deleteError } = await supabase.from("user_profiles").delete().eq("user_id", userId);
+  if (deleteError) {
+    console.warn("[cloud-sync] profile delete failed:", deleteError.message);
+    return false;
+  }
+
+  if (!store.profiles.length) return true;
+
+  const rows = store.profiles.map((profile) => ({
+    id: profile.id,
+    user_id: userId,
+    createdAt: profile.createdAt,
+    active: profile.id === store.activeId,
+    name: profile.name,
+    data: profile,
+  }));
+
+  const { error } = await supabase.from("user_profiles").insert(rows);
+  if (error) {
+    console.warn("[cloud-sync] profile push failed:", error.message);
+    return false;
+  }
+  return true;
 }
+
 export async function pullProfileStore(): Promise<ProfileStore | null> {
-  const userId=await uid(); if(!userId || !supabase) return null;
-  const {data,error}=await supabase.from("user_profiles").select("*").eq("user_id",userId).order("createdAt",{ascending:true});
-  if(error || !data?.length) return null;
-  const profiles=data.map(({user_id,active,data,...p}: any)=>data ?? p);
-  return {profiles, activeId:(data.find((p:any)=>p.active)?.id ?? profiles[0].id)};
+  const userId = await getUserId();
+  if (!userId || !supabase) return null;
+
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .select("id,user_id,createdAt,active,name,data")
+    .eq("user_id", userId)
+    .order("createdAt", { ascending: true });
+
+  if (error || !data?.length) return null;
+
+  const profiles = data.map((row: any) => ({
+    ...(row.data ?? {}),
+    id: row.id,
+    createdAt: Number(row.createdAt),
+    name: row.name ?? row.data?.name ?? "Me",
+  }));
+  const activeId = data.find((row: any) => row.active)?.id ?? profiles[0]?.id ?? "";
+  return { profiles, activeId };
 }
+
 export async function pushHistory(entries: ScanHistoryEntry[]) {
-  const userId=await uid(); if(!userId || !supabase) return;
-  await supabase.from("scan_history").delete().eq("user_id",userId);
-  if(entries.length) await supabase.from("scan_history").insert(entries.map(e=>({...e,user_id:userId})));
+  const userId = await getUserId();
+  if (!userId || !supabase) return false;
+
+  const { error: deleteError } = await supabase.from("scan_history").delete().eq("user_id", userId);
+  if (deleteError) {
+    console.warn("[cloud-sync] history delete failed:", deleteError.message);
+    return false;
+  }
+
+  if (!entries.length) return true;
+
+  const rows = entries.map((entry) => ({
+    id: entry.id,
+    user_id: userId,
+    profileId: entry.profileId,
+    profileName: entry.profileName,
+    mode: entry.mode,
+    image: entry.image,
+    rating: entry.rating,
+    headline: entry.headline,
+    productGuess: entry.productGuess,
+    createdAt: entry.createdAt,
+    aiResult: entry.aiResult ?? null,
+  }));
+
+  const { error } = await supabase.from("scan_history").insert(rows);
+  if (error) {
+    console.warn("[cloud-sync] history push failed:", error.message);
+    return false;
+  }
+  return true;
 }
+
 export async function pullHistory(): Promise<ScanHistoryEntry[] | null> {
-  const userId=await uid(); if(!userId || !supabase) return null;
-  const {data,error}=await supabase.from("scan_history").select("*").eq("user_id",userId).order("createdAt",{ascending:false});
-  if(error) return null; return (data ?? []).map(({user_id,...e}:any)=>e);
+  const userId = await getUserId();
+  if (!userId || !supabase) return null;
+
+  const { data, error } = await supabase
+    .from("scan_history")
+    .select("id,profileId,profileName,mode,image,rating,headline,productGuess,createdAt,aiResult")
+    .eq("user_id", userId)
+    .order("createdAt", { ascending: false });
+
+  if (error) {
+    console.warn("[cloud-sync] history pull failed:", error.message);
+    return null;
+  }
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    profileId: row.profileId ?? "",
+    profileName: row.profileName ?? "Me",
+    mode: row.mode === "medicine" ? "medicine" : "food",
+    image: row.image ?? "",
+    rating: Number(row.rating ?? 0),
+    headline: row.headline ?? "",
+    productGuess: row.productGuess ?? "Unknown product",
+    createdAt: Number(row.createdAt ?? Date.now()),
+    aiResult: row.aiResult ?? undefined,
+  }));
 }

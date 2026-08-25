@@ -13,7 +13,11 @@ import { Moon, Sun } from "lucide-react";
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { reportError } from "../lib/error-reporting";
-import { startAccountScopeSync } from "../lib/account-scope";
+import { startAccountScopeSync, setActiveScope } from "../lib/account-scope";
+import { pullHistory, pullProfileStore } from "../lib/cloud-sync";
+import { saveHistory } from "../lib/history";
+import { saveProfileStore } from "../lib/profile";
+import { supabase } from "../lib/supabase";
 
 function NotFoundComponent() {
   return (
@@ -219,13 +223,50 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function ThemeSync() {
   useEffect(() => {
-    // Make sure locally-stored profiles/history are read under the right
-    // account as early as possible, before any route reads them.
+    // Keep the local cache scoped to the signed-in account, then hydrate that
+    // cache from Supabase so the same account sees the same data on every device.
     startAccountScopeSync();
+
+    let cancelled = false;
+    const hydrateAccountData = async () => {
+      const { supabase } = await import("@/lib/supabase");
+      if (!supabase) return;
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user?.id ?? null;
+      setActiveScope(userId);
+      if (!userId || cancelled) return;
+
+      const [cloudProfiles, cloudHistory] = await Promise.all([pullProfileStore(), pullHistory()]);
+      if (cancelled) return;
+      if (cloudProfiles) saveProfileStore(cloudProfiles);
+      if (cloudHistory) saveHistory(cloudHistory);
+    };
+
+    void hydrateAccountData();
+
+    const authListener = supabase?.auth.onAuthStateChange((_event, session) => {
+      const userId = session?.user?.id ?? null;
+      setActiveScope(userId);
+      if (!userId) return;
+      // Auth changes can happen after the root has mounted (normal login flow).
+      // Hydrate again so a newly signed-in device immediately receives the
+      // account's cloud profiles and scan history.
+      void (async () => {
+        const [cloudProfiles, cloudHistory] = await Promise.all([pullProfileStore(), pullHistory()]);
+        if (cancelled) return;
+        if (cloudProfiles) saveProfileStore(cloudProfiles);
+        if (cloudHistory) saveHistory(cloudHistory);
+      })();
+    });
 
     const saved = window.localStorage.getItem("plateguard-theme");
     const nextDark = saved ? saved === "dark" : true;
     document.documentElement.classList.toggle("dark", nextDark);
+
+    return () => {
+      cancelled = true;
+      authListener?.data.subscription.unsubscribe();
+    };
   }, []);
 
   return null;

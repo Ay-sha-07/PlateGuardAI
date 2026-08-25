@@ -317,6 +317,7 @@ export function saveProfileStore(store: ProfileStore) {
   // Everything stays local to this device, scoped to whichever account is
   // currently active — never synced to a server database.
   window.localStorage.setItem(scopedKey(STORE_KEY_BASE), JSON.stringify(store));
+  void import("./cloud-sync").then(({ pushProfileStore }) => pushProfileStore(store));
 }
 
 /** Convenience: the profile currently active in the switcher, or null if none exist. */

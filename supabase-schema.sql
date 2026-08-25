@@ -1,8 +1,7 @@
--- NOTE: no longer used by the app. Profiles and scan history now live only
--- in each device's localStorage, namespaced per signed-in account — nothing
--- is synced to these tables anymore. Supabase is still used for
--- authentication (email/password + Google) only. Kept here for reference
--- in case cloud sync is reintroduced later.
+-- Cloud-synced account data. localStorage is used as the fast device cache,
+-- while these tables keep profiles and scan history available across devices.
+-- Supabase Auth supplies the user_id used by the RLS policies below.
+-- Run this file in the Supabase SQL Editor when setting up a new project.
 --
 -- Run in Supabase SQL Editor
 create table if not exists public.user_profiles (

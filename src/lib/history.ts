@@ -69,7 +69,7 @@ export function loadHistory(): ScanHistoryEntry[] {
   }
 }
 
-function saveHistory(entries: ScanHistoryEntry[]) {
+export function saveHistory(entries: ScanHistoryEntry[]) {
   if (typeof window === "undefined") return;
   // Local to this device only, scoped to whichever account is active —
   // never synced to a server database.
@@ -97,14 +97,17 @@ export function addHistoryEntry(entry: Omit<ScanHistoryEntry, "id" | "createdAt"
     createdAt: Date.now(),
   };
   saveHistory([withNew, ...entries]);
+  void import("./cloud-sync").then(({ pushHistory }) => pushHistory(loadHistory()));
 }
 
 export function deleteHistoryEntry(id: string): void {
   saveHistory(loadHistory().filter((e) => e.id !== id));
+  void import("./cloud-sync").then(({ pushHistory }) => pushHistory(loadHistory()));
 }
 
 export function clearHistory(): void {
   saveHistory([]);
+  void import("./cloud-sync").then(({ pushHistory }) => pushHistory([]));
 }
 
 /** Downscales a full-size scan image into a small square thumbnail so history doesn't blow past localStorage limits. */
