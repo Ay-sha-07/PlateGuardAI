@@ -239,7 +239,28 @@ function ThemeSync() {
       const [cloudProfiles, cloudHistory] = await Promise.all([pullProfileStore(), pullHistory()]);
       if (cancelled) return;
       if (cloudProfiles) saveProfileStore(cloudProfiles);
-      if (cloudHistory) saveHistory(cloudHistory);
+
+      if (cloudHistory) {
+        // Keep local-only records as well. This is important for existing
+        // accounts whose older phone history was created before cloud sync
+        // was working. Once merged, upload the combined set so every device
+        // gets the same account history.
+        const { loadHistory } = await import("@/lib/history");
+        const localHistory = loadHistory();
+        const byId = new Map(cloudHistory.map((entry) => [entry.id, entry]));
+        for (const entry of localHistory) {
+          if (!byId.has(entry.id)) byId.set(entry.id, entry);
+        }
+        const mergedHistory = [...byId.values()]
+          .sort((a, b) => b.createdAt - a.createdAt)
+          .slice(0, 60);
+        saveHistory(mergedHistory);
+
+        if (mergedHistory.length) {
+          const { pushHistory } = await import("@/lib/cloud-sync");
+          await pushHistory(mergedHistory);
+        }
+      }
     };
 
     void hydrateAccountData();
@@ -255,7 +276,24 @@ function ThemeSync() {
         const [cloudProfiles, cloudHistory] = await Promise.all([pullProfileStore(), pullHistory()]);
         if (cancelled) return;
         if (cloudProfiles) saveProfileStore(cloudProfiles);
-        if (cloudHistory) saveHistory(cloudHistory);
+
+        if (cloudHistory) {
+          const { loadHistory } = await import("@/lib/history");
+          const localHistory = loadHistory();
+          const byId = new Map(cloudHistory.map((entry) => [entry.id, entry]));
+          for (const entry of localHistory) {
+            if (!byId.has(entry.id)) byId.set(entry.id, entry);
+          }
+          const mergedHistory = [...byId.values()]
+            .sort((a, b) => b.createdAt - a.createdAt)
+            .slice(0, 60);
+          saveHistory(mergedHistory);
+
+          if (mergedHistory.length) {
+            const { pushHistory } = await import("@/lib/cloud-sync");
+            await pushHistory(mergedHistory);
+          }
+        }
       })();
     });
 

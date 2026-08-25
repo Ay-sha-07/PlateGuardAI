@@ -98,17 +98,21 @@ export function addHistoryEntry(entry: Omit<ScanHistoryEntry, "id" | "createdAt"
     createdAt: Date.now(),
   };
   saveHistory([withNew, ...entries]);
-  void import("./cloud-sync").then(({ pushHistory }) => pushHistory(loadHistory()));
+  // Upload only the new record. The cloud layer uses upsert, so another
+  // device's history can never be erased by this device's smaller cache.
+  void import("./cloud-sync").then(({ pushHistory }) => pushHistory([withNew]));
 }
 
 export function deleteHistoryEntry(id: string): void {
   saveHistory(loadHistory().filter((e) => e.id !== id));
-  void import("./cloud-sync").then(({ pushHistory }) => pushHistory(loadHistory()));
+  void import("./cloud-sync").then(({ deleteHistoryEntryCloud }) =>
+    deleteHistoryEntryCloud(id),
+  );
 }
 
 export function clearHistory(): void {
   saveHistory([]);
-  void import("./cloud-sync").then(({ pushHistory }) => pushHistory([]));
+  void import("./cloud-sync").then(({ clearHistoryCloud }) => clearHistoryCloud());
 }
 
 /** Downscales a full-size scan image into a small square thumbnail so history doesn't blow past localStorage limits. */

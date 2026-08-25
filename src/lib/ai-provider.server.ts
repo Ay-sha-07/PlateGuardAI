@@ -19,11 +19,17 @@ import { APICallError, type LanguageModel } from "ai";
  * subsequent one is a fallback if the previous fails/rate-limits):
  *
  *   1. GOOGLE_GENERATIVE_AI_API_KEY  → Gemini (default) — https://aistudio.google.com/apikey
- *   2. XAI_API_KEY (or GROK_API_KEY) → xAI Grok (fallback) — https://console.x.ai
- *   3. GROQ_API_KEY                  → Groq/Qwen 3.6 27B vision — https://console.groq.com/keys
- *   4. OPENAI_API_KEY                → OpenAI (gpt-4o-mini)
- *   5. ANTHROPIC_API_KEY             → Claude (claude-3-5-haiku)
- *   6. OPENAI_COMPATIBLE_API_KEY     → any other OpenAI-compatible endpoint (OpenRouter, etc.)
+ *   2. OPENROUTER_API_KEY            → OpenRouter (openrouter/free) — https://openrouter.ai/keys
+ *   3. XAI_API_KEY (or GROK_API_KEY) → xAI Grok (fallback) — https://console.x.ai
+ *   4. GROQ_API_KEY                  → Groq/Qwen 3.6 27B vision — https://console.groq.com/keys
+ *   5. CEREBRAS_API_KEY              → Cerebras
+ *   6. MISTRAL_API_KEY               → Mistral
+ *   7. CLOUDFLARE_API_TOKEN          → Cloudflare Workers AI
+ *   8. HF_TOKEN                      → Hugging Face
+ *   9. OLLAMA_API_KEY                → local Ollama
+ *  10. OPENAI_API_KEY                → OpenAI (gpt-4o-mini)
+ *  11. ANTHROPIC_API_KEY             → Claude (claude-3-5-haiku)
+ *  12. OPENAI_COMPATIBLE_API_KEY     → any other OpenAI-compatible endpoint
  *                                      — also set OPENAI_COMPATIBLE_BASE_URL and,
  *                                      optionally, OPENAI_COMPATIBLE_MODEL
  *
@@ -64,6 +70,8 @@ export function getVisionProviders(): VisionProvider[] {
     });
   };
 
+
+
   // 1. Google Gemini — primary.
   const google = process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
   if (google) {
@@ -83,7 +91,25 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
-  // 2. xAI Grok.
+  // 2. OpenRouter — can use its dynamic free-model router. OpenRouter
+  // automatically filters the free pool for capabilities such as vision
+  // and structured outputs when using "openrouter/free".
+  addCompatible(
+    "OpenRouter",
+    process.env["OPENROUTER_API_KEY"],
+    process.env["OPENROUTER_BASE_URL"] || "https://openrouter.ai/api/v1",
+    process.env["OPENROUTER_MODEL"] || "openrouter/free",
+    {
+      ...(process.env["OPENROUTER_HTTP_REFERER"]
+        ? { "HTTP-Referer": process.env["OPENROUTER_HTTP_REFERER"] }
+        : {}),
+      ...(process.env["OPENROUTER_APP_TITLE"]
+        ? { "X-OpenRouter-Title": process.env["OPENROUTER_APP_TITLE"] }
+        : {}),
+    },
+  );
+
+  // 3. xAI Grok.
   const xai = process.env["XAI_API_KEY"] || process.env["GROK_API_KEY"];
   if (xai) {
     providers.push({
@@ -92,7 +118,7 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
-  // 3. Groq.
+  // 4. Groq.
   const groq = process.env["GROQ_API_KEY"];
   if (groq) {
     // Llama 4 Scout was deprecated by Groq. Automatically migrate an old
@@ -112,7 +138,7 @@ export function getVisionProviders(): VisionProvider[] {
     });
   }
 
-  // 4. Cerebras — OpenAI-compatible endpoint.
+  // 5. Cerebras — OpenAI-compatible endpoint.
   addCompatible(
     "Cerebras",
     process.env["CEREBRAS_API_KEY"],
@@ -120,30 +146,12 @@ export function getVisionProviders(): VisionProvider[] {
     process.env["CEREBRAS_MODEL"] || "llama-4-scout-17b-16e-instruct",
   );
 
-  // 5. Mistral — OpenAI-compatible endpoint with vision-capable models.
+  // 6. Mistral — OpenAI-compatible endpoint with vision-capable models.
   addCompatible(
     "Mistral",
     process.env["MISTRAL_API_KEY"],
     process.env["MISTRAL_BASE_URL"] || "https://api.mistral.ai/v1",
     process.env["MISTRAL_MODEL"] || "mistral-small-2506",
-  );
-
-  // 6. OpenRouter — can use its dynamic free-model router. OpenRouter
-  // automatically filters the free pool for capabilities such as vision
-  // and structured outputs when using "openrouter/free".
-  addCompatible(
-    "OpenRouter",
-    process.env["OPENROUTER_API_KEY"],
-    process.env["OPENROUTER_BASE_URL"] || "https://openrouter.ai/api/v1",
-    process.env["OPENROUTER_MODEL"] || "openrouter/free",
-    {
-      ...(process.env["OPENROUTER_HTTP_REFERER"]
-        ? { "HTTP-Referer": process.env["OPENROUTER_HTTP_REFERER"] }
-        : {}),
-      ...(process.env["OPENROUTER_APP_TITLE"]
-        ? { "X-OpenRouter-Title": process.env["OPENROUTER_APP_TITLE"] }
-        : {}),
-    },
   );
 
   // 7. Cloudflare Workers AI — OpenAI-compatible REST endpoint.

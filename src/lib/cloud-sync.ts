@@ -67,15 +67,7 @@ export async function pullProfileStore(): Promise<ProfileStore | null> {
 
 export async function pushHistory(entries: ScanHistoryEntry[]) {
   const userId = await getUserId();
-  if (!userId || !supabase) return false;
-
-  const { error: deleteError } = await supabase.from("scan_history").delete().eq("user_id", userId);
-  if (deleteError) {
-    console.warn("[cloud-sync] history delete failed:", deleteError.message);
-    return false;
-  }
-
-  if (!entries.length) return true;
+  if (!userId || !supabase || !entries.length) return false;
 
   const rows = entries.map((entry) => ({
     id: entry.id,
@@ -91,9 +83,48 @@ export async function pushHistory(entries: ScanHistoryEntry[]) {
     aiResult: entry.aiResult ?? null,
   }));
 
-  const { error } = await supabase.from("scan_history").insert(rows);
+  // IMPORTANT: never delete/rewrite the entire account history here.
+  // A device can have an older/smaller local cache than another device.
+  // Upserting individual records keeps both devices' histories intact.
+  const { error } = await supabase
+    .from("scan_history")
+    .upsert(rows, { onConflict: "id" });
+
   if (error) {
     console.warn("[cloud-sync] history push failed:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteHistoryEntryCloud(id: string) {
+  const userId = await getUserId();
+  if (!userId || !supabase) return false;
+
+  const { error } = await supabase
+    .from("scan_history")
+    .delete()
+    .eq("user_id", userId)
+    .eq("id", id);
+
+  if (error) {
+    console.warn("[cloud-sync] history delete failed:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function clearHistoryCloud() {
+  const userId = await getUserId();
+  if (!userId || !supabase) return false;
+
+  const { error } = await supabase
+    .from("scan_history")
+    .delete()
+    .eq("user_id", userId);
+
+  if (error) {
+    console.warn("[cloud-sync] history clear failed:", error.message);
     return false;
   }
   return true;
