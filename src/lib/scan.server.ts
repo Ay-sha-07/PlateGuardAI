@@ -98,7 +98,7 @@ export const ScanResultSchema = z.object({
 export type ScanResult = z.infer<typeof ScanResultSchema>;
 
 const SYSTEM = `You are PlateGuard AI, a food-label safety scanner used by parents and patients in grocery aisles.
-You first classify what is actually shown. For food mode, the primary safety question is EDIBILITY: is this a food or beverage intended for human consumption? Cosmetics, perfume, body lotion, shampoo, soap, detergent, cleaners, medicines, supplements, and other non-food products are NOT edible and must never receive a food rating of Safe or Mostly safe. Set itemType="non_food" for those products. Only set itemType="food" when the visible product is clearly intended to be eaten or drunk. If you cannot tell, use itemType="unclear". Then, if and only if it is food, judge it against ONE person's FULL clinical profile — never just a single field in isolation. Weigh every field given together, since conditions interact and can even reverse each other's advice — e.g. dialysis-dependent kidney disease REQUIRES more protein while non-dialysis CKD restricts it; a pregnancy note changes advice on deli meats and raw ingredients; a medication note may flag a food-drug interaction (grapefruit, vitamin K-rich greens, tyramine); biological sex, weight, and activity level inform whether a nutrient level is actually significant for this person.
+You first classify what is actually shown. For food mode, the primary safety question is EDIBILITY: is this a food or beverage intended for human consumption? Cosmetics, perfume, body oil, mineral oil/cosmetic oil, body lotion, shampoo, soap, detergent, cleaners, medicines, supplements, and other non-food products are NOT edible and must never receive a food rating of Safe or Mostly safe. Set itemType="non_food" for those products. Only set itemType="food" when the visible product is clearly intended to be eaten or drunk. If you cannot tell, use itemType="unclear". Then, if and only if it is food, judge it against ONE person's FULL clinical profile — never just a single field in isolation. Weigh every field given together, since conditions interact and can even reverse each other's advice — e.g. dialysis-dependent kidney disease REQUIRES more protein while non-dialysis CKD restricts it; a pregnancy note changes advice on deli meats and raw ingredients; a medication note may flag a food-drug interaction (grapefruit, vitamin K-rich greens, tyramine); biological sex, weight, and activity level inform whether a nutrient level is actually significant for this person.
 
 Output a RATING from 1 to 5, not a strict eat/don't-eat verdict — this is intentional, to avoid misidentifying borderline products as unsafe or vice versa:
 1 = Safe — nothing in the profile is triggered.
@@ -473,6 +473,27 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     }
   }
 
+  // Deterministic non-food evidence is collected before the edible override so
+  // a phrase such as "FOR EXTERNAL USE ONLY" can never be overridden by a
+  // generic word such as "oil" or "food" elsewhere on the label.
+  const nonFoodPattern = /\b(perfume|parfum|fragrance|body\s+oil|cosmetic\s+oil|massage\s+oil|hair\s+oil|mineral\s+oil|body\s+lotion|lotion|moisturizer|moisturiser|shampoo|conditioner|soap|body\s+wash|face\s+wash|cleanser|sunscreen|deodorant|makeup|cosmetic|lipstick|foundation|detergent|dishwasher|dish\s+soap|floor\s+cleaner|toilet\s+cleaner|bleach|fabric\s+softener|hand\s+sanitizer|sanitiser|air\s+freshener|insecticide|pesticide)\b/i;
+  const externalUsePattern = /\b(for\s+external\s+use\s+only|external\s+use\s+only|not\s+for\s+human\s+consumption|not\s+intended\s+for\s+human\s+consumption|do\s+not\s+ingest|do\s+not\s+eat|cosmetic\s+product)\b/i;
+  const classificationText = [
+    data.productName,
+    data.barcodeProductName,
+    data.barcodeIngredientText,
+    parsed.productGuess,
+    parsed.headline,
+    parsed.summary,
+    parsed.whatItIs,
+    parsed.recommendation,
+    ...parsed.labelEvidence,
+    ...parsed.nutritionHighlights,
+    ...parsed.flaggedIngredients,
+    ...parsed.reasons.map((reason) => `${reason.trigger} ${reason.detail}`),
+  ].join(" ");
+  const hasStrongExternalUseEvidence = externalUsePattern.test(classificationText);
+
   // Deterministic food override: some ordinary edible products can be
   // mislabeled by vision models as non-food (for example ghee because its
   // label is dominated by nutrition facts and manufacturing text). Strong
@@ -486,7 +507,11 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     parsed.headline,
     ...parsed.reasons.map((reason) => `${reason.trigger} ${reason.detail}`),
   ].join(" ");
-  const clearlyEdible = data.mode === "food" && foodPattern.test(foodEvidenceText);
+  const clearlyEdible =
+    data.mode === "food" &&
+    foodPattern.test(foodEvidenceText) &&
+    !hasStrongExternalUseEvidence &&
+    !nonFoodPattern.test(classificationText);
 
   if (clearlyEdible && parsed.itemType === "non_food") {
     const filteredReasons = parsed.reasons.filter(
@@ -509,29 +534,37 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   // contains an unmistakable cosmetic/household/product term, never let the
   // food scanner classify it as edible. This specifically prevents items such
   // as perfume and body lotion from receiving a misleading "Safe" verdict.
-  const nonFoodPattern = /\b(perfume|parfum|fragrance|body\s+lotion|lotion|moisturizer|moisturiser|shampoo|conditioner|soap|body\s+wash|face\s+wash|cleanser|sunscreen|deodorant|makeup|cosmetic|lipstick|foundation|detergent|dishwasher|dish\s+soap|floor\s+cleaner|toilet\s+cleaner|bleach|fabric\s+softener|hand\s+sanitizer|sanitiser|air\s+freshener|insecticide|pesticide)\b/i;
-  const classificationText = [
-    data.productName,
-    parsed.productGuess,
-    parsed.headline,
-    ...parsed.reasons.map((reason) => `${reason.trigger} ${reason.detail}`),
-  ].join(" ");
-  const isClearlyNonFood = data.mode === "food" && (parsed.itemType === "non_food" || nonFoodPattern.test(classificationText));
+  const isClearlyNonFood =
+    data.mode === "food" &&
+    (parsed.itemType === "non_food" ||
+      nonFoodPattern.test(classificationText) ||
+      hasStrongExternalUseEvidence);
 
   // Never allow a non-edible product to be reported as safe in food mode.
   // This is a deterministic safety gate in addition to the model instruction.
   if (isClearlyNonFood) {
+    const cleanedReasons = parsed.reasons.filter(
+      (reason) =>
+        !/verified food|food product|safe based on the scanned information|not (a )?food|non[- ]?food|cosmetic|body\s+oil|lotion|perfume|soap|detergent|shampoo/i.test(
+          `${reason.trigger} ${reason.detail}`,
+        ),
+    );
     return toSafetyScale({
       ...parsed,
+      itemType: "non_food",
       rating: 5,
-      headline: "Not edible — do not eat",
+      headline: "Not edible — do not ingest",
+      summary:
+        "The label indicates that this is a non-food product intended for external use, not human consumption.",
+      whatItIs: genericProductName(parsed.whatItIs || parsed.productGuess),
+      recommendation: "Do not ingest this product. Follow the printed directions for external use only.",
       reasons: [
         {
           rating: 5,
           trigger: "Not a food product",
-          detail: "This appears to be a non-food item and should not be eaten.",
+          detail: "The label identifies this as a non-food/external-use product, so it should not be eaten or swallowed.",
         },
-        ...parsed.reasons.filter((reason) => !/not (a )?food|non[- ]?food|cosmetic|lotion|perfume|soap|detergent|shampoo/i.test(`${reason.trigger} ${reason.detail}`)),
+        ...cleanedReasons,
       ],
     });
   }

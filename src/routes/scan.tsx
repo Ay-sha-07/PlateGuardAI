@@ -1376,18 +1376,43 @@ function CameraCapture({
 
     navigator.mediaDevices
       .getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          frameRate: { ideal: 30, max: 30 },
+        },
         audio: false,
       })
-      .then((stream) => {
+      .then(async (stream) => {
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
         streamRef.current = stream;
+
+        // Prefer continuous autofocus when the camera/browser exposes it.
+        // This keeps ingredient text sharp instead of relying on the device's
+        // default focus mode, which can lock onto the background.
+        const track = stream.getVideoTracks()[0];
+        if (track) {
+          try {
+            const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
+              focusMode?: string[];
+            };
+            if (capabilities.focusMode?.includes("continuous")) {
+              await track.applyConstraints({
+                advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet],
+              });
+            }
+          } catch (focusError) {
+            console.debug("[camera] continuous autofocus unavailable:", focusError);
+          }
+        }
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
+          await videoRef.current.play().catch(() => {});
         }
         setStatus("ready");
       })
@@ -1431,6 +1456,29 @@ function CameraCapture({
           autoPlay
           playsInline
           muted
+          onClick={async () => {
+            const track = streamRef.current?.getVideoTracks()[0];
+            if (!track) return;
+            try {
+              const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
+                focusMode?: string[];
+              };
+              if (capabilities.focusMode?.includes("single-shot")) {
+                await track.applyConstraints({
+                  advanced: [{ focusMode: "single-shot" } as MediaTrackConstraintSet],
+                });
+                if (capabilities.focusMode.includes("continuous")) {
+                  window.setTimeout(() => {
+                    void track.applyConstraints({
+                      advanced: [{ focusMode: "continuous" } as MediaTrackConstraintSet],
+                    });
+                  }, 250);
+                }
+              }
+            } catch (focusError) {
+              console.debug("[camera] tap-to-focus unavailable:", focusError);
+            }
+          }}
           className={`size-full object-cover ${status === "ready" ? "" : "hidden"}`}
         />
 
@@ -1491,6 +1539,14 @@ function CameraCapture({
         >
           <X className="size-5" />
         </button>
+
+        {status === "ready" && (
+          <p
+            className={`absolute inset-x-0 z-20 text-center text-xs font-medium text-white/90 drop-shadow ${embedded ? "bottom-28" : "bottom-32"}`}
+          >
+            Autofocus on • hold steady • tap the label to refocus
+          </p>
+        )}
 
         {status === "ready" && (
           <div

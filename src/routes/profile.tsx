@@ -230,18 +230,18 @@ function ProfilePageContent() {
         </div>
       </div>
 
-      <section className="mt-6 rounded-3xl border border-border bg-card/70 p-5 shadow-sm">
-        <div className="flex items-center gap-4">
+      <section className="mt-5 rounded-2xl border border-border bg-card/60 px-4 py-3">
+        <div className="flex items-center gap-3">
           <div className="relative shrink-0">
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
                 alt={`${profile.name || "Profile"} photo`}
-                className="size-24 rounded-full border-2 border-border object-cover shadow-sm"
+                className="size-14 rounded-full border border-border object-cover"
               />
             ) : (
               <div
-                className="flex size-24 items-center justify-center rounded-full border-2 border-border bg-primary/10 text-2xl font-bold text-primary"
+                className="flex size-14 items-center justify-center rounded-full border border-border bg-primary/10 text-lg font-bold text-primary"
                 aria-label={`Initial for ${profile.name || "profile"}`}
               >
                 {(profile.name || "?").slice(0, 1).toUpperCase()}
@@ -251,41 +251,42 @@ function ProfilePageContent() {
               <button
                 type="button"
                 onClick={() => patch({ avatarUrl: "" })}
-                className="absolute -right-1 -top-1 flex size-7 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-accent"
+                className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-accent"
                 aria-label="Remove profile photo"
               >
-                <X className="size-4" />
+                <X className="size-3" />
               </button>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="font-semibold text-foreground">Profile photo</h2>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Add a photo so family members are easier to identify when switching profiles. The
-              image is resized before it is saved.
-            </p>
-            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3.5 py-2 text-sm font-medium transition-colors hover:bg-accent">
-              <ImagePlus className="size-4" />
-              {profile.avatarUrl ? "Change photo" : "Upload photo"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="sr-only"
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  event.currentTarget.value = "";
-                  if (!file) return;
-                  try {
-                    patch({ avatarUrl: await resizeProfilePhoto(file) });
-                    toast.success("Profile photo updated.");
-                  } catch (error) {
-                    toast.error(
-                      error instanceof Error ? error.message : "Could not upload the photo.",
-                    );
-                  }
-                }}
-              />
-            </label>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold text-foreground">Profile photo</h2>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">Optional • helps identify profiles</p>
+              </div>
+              <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-accent">
+                <ImagePlus className="size-3.5" />
+                {profile.avatarUrl ? "Change" : "Add"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="sr-only"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.currentTarget.value = "";
+                    if (!file) return;
+                    try {
+                      patch({ avatarUrl: await resizeProfilePhoto(file) });
+                      toast.success("Profile photo updated.");
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error ? error.message : "Could not upload the photo.",
+                      );
+                    }
+                  }}
+                />
+              </label>
+            </div>
           </div>
         </div>
       </section>
