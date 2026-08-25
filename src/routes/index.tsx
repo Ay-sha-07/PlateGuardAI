@@ -515,15 +515,27 @@ function UserGuideVideo() {
     return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
   }
 
-  function scrubTo(ratio: number) {
+  // While dragging we only move the visual bar/time label — we do NOT touch
+  // video.currentTime on every pointermove. Setting currentTime dozens of
+  // times a second (once per drag frame) is what was causing the seek to
+  // snap back to 0:00: rapid repeated seeks on a not-fully-buffered video
+  // race each other, and the browser can end up resolving to an earlier
+  // (sometimes the very first, i.e. 0:00) pending seek. Only committing the
+  // seek once, on release, avoids that entirely.
+  const lastRatio = useRef(0);
+
+  function previewTo(ratio: number) {
     const video = videoRef.current;
     if (!video || !video.duration) return;
-    const time = ratio * video.duration;
+    lastRatio.current = ratio;
     setProgress(ratio * 100);
-    setCurrentTime(time);
-    // Live scrub preview: move actual playback position as the user drags,
-    // not just the visual bar.
-    video.currentTime = time;
+    setCurrentTime(ratio * video.duration);
+  }
+
+  function commitSeek() {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    video.currentTime = lastRatio.current * video.duration;
   }
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -533,18 +545,19 @@ function UserGuideVideo() {
     video.pause();
     setScrubbing(true);
     scrubberRef.current?.setPointerCapture(e.pointerId);
-    scrubTo(ratioFromPointer(e.clientX));
+    previewTo(ratioFromPointer(e.clientX));
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!scrubbing) return;
-    scrubTo(ratioFromPointer(e.clientX));
+    previewTo(ratioFromPointer(e.clientX));
   }
 
   function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
     if (!scrubbing) return;
     setScrubbing(false);
     scrubberRef.current?.releasePointerCapture(e.pointerId);
+    commitSeek();
     if (wasPlayingBeforeScrub.current) void videoRef.current?.play();
   }
 
@@ -580,6 +593,7 @@ function UserGuideVideo() {
             className="aspect-[480/1016] w-full bg-black object-cover"
             src="/media/user-guide.mp4"
             poster="/media/user-guide-poster.jpg"
+            preload="auto"
             playsInline
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}

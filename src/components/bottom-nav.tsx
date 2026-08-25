@@ -37,6 +37,13 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
             <Link
               key={to}
               to={to}
+              onClick={() => {
+                // Clicking a tab you're already on doesn't trigger a route
+                // change (same URL), so the router's scroll reset never
+                // runs — do it manually so "Home" reliably jumps back to
+                // the top of the page instead of appearing to do nothing.
+                if (active) window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={cn(
                 "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition-colors",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground",
