@@ -73,12 +73,13 @@ export const ScanResultSchema = z.object({
   // Medicine-mode only. Left empty/undefined for food scans.
   purpose: z.string().default(""),
   activeIngredients: z.array(z.string()).default([]),
+  itemType: z.enum(["food", "non_food", "medicine", "unclear"]).default("unclear"),
 });
 
 export type ScanResult = z.infer<typeof ScanResultSchema>;
 
 const SYSTEM = `You are PlateGuard AI, a food-label safety scanner used by parents and patients in grocery aisles.
-You read a photo of a packaged food label (ingredients and/or nutrition panel) and judge it against ONE person's FULL clinical profile — never just a single field in isolation. Weigh every field given together, since conditions interact and can even reverse each other's advice — e.g. dialysis-dependent kidney disease REQUIRES more protein while non-dialysis CKD restricts it; a pregnancy note changes advice on deli meats and raw ingredients; a medication note may flag a food-drug interaction (grapefruit, vitamin K-rich greens, tyramine); biological sex, weight, and activity level inform whether a nutrient level is actually significant for this person.
+You first classify what is actually shown. For food mode, the primary safety question is EDIBILITY: is this a food or beverage intended for human consumption? Cosmetics, perfume, body lotion, shampoo, soap, detergent, cleaners, medicines, supplements, and other non-food products are NOT edible and must never receive a food rating of Safe or Mostly safe. Set itemType="non_food" for those products. Only set itemType="food" when the visible product is clearly intended to be eaten or drunk. If you cannot tell, use itemType="unclear". Then, if and only if it is food, judge it against ONE person's FULL clinical profile — never just a single field in isolation. Weigh every field given together, since conditions interact and can even reverse each other's advice — e.g. dialysis-dependent kidney disease REQUIRES more protein while non-dialysis CKD restricts it; a pregnancy note changes advice on deli meats and raw ingredients; a medication note may flag a food-drug interaction (grapefruit, vitamin K-rich greens, tyramine); biological sex, weight, and activity level inform whether a nutrient level is actually significant for this person.
 
 Output a RATING from 1 to 5, not a strict eat/don't-eat verdict — this is intentional, to avoid misidentifying borderline products as unsafe or vice versa:
 1 = Safe — nothing in the profile is triggered.
@@ -89,6 +90,8 @@ Output a RATING from 1 to 5, not a strict eat/don't-eat verdict — this is inte
 Give the SAME 1–5 rating to each individual "reasons" entry for the specific thing it flags, so the overall rating is a defensible aggregate of the reasons rather than a separate guess.
 
 Rules:
+- Food-mode hard gate: if itemType="non_food", rating MUST be 5, headline MUST clearly say "Not edible — do not eat", and include a reason stating that the scanned item is not food. Do not describe a non-food item as safe merely because no allergy or health trigger was found.
+- Food-mode uncertainty: if itemType="unclear", never call the item Safe; use rating 3 and clearly ask the user to verify the product type.
 - Allergen matches: any direct allergen or hidden derivative (e.g. "groundnut oil"/"arachis oil" = peanut; "casein"/"whey" = milk; "semolina"/"malt" = gluten) => rating 5. A vague shared-facility "may contain" statement alone => rating 3, or 4 if allergy severity is "severe / anaphylaxis risk".
 - Diabetes: if type is present, flag added sugars / high net carbs / high-glycemic additives (maltodextrin, HFCS); insulin-dependent or gestational warrants stricter (+1 rating step) treatment of sugar spikes than lifestyle-managed.
 - Hypertension / cardiovascular: flag high sodium and saturated/trans fat; coronary artery disease or heart failure warrants stricter sodium/fat limits than pre-hypertension.
@@ -268,7 +271,56 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     );
   }
 
-  return ScanResultSchema.parse(await result.output);
+  const parsed = ScanResultSchema.parse(await result.output);
+
+  // Deterministic non-food guard: if the model or the shopper's typed name
+  // contains an unmistakable cosmetic/household/product term, never let the
+  // food scanner classify it as edible. This specifically prevents items such
+  // as perfume and body lotion from receiving a misleading "Safe" verdict.
+  const nonFoodPattern = /\b(perfume|parfum|fragrance|body\s+lotion|lotion|moisturizer|moisturiser|shampoo|conditioner|soap|body\s+wash|face\s+wash|cleanser|sunscreen|deodorant|makeup|cosmetic|lipstick|foundation|detergent|dishwasher|dish\s+soap|floor\s+cleaner|toilet\s+cleaner|bleach|fabric\s+softener|hand\s+sanitizer|sanitiser|air\s+freshener|insecticide|pesticide)\b/i;
+  const classificationText = [
+    data.productName,
+    parsed.productGuess,
+    parsed.headline,
+    ...parsed.reasons.map((reason) => `${reason.trigger} ${reason.detail}`),
+  ].join(" ");
+  const isClearlyNonFood = data.mode === "food" && (parsed.itemType === "non_food" || nonFoodPattern.test(classificationText));
+
+  // Never allow a non-edible product to be reported as safe in food mode.
+  // This is a deterministic safety gate in addition to the model instruction.
+  if (isClearlyNonFood) {
+    return {
+      ...parsed,
+      rating: 5,
+      headline: "Not edible — do not eat",
+      reasons: [
+        {
+          rating: 5,
+          trigger: "Not a food product",
+          detail: "This appears to be a non-food item and should not be eaten.",
+        },
+        ...parsed.reasons.filter((reason) => !/not (a )?food|non[- ]?food|cosmetic|lotion|perfume|soap|detergent|shampoo/i.test(`${reason.trigger} ${reason.detail}`)),
+      ],
+    };
+  }
+
+  if (data.mode === "food" && parsed.itemType === "unclear") {
+    return {
+      ...parsed,
+      rating: Math.max(3, parsed.rating),
+      headline: "Product type unclear — do not eat until verified",
+      reasons: [
+        {
+          rating: 3,
+          trigger: "Product type unclear",
+          detail: "The scan could not confirm that this item is food intended for eating or drinking.",
+        },
+        ...parsed.reasons,
+      ],
+    };
+  }
+
+  return parsed;
 }
 
 // Builds a short, actionable message from a structured diagnosis instead of

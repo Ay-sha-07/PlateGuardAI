@@ -114,6 +114,32 @@ function ratingTheme(rating: number) {
   return { ...style, label: RATING_LABELS[rating] ?? "Use caution" };
 }
 
+function ProfileAvatar({
+  name,
+  avatarUrl,
+  size = "size-7",
+}: {
+  name: string;
+  avatarUrl?: string;
+  size?: string;
+}) {
+  const initial = (name.trim() || "?").slice(0, 1).toUpperCase();
+  return avatarUrl ? (
+    <img
+      src={avatarUrl}
+      alt={`${name || "Profile"} photo`}
+      className={`${size} shrink-0 rounded-full border border-border object-cover`}
+    />
+  ) : (
+    <span
+      className={`flex ${size} shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-xs font-bold text-primary`}
+      aria-label={`Default profile picture for ${name || "profile"}`}
+    >
+      {initial}
+    </span>
+  );
+}
+
 function ScannerPage() {
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
@@ -379,20 +405,7 @@ function ScannerPage() {
           >
             <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
               {hasProfile ? (
-                activeProfile!.avatarUrl ? (
-                  <img
-                    src={activeProfile!.avatarUrl}
-                    alt=""
-                    className="size-7 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <span
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
-                    aria-hidden="true"
-                  >
-                    {(activeProfile!.name || "?").slice(0, 1).toUpperCase()}
-                  </span>
-                )
+                <ProfileAvatar name={activeProfile!.name} avatarUrl={activeProfile!.avatarUrl} />
               ) : (
                 <Users className="size-4 shrink-0 text-primary" />
               )}
@@ -412,16 +425,7 @@ function ScannerPage() {
                   className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-accent"
                 >
                   <span className="flex min-w-0 items-center gap-2 text-foreground">
-                    {p.avatarUrl ? (
-                      <img src={p.avatarUrl} alt="" className="size-7 shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <span
-                        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
-                        aria-hidden="true"
-                      >
-                        {(p.name || "?").slice(0, 1).toUpperCase()}
-                      </span>
-                    )}
+                    <ProfileAvatar name={p.name} avatarUrl={p.avatarUrl} />
                     <span className="truncate">{p.name || "Unnamed"}</span>
                   </span>
                   {p.id === activeId && <Check className="size-4 shrink-0 text-primary" />}
@@ -848,9 +852,14 @@ function ScannerPage() {
                 className="animate-rise-in rounded-2xl border border-border bg-card/80 p-4 backdrop-blur"
                 style={{ animationDelay: "60ms" }}
               >
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {mode === "medicine" ? "Medicine" : "Product"}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                    {mode === "medicine" ? "Medicine" : result.itemType === "non_food" ? "Non-food item" : "Product"}
+                  </p>
+                  {mode === "food" && result.itemType === "non_food" && (
+                    <Badge variant="destructive">Do not eat</Badge>
+                  )}
+                </div>
                 <p className="mt-1 text-base font-semibold text-foreground">
                   {result.productGuess}
                 </p>

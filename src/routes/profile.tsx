@@ -87,6 +87,39 @@ async function resizeProfilePhoto(file: File): Promise<string> {
   return canvas.toDataURL("image/jpeg", 0.82);
 }
 
+function ProfileAvatar({
+  name,
+  avatarUrl,
+  size = "size-6",
+  textSize = "text-[10px]",
+  className = "",
+}: {
+  name: string;
+  avatarUrl?: string;
+  size?: string;
+  textSize?: string;
+  className?: string;
+}) {
+  const initial = (name.trim() || "?").slice(0, 1).toUpperCase();
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={`${name || "Profile"} photo`}
+        className={`${size} shrink-0 rounded-full border border-border object-cover ${className}`}
+      />
+    );
+  }
+  return (
+    <span
+      className={`flex ${size} shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 ${textSize} font-bold text-primary ${className}`}
+      aria-label={`Default profile picture for ${name || "profile"}`}
+    >
+      {initial}
+    </span>
+  );
+}
+
 function ProfilePage() {
   const router = useRouter();
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
@@ -247,14 +280,8 @@ function ProfilePage() {
                   : "border-border bg-card/70 text-foreground hover:bg-accent"
               }`}
             >
-              {p.avatarUrl ? (
-                <img src={p.avatarUrl} alt="" className="size-6 rounded-full object-cover" />
-              ) : (
-                <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
-                  {(p.name || "?").slice(0, 1).toUpperCase()}
-                </span>
-              )}
-              {p.name || "Unnamed"}
+              <ProfileAvatar name={p.name} avatarUrl={p.avatarUrl} size="size-7" textSize="text-xs" />
+              <span className="min-w-0 truncate">{p.name || "Unnamed"}</span>
             </button>
             {profiles.length > 1 && (
               <button
