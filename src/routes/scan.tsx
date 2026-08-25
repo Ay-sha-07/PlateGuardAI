@@ -291,8 +291,15 @@ function ScannerPage() {
   }
 
   /** Alternative to the camera: scans pasted/typed ingredient text (e.g. from a barcode lookup) with no photo. */
-  async function runTextScan() {
-    if (!ingredientText.trim()) return;
+  async function runTextScan(overrides?: {
+    ingredientText?: string;
+    productName?: string;
+    barcode?: string;
+    barcodeProductName?: string;
+    barcodeIngredientText?: string;
+  }) {
+    const text = overrides?.ingredientText?.trim() ?? ingredientText.trim();
+    if (!text) return;
     setError(null);
     setResult(null);
     setImage(null);
@@ -300,8 +307,11 @@ function ScannerPage() {
     try {
       const res = (await run({
         data: {
-          ingredientText: ingredientText.trim(),
-          productName: productName.trim(),
+          ingredientText: text,
+          productName: overrides?.productName?.trim() ?? productName.trim(),
+          barcode: overrides?.barcode ?? "",
+          barcodeProductName: overrides?.barcodeProductName ?? "",
+          barcodeIngredientText: overrides?.barcodeIngredientText ?? "",
           ...profilePayload(),
         },
       })) as ScanResult;
@@ -336,6 +346,21 @@ function ScannerPage() {
       }
       setProductName(result.productName);
       setIngredientText(result.ingredientText);
+
+      // Barcode lookup is a complete alternative scan path: once the catalog
+      // identifies the item, analyze it immediately instead of requiring the
+      // user to press the separate "Analyze label" button.
+      if (result.ingredientText.trim()) {
+        await runTextScan({
+          ingredientText: result.ingredientText,
+          productName: result.productName,
+          barcode: result.barcode,
+          barcodeProductName: result.productName,
+          barcodeIngredientText: result.ingredientText,
+        });
+      } else {
+        setError("Barcode found, but no label text was available to analyze. Add or paste the label text below.");
+      }
     } catch {
       setBarcodeError("Barcode lookup failed — check your connection and try again.");
     } finally {
@@ -859,6 +884,17 @@ function ScannerPage() {
                               if (lookup.found) {
                                 setProductName(lookup.productName);
                                 setIngredientText(lookup.ingredientText);
+                                if (lookup.ingredientText.trim()) {
+                                  await runTextScan({
+                                    ingredientText: lookup.ingredientText,
+                                    productName: lookup.productName,
+                                    barcode: lookup.barcode,
+                                    barcodeProductName: lookup.productName,
+                                    barcodeIngredientText: lookup.ingredientText,
+                                  });
+                                } else {
+                                  setBarcodeError("Barcode found, but no label text was available to analyze. Add or paste the label text below.");
+                                }
                               } else {
                                 setBarcodeError(`Barcode ${value} was detected, but it was not found in the free catalog. You can still analyze the label text.`);
                               }
@@ -903,6 +939,9 @@ function ScannerPage() {
                     )}
                     {pending ? "Analyzing…" : "Analyze label"}
                   </Button>
+                  <p className="text-center text-[11px] text-muted-foreground">
+                    Pasted text is analyzed when you press this button. A successful barcode scan analyzes automatically.
+                  </p>
                 </div>
               )}
             </div>
