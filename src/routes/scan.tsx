@@ -176,7 +176,6 @@ function ScannerPage() {
     cooldown: number;
     providers: Array<{ name: string; status: "ready" | "cooldown" | "blocked"; reason: string; retryAt: number | null }>;
   } | null>(null);
-  const [healthOpen, setHealthOpen] = useState(false);
   const [ingredientText, setIngredientText] = useState("");
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -493,36 +492,14 @@ function ScannerPage() {
                 <HistoryIcon className="size-4" />
               </Link>
             </Button>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setHealthOpen((v) => !v)}
-                className="hidden items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-1.5 text-[11px] font-semibold text-foreground backdrop-blur sm:flex"
-                title="AI provider capacity"
-              >
-                <Activity className="size-3.5" />
-                AI {aiHealth?.capacity ?? "…"}
-                {aiHealth && <span className="text-muted-foreground">{aiHealth.ready}/{aiHealth.total}</span>}
-              </button>
-              {healthOpen && aiHealth && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">AI capacity</p>
-                    <span className="text-xs font-bold text-primary">{aiHealth.capacity}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{aiHealth.ready} of {aiHealth.total} providers are ready. Rate-limited or unavailable providers are temporarily skipped.</p>
-                  <div className="mt-3 space-y-1.5">
-                    {aiHealth.providers.map((provider) => (
-                      <div key={provider.name} className="flex items-center justify-between gap-2 text-xs">
-                        <span className="truncate text-foreground">{provider.name}</span>
-                        <span className={provider.status === "ready" ? "text-primary" : provider.status === "cooldown" ? "text-caution" : "text-danger"}>
-                          {provider.status === "ready" ? "Ready" : provider.status === "cooldown" ? "Cooling down" : "Blocked"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div
+              className="hidden items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-1.5 text-[11px] font-semibold text-foreground backdrop-blur sm:flex"
+              title="AI provider capacity"
+              aria-label={`AI capacity ${aiHealth?.capacity ?? "loading"}`}
+            >
+              <Activity className="size-3.5" />
+              AI {aiHealth?.capacity ?? "…"}
+              {aiHealth && <span className="text-muted-foreground">{aiHealth.ready}/{aiHealth.total}</span>}
             </div>
 
             <Button
@@ -588,17 +565,16 @@ function ScannerPage() {
         </div>
 
         {aiHealth && (
-          <button
-            type="button"
-            onClick={() => setHealthOpen((v) => !v)}
-            className="mt-2 flex w-full items-center justify-between rounded-xl border border-border/70 bg-card/50 px-3 py-2 text-left sm:hidden"
+          <div
+            className="mt-2 flex w-full items-center justify-between rounded-xl border border-border/70 bg-card/50 px-3 py-2"
+            aria-label={`AI capacity ${aiHealth.capacity}, ${aiHealth.ready} of ${aiHealth.total} providers ready`}
           >
             <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
               <Activity className="size-3.5" />
-              AI capacity: <span className="text-primary">{aiHealth.capacity}</span>
+              AI capacity: <span className={aiHealth.capacity === "High" ? "text-safe" : aiHealth.capacity === "Medium" ? "text-caution" : "text-danger"}>{aiHealth.capacity}</span>
             </span>
             <span className="text-[11px] text-muted-foreground">{aiHealth.ready}/{aiHealth.total} ready</span>
-          </button>
+          </div>
         )}
 
         <div
@@ -799,6 +775,12 @@ function ScannerPage() {
                 onFallbackToFile={() => {
                   setCameraOpen(false);
                   galleryRef.current?.click();
+                }}
+                onOpenPhoneCamera={() => {
+                  setCameraOpen(false);
+                  // fileRef uses capture="environment", so supported mobile browsers
+                  // open the phone's native rear camera instead of the in-app preview.
+                  window.setTimeout(() => fileRef.current?.click(), 0);
                 }}
               />
             )}
@@ -1432,11 +1414,13 @@ function CameraCapture({
   onClose,
   onCapture,
   onFallbackToFile,
+  onOpenPhoneCamera,
 }: {
   embedded?: boolean;
   onClose: () => void;
   onCapture: (dataUrl: string) => void;
   onFallbackToFile: () => void;
+  onOpenPhoneCamera: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -1501,10 +1485,14 @@ function CameraCapture({
 
     return () => {
       cancelled = true;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+      stopCameraStream();
     };
   }, []);
+
+  function stopCameraStream() {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  }
 
   function capture() {
     const video = videoRef.current;
@@ -1630,25 +1618,44 @@ function CameraCapture({
           <div
             className={`absolute inset-x-0 z-20 flex items-center justify-center gap-6 ${embedded ? "bottom-5" : "bottom-8"}`}
           >
+            {/* Left: keep the existing gallery/upload action. */}
             <button
               type="button"
               onClick={onFallbackToFile}
-              className="flex size-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-transform active:scale-90"
-              aria-label="Upload a photo or PDF instead"
-              title="Upload a photo or PDF instead"
+              className="flex size-12 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-transform active:scale-90"
+              aria-label="Open gallery"
+              title="Open gallery"
             >
               <FileImage className="size-5" />
             </button>
+
+            {/* Center: capture with PlateGuard's live camera. */}
             <button
               type="button"
               onClick={capture}
               className="group flex size-20 items-center justify-center rounded-full border-4 border-white bg-black/30 shadow-2xl backdrop-blur-sm transition-transform active:scale-90"
               aria-label="Capture photo"
+              title="Capture photo"
             >
               <span className="size-14 rounded-full bg-primary ring-2 ring-white/50 transition-all group-hover:scale-105" />
             </button>
-            {/* Spacer to balance the upload button so the shutter stays visually centered. */}
-            <span className="size-12" aria-hidden />
+
+            {/* Right: NEW separate button for the phone's native camera. */}
+            <button
+              type="button"
+              onClick={() => {
+                // Stop the in-browser camera before handing control to the phone's
+                // native camera app. This avoids two camera sessions competing for
+                // the same device on Android/iOS.
+                stopCameraStream();
+                onOpenPhoneCamera();
+              }}
+              className="flex size-12 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white shadow-lg backdrop-blur-sm transition-transform active:scale-90"
+              aria-label="Open phone camera"
+              title="Open phone camera"
+            >
+              <Camera className="size-5" />
+            </button>
           </div>
         )}
       </div>
