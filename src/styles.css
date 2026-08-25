@@ -347,3 +347,18 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Keep mobile action cards inside the viewport even when text is long. */
+.login-gate-card,
+.login-gate-card * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .login-gate-card {
+    width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

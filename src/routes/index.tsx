@@ -63,7 +63,7 @@ export const Route = createFileRoute("/")({
 function LoginGate() {
   return (
     <main className="flex min-h-[100dvh] w-full max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
-      <section className="box-border w-full min-w-0 max-w-lg overflow-hidden rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-10">
+      <section className="login-gate-card box-border w-full min-w-0 max-w-lg overflow-hidden rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-10">
         <div className="text-center">
           <img
             src="/icons/logo.png"
@@ -87,22 +87,25 @@ function LoginGate() {
             </Link>
           </Button>
 
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="h-auto min-h-14 w-full min-w-0 rounded-2xl border-2 px-4 py-3 text-left"
-          >
-            <Link to="/scan" className="flex min-w-0 items-center whitespace-normal">
-              <Accessibility className="mr-3 size-6 shrink-0 text-primary" />
-              <span className="min-w-0 flex-1 break-words">
-                <span className="block text-base font-bold leading-5">Accessibility: go straight to scanner</span>
-                <span className="mt-1 block text-xs font-normal leading-4 text-muted-foreground">
-                  Skip account setup and open the scanner with larger, simpler controls.
-                </span>
-              </span>
+          <Button asChild size="lg" variant="outline" className="h-12 w-full min-w-0 rounded-2xl text-base">
+            <Link to="/login" className="min-w-0 whitespace-normal">
+              <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-[#4285F4]">G</span>
+              Continue with Google
             </Link>
           </Button>
+
+          <Link
+            to="/scan"
+            className="grid w-full min-w-0 max-w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 overflow-hidden rounded-2xl border-2 border-input bg-background px-4 py-3 text-left transition-colors hover:bg-accent"
+          >
+            <Accessibility className="size-6 shrink-0 text-primary" />
+            <span className="min-w-0 max-w-full overflow-hidden">
+              <span className="block break-words text-sm font-bold leading-5 sm:text-base">Accessibility: go straight to scanner</span>
+              <span className="mt-1 block break-words text-xs font-normal leading-4 text-muted-foreground">
+                Skip account setup and open the scanner with larger, simpler controls.
+              </span>
+            </span>
+          </Link>
         </div>
 
         <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">

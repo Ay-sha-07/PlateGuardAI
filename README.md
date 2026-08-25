@@ -101,3 +101,15 @@ quota, and model errors are skipped so the next configured provider can try.
 For the closest thing to unlimited inference, run a vision model through
 Ollama locally. Hosted free tiers still have provider-specific limits.
 
+
+## Google sign-in
+
+The login screen includes **Continue with Google** using Supabase OAuth. To enable it:
+
+1. In Supabase, open **Authentication → Providers → Google** and enable Google.
+2. Configure the Google OAuth client ID/secret there.
+3. Add your deployed app URL (and local development URL, if needed) to Supabase **Authentication → URL Configuration → Redirect URLs**.
+4. The app sends the OAuth callback to the site root (`/`), where the existing session gate detects the authenticated user.
+
+If Google is not enabled/configured in Supabase, the button will show the provider error returned by Supabase instead of silently failing.
+
