@@ -299,7 +299,15 @@ function ScannerPage() {
     barcodeIngredientText?: string;
   }) {
     const text = overrides?.ingredientText?.trim() ?? ingredientText.trim();
-    if (!text) return;
+    const name = overrides?.productName?.trim() ?? productName.trim();
+    const code = overrides?.barcode?.trim() ?? barcode.trim();
+    const barcodeName = overrides?.barcodeProductName?.trim() ?? "";
+
+    // A manual scan has three valid alternatives: pasted label text, a
+    // verified barcode/product identity, or (as a last resort) a product name.
+    // Do not silently no-op just because the label-text box is empty.
+    if (!text && !name && !(code && barcodeName)) return;
+    const analysisText = text || (name ? `Product identified as: ${name}` : "");
     setError(null);
     setResult(null);
     setImage(null);
@@ -307,10 +315,10 @@ function ScannerPage() {
     try {
       const res = (await run({
         data: {
-          ingredientText: text,
-          productName: overrides?.productName?.trim() ?? productName.trim(),
-          barcode: overrides?.barcode ?? "",
-          barcodeProductName: overrides?.barcodeProductName ?? "",
+          ingredientText: analysisText,
+          productName: name,
+          barcode: code,
+          barcodeProductName: barcodeName,
           barcodeIngredientText: overrides?.barcodeIngredientText ?? "",
           ...profilePayload(),
         },
@@ -921,7 +929,7 @@ function ScannerPage() {
                   <Button
                     size="lg"
                     className="h-12 w-full rounded-xl text-sm font-semibold"
-                    disabled={pending || !ingredientText.trim()}
+                    disabled={pending || (!ingredientText.trim() && !productName.trim() && !(barcode.trim() && productName.trim()))}
                     onClick={() => void runTextScan()}
                   >
                     {pending ? (
@@ -929,10 +937,10 @@ function ScannerPage() {
                     ) : (
                       <Sparkles className="size-4" />
                     )}
-                    {pending ? "Analyzing…" : "Analyze label"}
+                    {pending ? "Analyzing…" : "Analyze product"}
                   </Button>
                   <p className="text-center text-[11px] text-muted-foreground">
-                    Pasted text is analyzed when you press this button. A successful barcode scan analyzes automatically and does not require label text.
+                    Paste text, enter a product, or use a verified barcode. A successful barcode scan analyzes automatically and does not require label text.
                   </p>
                 </div>
               )}
