@@ -64,6 +64,15 @@ function HistoryPage() {
     const id = new URLSearchParams(window.location.search).get("scan");
     setSelectedId(id);
     setLoaded(true);
+
+    // Keep selectedId in sync when the browser/back button changes the URL
+    // (pushState navigations don't fire a re-render on their own).
+    const onPopState = () => {
+      const nextId = new URLSearchParams(window.location.search).get("scan");
+      setSelectedId(nextId);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const selected = useMemo(

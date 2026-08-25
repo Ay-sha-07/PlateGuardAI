@@ -126,7 +126,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       /* PWA settings */
       {
         name: "theme-color",
-        content: "#0f9d6e",
+        content: "#000000",
       },
 
       {
