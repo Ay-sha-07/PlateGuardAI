@@ -472,12 +472,24 @@ function StatsStrip() {
 
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
+function formatTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 function UserGuideVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const scrubberRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [scrubbing, setScrubbing] = useState(false);
+  const wasPlayingBeforeScrub = useRef(false);
 
   function togglePlay() {
     const video = videoRef.current;
@@ -496,12 +508,56 @@ function UserGuideVideo() {
     setSpeedMenuOpen(false);
   }
 
-  function seekTo(e: React.MouseEvent<HTMLDivElement>) {
+  function ratioFromPointer(clientX: number): number {
+    const el = scrubberRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  }
+
+  function scrubTo(ratio: number) {
     const video = videoRef.current;
     if (!video || !video.duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
-    video.currentTime = ratio * video.duration;
+    const time = ratio * video.duration;
+    setProgress(ratio * 100);
+    setCurrentTime(time);
+    // Live scrub preview: move actual playback position as the user drags,
+    // not just the visual bar.
+    video.currentTime = time;
+  }
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    const video = videoRef.current;
+    if (!video) return;
+    wasPlayingBeforeScrub.current = !video.paused;
+    video.pause();
+    setScrubbing(true);
+    scrubberRef.current?.setPointerCapture(e.pointerId);
+    scrubTo(ratioFromPointer(e.clientX));
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!scrubbing) return;
+    scrubTo(ratioFromPointer(e.clientX));
+  }
+
+  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!scrubbing) return;
+    setScrubbing(false);
+    scrubberRef.current?.releasePointerCapture(e.pointerId);
+    if (wasPlayingBeforeScrub.current) void videoRef.current?.play();
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    if (e.key === "ArrowRight") {
+      video.currentTime = Math.min(video.duration, video.currentTime + 5);
+      e.preventDefault();
+    } else if (e.key === "ArrowLeft") {
+      video.currentTime = Math.max(0, video.currentTime - 5);
+      e.preventDefault();
+    }
   }
 
   return (
@@ -521,15 +577,18 @@ function UserGuideVideo() {
         <div className="group relative mx-auto mt-10 max-w-sm overflow-hidden rounded-3xl border border-border bg-black shadow-xl">
           <video
             ref={videoRef}
-            className="aspect-[9/16] w-full bg-black object-contain"
+            className="aspect-[480/1016] w-full bg-black object-cover"
             src="/media/user-guide.mp4"
             poster="/media/user-guide-poster.jpg"
             playsInline
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
             onClick={togglePlay}
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
             onTimeUpdate={(e) => {
+              if (scrubbing) return; // avoid fighting the drag position
               const v = e.currentTarget;
+              setCurrentTime(v.currentTime);
               if (v.duration) setProgress((v.currentTime / v.duration) * 100);
             }}
           />
@@ -551,30 +610,49 @@ function UserGuideVideo() {
           {/* Controls bar */}
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2.5 pt-8">
             <div
-              className="mb-2 h-1.5 w-full cursor-pointer rounded-full bg-white/25"
-              onClick={seekTo}
+              ref={scrubberRef}
+              className="group/scrub relative mb-1 flex h-4 w-full cursor-pointer items-center touch-none"
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onKeyDown={handleKeyDown}
+              tabIndex={0}
               role="slider"
-              aria-label="Seek"
+              aria-label="Seek — drag, click, or use arrow keys to jump to any point in the video"
               aria-valuenow={Math.round(progress)}
               aria-valuemin={0}
               aria-valuemax={100}
+              aria-valuetext={`${formatTime(currentTime)} of ${formatTime(duration)}`}
             >
-              <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+              <div className="h-1.5 w-full rounded-full bg-white/25">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+              </div>
+              <div
+                className={`absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow transition-transform ${
+                  scrubbing ? "scale-125" : "scale-100 group-hover/scrub:scale-110"
+                }`}
+                style={{ left: `${progress}%` }}
+              />
             </div>
 
             <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={togglePlay}
-                aria-label={playing ? "Pause" : "Play"}
-                className="flex size-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
-              >
-                {playing ? (
-                  <Pause className="size-4" fill="currentColor" />
-                ) : (
-                  <Play className="size-4 translate-x-0.5" fill="currentColor" />
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={togglePlay}
+                  aria-label={playing ? "Pause" : "Play"}
+                  className="flex size-9 items-center justify-center rounded-full text-white transition-colors hover:bg-white/15"
+                >
+                  {playing ? (
+                    <Pause className="size-4" fill="currentColor" />
+                  ) : (
+                    <Play className="size-4 translate-x-0.5" fill="currentColor" />
+                  )}
+                </button>
+                <span className="font-mono text-[11px] tabular-nums text-white/80">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
+              </div>
 
               <div className="relative">
                 <button
