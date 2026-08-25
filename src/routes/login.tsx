@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogIn, UserPlus, ShieldCheck } from "lucide-react";
+import { LogIn, UserPlus, ShieldCheck, Accessibility } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireSupabase } from "@/lib/supabase";
 import { loadProfileStore, saveProfileStore } from "@/lib/profile";
@@ -26,7 +26,7 @@ function LoginPage() {
       if(cloud) saveProfileStore(cloud); else await pushProfileStore(loadProfileStore());
       const cloudHistory=await pullHistory();
       if(cloudHistory) localStorage.setItem("PlateGuard.history.v1",JSON.stringify(cloudHistory)); else await pushHistory(loadHistory());
-      await nav({to:"/home"});
+      await nav({to:"/"});
     } catch(err:any) { setError(err?.message ?? "Unable to continue."); } finally { setBusy(false); }
   }
   return <main className="min-h-screen bg-background px-4 py-10 text-foreground flex items-center justify-center">
@@ -43,6 +43,17 @@ function LoginPage() {
       <button className="mt-5 w-full text-sm text-primary hover:underline" onClick={()=>{setMode(mode==="login"?"signup":"login");setError("")}}>
         {mode==="login"?"New here? Create an account":"Already have an account? Log in"}
       </button>
+      <div className="mt-5 border-t pt-5">
+        <Button asChild type="button" variant="outline" className="h-auto min-h-12 w-full rounded-xl px-4 py-3 text-left">
+          <a href="/scan">
+            <Accessibility className="mr-3 size-5 shrink-0 text-primary" />
+            <span>
+              <span className="block font-semibold">Accessibility: scan without logging in</span>
+              <span className="block text-xs font-normal text-muted-foreground">Go directly to the scanner with the simplest path.</span>
+            </span>
+          </a>
+        </Button>
+      </div>
     </section>
   </main>;
 }

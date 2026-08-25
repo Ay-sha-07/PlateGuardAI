@@ -27,6 +27,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   ShieldAlert,
+  Accessibility,
+  LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
@@ -58,6 +60,59 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+function LoginGate() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background px-5 py-10 text-foreground">
+      <section className="w-full max-w-lg rounded-[2rem] border bg-card p-7 shadow-2xl sm:p-10">
+        <div className="text-center">
+          <img
+            src="/icons/logo.png"
+            alt="PlateGuard AI"
+            className="mx-auto mb-5 size-16 rounded-2xl object-contain"
+          />
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+            PlateGuard AI
+          </p>
+          <h1 className="font-display text-3xl font-bold sm:text-4xl">Welcome to PlateGuard</h1>
+          <p className="mx-auto mt-3 max-w-md text-base leading-7 text-muted-foreground">
+            Sign in to access your personalised profiles, scan history, and the full PlateGuard experience.
+          </p>
+        </div>
+
+        <div className="mt-8 grid gap-3">
+          <Button asChild size="lg" className="h-12 rounded-2xl text-base">
+            <Link to="/login">
+              <LogIn className="mr-2 size-5" />
+              Log in or create an account
+            </Link>
+          </Button>
+
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-auto min-h-14 rounded-2xl border-2 px-5 py-3 text-left"
+          >
+            <Link to="/scan">
+              <Accessibility className="mr-3 size-6 shrink-0 text-primary" />
+              <span>
+                <span className="block text-base font-bold">Accessibility: go straight to scanner</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                  Skip account setup and open the scanner with larger, simpler controls.
+                </span>
+              </span>
+            </Link>
+          </Button>
+        </div>
+
+        <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
+          The accessibility option is designed for elderly users and anyone who needs the quickest route to scanning.
+        </p>
+      </section>
+    </main>
+  );
+}
+
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
   { label: "What we scan", href: "#coverage" },
@@ -66,6 +121,49 @@ const NAV_LINKS = [
 ];
 
 function HomePage() {
+  const [authReady, setAuthReady] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) {
+      setAuthReady(true);
+      return;
+    }
+
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setLoggedIn(!!data.session?.user);
+      setAuthReady(true);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setLoggedIn(!!session?.user);
+      setAuthReady(true);
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (!authReady) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
+        <div className="text-center">
+          <div className="mx-auto mb-4 size-10 animate-pulse rounded-full bg-primary/20" />
+          <p className="text-sm text-muted-foreground">Checking your account…</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!loggedIn) {
+    return <LoginGate />;
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20 text-foreground">
       <SiteNav />

@@ -164,7 +164,7 @@ function ProfilePage() {
     <main className="mx-auto w-full max-w-md px-5 pb-44 pt-6">
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" className="rounded-full">
-          <Link to="/home">
+          <Link to="/">
             <ArrowLeft className="size-5" />
           </Link>
         </Button>

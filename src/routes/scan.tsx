@@ -330,7 +330,7 @@ function ScannerPage() {
               size="icon"
               className="size-9 rounded-full border border-border/50 bg-card/60 transition-transform active:scale-95"
             >
-              <Link to="/home" title="Back to Home">
+              <Link to="/" title="Back to Home">
                 <ArrowLeft className="size-4 text-foreground" />
               </Link>
             </Button>

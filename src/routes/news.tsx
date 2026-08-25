@@ -23,7 +23,7 @@ function NewsPage() {
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-24 pt-6">
         <header className="flex items-center gap-2">
           <Button asChild variant="ghost" size="icon" className="rounded-full">
-            <Link to="/home">
+            <Link to="/">
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
