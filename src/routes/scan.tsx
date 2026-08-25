@@ -705,7 +705,7 @@ function ScannerPage() {
                 }}
                 onFallbackToFile={() => {
                   setCameraOpen(false);
-                  fileRef.current?.click();
+                  galleryRef.current?.click();
                 }}
               />
             )}
@@ -1479,8 +1479,17 @@ function CameraCapture({
 
         {status === "ready" && (
           <div
-            className={`absolute inset-x-0 z-20 flex items-center justify-center ${embedded ? "bottom-5" : "bottom-8"}`}
+            className={`absolute inset-x-0 z-20 flex items-center justify-center gap-6 ${embedded ? "bottom-5" : "bottom-8"}`}
           >
+            <button
+              type="button"
+              onClick={onFallbackToFile}
+              className="flex size-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-transform active:scale-90"
+              aria-label="Upload a photo or PDF instead"
+              title="Upload a photo or PDF instead"
+            >
+              <FileImage className="size-5" />
+            </button>
             <button
               type="button"
               onClick={capture}
@@ -1489,6 +1498,8 @@ function CameraCapture({
             >
               <span className="size-14 rounded-full bg-primary ring-2 ring-white/50 transition-all group-hover:scale-105" />
             </button>
+            {/* Spacer to balance the upload button so the shutter stays visually centered. */}
+            <span className="size-12" aria-hidden />
           </div>
         )}
       </div>
