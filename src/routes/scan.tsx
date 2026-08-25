@@ -377,9 +377,26 @@ function ScannerPage() {
             onClick={() => setSwitcherOpen((v) => !v)}
             className="flex w-full items-center justify-between gap-2 rounded-2xl border border-border bg-card/80 px-3.5 py-2.5 backdrop-blur transition-colors hover:bg-card"
           >
-            <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Users className="size-4 text-primary" />
-              {hasProfile ? activeProfile!.name : "No profile yet"}
+            <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
+              {hasProfile ? (
+                activeProfile!.avatarUrl ? (
+                  <img
+                    src={activeProfile!.avatarUrl}
+                    alt=""
+                    className="size-7 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
+                    aria-hidden="true"
+                  >
+                    {(activeProfile!.name || "?").slice(0, 1).toUpperCase()}
+                  </span>
+                )
+              ) : (
+                <Users className="size-4 shrink-0 text-primary" />
+              )}
+              <span className="truncate">{hasProfile ? activeProfile!.name : "No profile yet"}</span>
             </span>
             <ChevronDown
               className={`size-4 text-muted-foreground transition-transform ${switcherOpen ? "rotate-180" : ""}`}
@@ -394,8 +411,20 @@ function ScannerPage() {
                   onClick={() => switchTo(p.id)}
                   className="flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-left text-sm transition-colors hover:bg-accent"
                 >
-                  <span className="text-foreground">{p.name}</span>
-                  {p.id === activeId && <Check className="size-4 text-primary" />}
+                  <span className="flex min-w-0 items-center gap-2 text-foreground">
+                    {p.avatarUrl ? (
+                      <img src={p.avatarUrl} alt="" className="size-7 shrink-0 rounded-full object-cover" />
+                    ) : (
+                      <span
+                        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary"
+                        aria-hidden="true"
+                      >
+                        {(p.name || "?").slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                    <span className="truncate">{p.name || "Unnamed"}</span>
+                  </span>
+                  {p.id === activeId && <Check className="size-4 shrink-0 text-primary" />}
                 </button>
               ))}
               <button

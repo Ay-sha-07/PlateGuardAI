@@ -186,8 +186,11 @@ function ProfilePage() {
                 className="size-24 rounded-full border-2 border-border object-cover shadow-sm"
               />
             ) : (
-              <div className="flex size-24 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted text-muted-foreground">
-                <Camera className="size-8" />
+              <div
+                className="flex size-24 items-center justify-center rounded-full border-2 border-border bg-primary/10 text-2xl font-bold text-primary"
+                aria-label={`Initial for ${profile.name || "profile"}`}
+              >
+                {(profile.name || "?").slice(0, 1).toUpperCase()}
               </div>
             )}
             {profile.avatarUrl && (
