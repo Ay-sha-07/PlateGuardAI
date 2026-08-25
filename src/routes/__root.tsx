@@ -7,7 +7,8 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Moon, Sun } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
@@ -215,6 +216,38 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ThemeToggle() {
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("plateguard-theme");
+    const nextDark = saved ? saved === "dark" : true;
+    document.documentElement.classList.toggle("dark", nextDark);
+    setDark(nextDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !dark;
+    document.documentElement.classList.toggle("dark", nextDark);
+    window.localStorage.setItem("plateguard-theme", nextDark ? "dark" : "light");
+    setDark(nextDark);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${dark ? "light" : "dark"} mode`}
+      aria-pressed={dark}
+      title={`Switch to ${dark ? "light" : "dark"} mode`}
+      className="fixed right-3 top-3 z-[100] inline-flex h-10 items-center gap-2 rounded-full border border-border bg-background/90 px-3 text-foreground shadow-lg backdrop-blur-xl transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:right-5 sm:top-5"
+    >
+      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      <span className="hidden text-xs font-semibold sm:inline">{dark ? "Light" : "Dark"}</span>
+    </button>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -271,6 +304,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeToggle />
       <Outlet />
       <Toaster position="top-center" />
     </QueryClientProvider>

@@ -45,3 +45,8 @@ No new dependencies were added — barcode lookup uses a plain `fetch()` to the 
 
 ## Rating scale update
 The public PlateGuard rating now follows the intuitive safety convention: **1/5 = Avoid/unsafe, 3/5 = Use caution, 5/5 = Safe**. The server converts the internal risk scale before returning and persisting results, and existing local history is migrated once.
+
+
+## Result/camera control cleanup
+- Hide the external “Scan a label” button while the live camera frame is open; the in-frame shutter is the single capture control.
+- Replace the isolated result-state retry icon with a full-width “Scan another label” button that reopens the camera.

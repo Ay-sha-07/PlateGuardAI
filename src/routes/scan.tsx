@@ -766,7 +766,7 @@ function ScannerPage() {
           />
 
           <div className="mt-4 flex gap-2">
-            {!result && (
+            {!result && !cameraOpen && (
               <Button
                 size="lg"
                 className="relative h-14 flex-1 overflow-hidden rounded-2xl bg-gradient-to-b from-primary to-[oklch(0.66_0.13_58)] text-base font-semibold text-primary-foreground shadow-sm transition-transform active:scale-[0.98]"
@@ -777,7 +777,7 @@ function ScannerPage() {
                 {image ? "Scan another label" : "Scan a label"}
               </Button>
             )}
-            {!result && (
+            {!result && !cameraOpen && (
               <Button
                 size="lg"
                 variant="secondary"
@@ -789,11 +789,10 @@ function ScannerPage() {
                 <FileImage className="size-5" />
               </Button>
             )}
-            {(image || result) && (
+            {result && (
               <Button
                 size="lg"
-                variant="secondary"
-                className="h-14 rounded-2xl transition-transform active:scale-95"
+                className="h-14 flex-1 rounded-2xl bg-gradient-to-b from-primary to-[oklch(0.66_0.13_58)] text-base font-semibold text-primary-foreground shadow-sm transition-transform active:scale-[0.98]"
                 disabled={pending || preparing}
                 onClick={() => {
                   setImage(null);
@@ -803,9 +802,11 @@ function ScannerPage() {
                   setBarcode("");
                   setProductName("");
                   setBarcodeError(null);
+                  setCameraOpen(true);
                 }}
               >
-                <RotateCcw className="size-5" />
+                <Camera className="size-5" />
+                Scan another label
               </Button>
             )}
           </div>
