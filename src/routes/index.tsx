@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { requireSupabase, supabase } from "@/lib/supabase";
 import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 
 export const Route = createFileRoute("/")({
@@ -61,6 +61,27 @@ export const Route = createFileRoute("/")({
 });
 
 function LoginGate() {
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleError, setGoogleError] = useState("");
+
+  async function signInWithGoogle() {
+    setGoogleBusy(true);
+    setGoogleError("");
+    try {
+      const s = requireSupabase();
+      const { error } = await s.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setGoogleError(err?.message ?? "Unable to continue with Google.");
+      setGoogleBusy(false);
+    }
+  }
+
   return (
     <main className="flex min-h-[100dvh] w-full max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
       <section className="login-gate-card box-border w-full min-w-0 max-w-lg overflow-hidden rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-10">
@@ -87,12 +108,20 @@ function LoginGate() {
             </Link>
           </Button>
 
-          <Button asChild size="lg" variant="outline" className="h-12 w-full min-w-0 rounded-2xl text-base">
-            <Link to="/login" className="min-w-0 whitespace-normal">
-              <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-[#4285F4]">G</span>
-              Continue with Google
-            </Link>
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            disabled={googleBusy}
+            onClick={signInWithGoogle}
+            className="h-12 w-full min-w-0 rounded-2xl px-4 text-base"
+          >
+            <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-[#4285F4]">G</span>
+            <span className="min-w-0 truncate">{googleBusy ? "Connecting to Google…" : "Continue with Google"}</span>
           </Button>
+          {googleError && (
+            <p role="alert" className="break-words text-sm text-destructive">{googleError}</p>
+          )}
 
           <Link
             to="/scan"
