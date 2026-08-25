@@ -112,16 +112,26 @@ export async function detectBarcodeFromDataUrl(dataUrl: string): Promise<string 
     });
 
     const image = await loadImage(dataUrl);
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    const max = 640;
+    const scale = Math.min(1, max / Math.max(sourceWidth, sourceHeight));
     const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth || image.width;
-    canvas.height = image.naturalHeight || image.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx || !canvas.width || !canvas.height) return null;
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    try {
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx || !canvas.width || !canvas.height) return null;
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-    const codes = await detector.detect(canvas);
-    const value = codes.find((code) => code.rawValue?.trim())?.rawValue?.trim();
-    return value || null;
+      const codes = await detector.detect(canvas);
+      const value = codes.find((code) => code.rawValue?.trim())?.rawValue?.trim();
+      return value || null;
+    } finally {
+      canvas.width = 1;
+      canvas.height = 1;
+      image.src = "";
+    }
   } catch {
     return null;
   }

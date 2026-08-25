@@ -122,13 +122,19 @@ export async function makeThumbnail(dataUrl: string, size = 160): Promise<string
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return dataUrl;
-    const scale = Math.max(size / img.width, size / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-    return canvas.toDataURL("image/jpeg", 0.6);
+    try {
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) return dataUrl;
+      const scale = Math.max(size / img.width, size / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      return canvas.toDataURL("image/jpeg", 0.6);
+    } finally {
+      canvas.width = 1;
+      canvas.height = 1;
+      img.src = "";
+    }
   } catch {
     return dataUrl;
   }

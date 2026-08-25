@@ -1,6 +1,6 @@
 import { getVisionProviders, type ProviderErrorCategory, type ProviderErrorDiagnosis } from "./ai-provider.server";
 
-export type ProviderHealthStatus = "ready" | "cooldown" | "blocked";
+export type ProviderHealthStatus = "ready" | "cooldown" | "blocked" | "unverified";
 
 export type ProviderHealth = {
   name: string;
@@ -86,8 +86,11 @@ function toHealth(name: string): ProviderHealth {
   }
   return {
     name,
-    status: "ready",
-    reason: current.reason === "healthy" ? "healthy" : "healthy",
+    // A provider with a configured key is not necessarily usable. Until the
+    // first real scan succeeds, show it as unverified rather than falsely
+    // claiming that an invalid key / unpaid team is ready.
+    status: current.lastCheckedAt === null ? "unverified" : "ready",
+    reason: current.lastCheckedAt === null ? "healthy" : "healthy",
     retryAt: null,
     lastCheckedAt: current.lastCheckedAt,
   };
@@ -97,6 +100,7 @@ export function getAIHealth() {
   const providers = getVisionProviders();
   const health = providers.map((provider) => toHealth(provider.name));
   const ready = health.filter((item) => item.status === "ready").length;
+  const unverified = health.filter((item) => item.status === "unverified").length;
   const total = health.length;
   const blocked = health.filter((item) => item.status === "blocked").length;
   const cooldown = health.filter((item) => item.status === "cooldown").length;
@@ -112,6 +116,7 @@ export function getAIHealth() {
     total,
     blocked,
     cooldown,
+    unverified,
     providers: health,
     checkedAt: Date.now(),
   };

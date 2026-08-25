@@ -334,6 +334,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
 
   let result: Awaited<ReturnType<typeof generateText>> | null = null;
   let lastDiagnosis: ReturnType<typeof diagnoseProviderError> | null = null;
+  const providerFailures: Array<{ name: string; diagnosis: ReturnType<typeof diagnoseProviderError> }> = [];
 
   // Failover strategy, using the REAL diagnosis (HTTP status + response
   // body via APICallError, see ai-provider.server.ts) rather than guessing
@@ -377,6 +378,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
       } catch (err) {
         const diagnosis = diagnoseProviderError(err);
         lastDiagnosis = diagnosis;
+        providerFailures.push({ name: provider.name, diagnosis });
         markProviderFailure(provider.name, diagnosis);
         console.error(
           `[scan] provider "${provider.name}" attempt ${attempt + 1} failed ` +
@@ -396,16 +398,16 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   }
 
   if (!result) {
-    const triedNames = providers.map((p) => p.name).join(", ");
+    const summary = providerFailures
+      .map(({ name, diagnosis }) => `${name}: ${diagnosis.category}`)
+      .join("; ");
     const hint =
       providers.length === 1
-        ? " Only one AI provider is configured — set both GOOGLE_GENERATIVE_AI_API_KEY (Gemini) " +
-          "and XAI_API_KEY (Grok) so scans can fail over instead of stopping here."
-        : ` All configured providers (${triedNames}) failed — see the server logs for the ` +
-          "specific reason each one gave.";
+        ? " Add a second valid vision provider key for automatic failover."
+        : " Fix at least one configured provider key/model/billing setting, then retry.";
     throw new Error(
-      (lastDiagnosis ? describeProviderError(lastDiagnosis) : "No AI provider was reachable.") +
-        hint,
+      `${lastDiagnosis ? describeProviderError(lastDiagnosis) : "No AI provider was reachable."} ` +
+        `Providers tried: ${summary || "none"}.${hint}`,
     );
   }
 

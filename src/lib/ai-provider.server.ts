@@ -67,11 +67,19 @@ export function getVisionProviders(): VisionProvider[] {
   // 1. Google Gemini — primary.
   const google = process.env["GOOGLE_GENERATIVE_AI_API_KEY"];
   if (google) {
+    // Gemini 2.5 Flash is no longer available to new users. If an older
+    // deployment still has GOOGLE_MODEL=gemini-2.5-flash, silently migrate it
+    // instead of sending a guaranteed 404 on every scan.
+    const configuredGoogleModel = process.env["GOOGLE_MODEL"]?.trim();
+    const googleModel =
+      !configuredGoogleModel ||
+      /^(models\/)?gemini-2\.5-flash(?:-lite)?$/i.test(configuredGoogleModel)
+        ? "gemini-3.6-flash"
+        : configuredGoogleModel.replace(/^models\//i, "");
+
     providers.push({
       name: "Google Gemini",
-      model: createGoogleGenerativeAI({ apiKey: google })(
-        process.env["GOOGLE_MODEL"] || "gemini-2.5-flash",
-      ),
+      model: createGoogleGenerativeAI({ apiKey: google })(googleModel),
     });
   }
 
@@ -93,7 +101,8 @@ export function getVisionProviders(): VisionProvider[] {
     const configuredGroqModel = process.env["GROQ_MODEL"];
     const groqModel =
       !configuredGroqModel ||
-      configuredGroqModel === "meta-llama/llama-4-scout-17b-16e-instruct"
+      configuredGroqModel === "meta-llama/llama-4-scout-17b-16e-instruct" ||
+      configuredGroqModel === "llama-4-scout-17b-16e-instruct"
         ? "qwen/qwen3.6-27b"
         : configuredGroqModel;
 

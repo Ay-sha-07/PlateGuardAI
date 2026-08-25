@@ -274,10 +274,19 @@ function ScannerPage() {
     const rawMessage = e instanceof Error ? e.message : "";
     const looksLikeHtml = /^\s*<(!doctype|html)/i.test(rawMessage);
     const detail = rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
+
+    if (/low memory|out of memory|memory pressure/i.test(detail)) {
+      setImage(null);
+      setError(
+        "Your device ran low on memory while preparing the scan. The scanner now uses a smaller image; close other tabs/apps and try again, or upload a smaller/cropped label photo.",
+      );
+      return;
+    }
+
     setError(
       detail && !/^\s*<(!doctype|html)/i.test(detail)
-        ? "Scan failed — please try again. " + detail.slice(0, 140)
-        : "Scan failed — please try again. Check the browser console for details.",
+        ? "Scan failed — " + detail.slice(0, 220)
+        : "Scan failed — please try again. Check the AI capacity bar and browser console for details.",
     );
   }
 
@@ -561,9 +570,22 @@ function ScannerPage() {
           >
             <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
               <Activity className="size-3.5" />
-              AI capacity: <span className={aiHealth.capacity === "High" ? "text-safe" : aiHealth.capacity === "Medium" ? "text-caution" : "text-danger"}>{aiHealth.capacity}</span>
+              AI capacity:{" "}
+              <span
+                className={
+                  aiHealth.capacity === "High"
+                    ? "text-safe"
+                    : aiHealth.capacity === "Medium"
+                      ? "text-caution"
+                      : "text-danger"
+                }
+              >
+                {aiHealth.capacity}
+              </span>
             </span>
-            <span className="text-[11px] text-muted-foreground">{aiHealth.ready}/{aiHealth.total} ready</span>
+            <span className="text-[11px] text-muted-foreground">
+              {aiHealth.ready}/{aiHealth.total} ready
+            </span>
           </div>
         )}
 
@@ -1430,9 +1452,9 @@ function CameraCapture({
       .getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30, max: 30 },
+          width: { ideal: 1280, max: 1280 },
+          height: { ideal: 720, max: 720 },
+          frameRate: { ideal: 24, max: 24 },
         },
         audio: false,
       })
@@ -1488,14 +1510,14 @@ function CameraCapture({
     const video = videoRef.current;
     if (!video || video.videoWidth === 0) return;
     const canvas = document.createElement("canvas");
-    const max = 1200;
+    const max = 1024;
     const scale = Math.min(1, max / Math.max(video.videoWidth, video.videoHeight));
     canvas.width = Math.round(video.videoWidth * scale);
     canvas.height = Math.round(video.videoHeight * scale);
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    onCapture(canvas.toDataURL("image/jpeg", 0.85));
+    canvas.toBlob((blob) => { if (!blob) return; const reader = new FileReader(); reader.onload = () => onCapture(String(reader.result)); reader.readAsDataURL(blob); canvas.width = 1; canvas.height = 1; }, "image/jpeg", 0.72);
   }
 
   return (
@@ -1677,34 +1699,90 @@ const TICKER = [
   { text: "Apple crisps — clear", ok: true },
 ];
 
-async function fileToImageDataUrl(file: File, max = 1200): Promise<string> {
+// Mobile-safe image pipeline: never send full-resolution camera/gallery frames to the AI.
+// Large phone photos can exhaust the browser process and surface a low-memory error.
+async function fileToImageDataUrl(file: File, max = 896): Promise<string> {
   const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-  const bitmap = isPdf ? await renderFirstPdfPage(file) : await createImageBitmap(file);
-  const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas unavailable");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.85);
+
+  // Keep the browser-side working set deliberately small. Large phone photos
+  // can require several full-size decoded buffers at once and trigger the
+  // browser's "Unable to perform operation due to low memory" error before
+  // the image ever reaches the server.
+  if (isPdf) {
+    return renderPdfToJpegDataUrl(file, max);
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await loadImageElement(objectUrl);
+    const longestSide = Math.max(image.naturalWidth, image.naturalHeight);
+    if (!longestSide) throw new Error("Image has no readable dimensions");
+
+    const scale = Math.min(1, max / longestSide);
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    try {
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) throw new Error("Canvas unavailable");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.68);
+      if (!dataUrl || dataUrl.length < 100) throw new Error("Image encoding failed");
+      return dataUrl;
+    } finally {
+      canvas.width = 1;
+      canvas.height = 1;
+    }
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
-async function renderFirstPdfPage(file: File): Promise<ImageBitmap> {
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not decode image"));
+    image.src = src;
+  });
+}
+
+async function renderPdfToJpegDataUrl(file: File, max = 896): Promise<string> {
   const pdfjsLib = await import("pdfjs-dist");
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
+  // Limit the PDF input buffer and rendered page dimensions. PDFs can contain
+  // enormous raster pages even when the file itself is small.
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: 2.5 });
-  const canvas = document.createElement("canvas");
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas unavailable");
-  await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-  return createImageBitmap(canvas);
+  const pdf = await pdfjsLib.getDocument({ data: buffer, disableAutoFetch: true, disableStream: true }).promise;
+  try {
+    const page = await pdf.getPage(1);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = Math.min(1.25, max / Math.max(baseViewport.width, baseViewport.height));
+    const viewport = page.getViewport({ scale: Math.max(0.6, scale) });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(viewport.width));
+    canvas.height = Math.max(1, Math.round(viewport.height));
+    try {
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) throw new Error("Canvas unavailable");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+      return canvas.toDataURL("image/jpeg", 0.68);
+    } finally {
+      canvas.width = 1;
+      canvas.height = 1;
+      page.cleanup();
+    }
+  } finally {
+    await pdf.destroy();
+  }
 }
