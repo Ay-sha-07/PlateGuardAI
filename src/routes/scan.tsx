@@ -664,6 +664,21 @@ function ScannerPage() {
               </div>
             )}
 
+            {cameraOpen && !image && !result && (
+              <CameraCapture
+                embedded
+                onClose={() => setCameraOpen(false)}
+                onCapture={(dataUrl) => {
+                  setCameraOpen(false);
+                  void runScan(dataUrl);
+                }}
+                onFallbackToFile={() => {
+                  setCameraOpen(false);
+                  fileRef.current?.click();
+                }}
+              />
+            )}
+
             {pending && (
               <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px]">
                 <div className="animate-scanline pointer-events-none absolute inset-x-0 top-0 h-1 bg-primary/80 shadow-[0_0_24px_4px_var(--primary)]" />
@@ -1047,19 +1062,6 @@ function ScannerPage() {
         </section>
       </main>
 
-      {cameraOpen && (
-        <CameraCapture
-          onClose={() => setCameraOpen(false)}
-          onCapture={(dataUrl) => {
-            setCameraOpen(false);
-            void runScan(dataUrl);
-          }}
-          onFallbackToFile={() => {
-            setCameraOpen(false);
-            fileRef.current?.click();
-          }}
-        />
-      )}
       <BottomNav />
     </div>
   );
@@ -1068,10 +1070,12 @@ function ScannerPage() {
 /* ------------------------------- Live camera ------------------------------ */
 
 function CameraCapture({
+  embedded = false,
   onClose,
   onCapture,
   onFallbackToFile,
 }: {
+  embedded?: boolean;
   onClose: () => void;
   onCapture: (dataUrl: string) => void;
   onFallbackToFile: () => void;
@@ -1134,7 +1138,13 @@ function CameraCapture({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-black">
+    <div
+      className={
+        embedded
+          ? "absolute inset-0 z-40 overflow-hidden rounded-3xl bg-black"
+          : "fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-black"
+      }
+    >
       <div className="relative size-full">
         <video
           ref={videoRef}
@@ -1177,7 +1187,7 @@ function CameraCapture({
         )}
 
         {status === "ready" && (
-          <div aria-hidden className="pointer-events-none absolute inset-8 sm:inset-16">
+          <div aria-hidden className={`pointer-events-none absolute ${embedded ? "inset-4" : "inset-8 sm:inset-16"}`}>
             {[
               "left-0 top-0 border-l-2 border-t-2 rounded-tl-xl",
               "right-0 top-0 border-r-2 border-t-2 rounded-tr-xl",
@@ -1200,7 +1210,7 @@ function CameraCapture({
         </button>
 
         {status === "ready" && (
-          <div className="absolute inset-x-0 bottom-8 z-20 flex items-center justify-center">
+          <div className={`absolute inset-x-0 z-20 flex items-center justify-center ${embedded ? "bottom-5" : "bottom-8"}`}>
             <button
               type="button"
               onClick={capture}
