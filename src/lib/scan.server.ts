@@ -109,12 +109,13 @@ Give the SAME 1–5 rating to each individual "reasons" entry for the specific t
 
 Detailed result requirements:
 - summary: 2–4 plain-English sentences explaining what was scanned, the main result, and why the rating was reached.
-- whatItIs: identify the product type and brand/name only from visible or verified evidence.
+- whatItIs: identify the generic product type/variant only from visible or verified evidence. Do NOT mention the manufacturer, company, brand, trademark, or seller name.
 - labelEvidence: list the important visible label facts that support the result (ingredients, nutrition values, warnings, certification wording, barcode evidence, or readable claims). Never invent a value.
 - nutritionHighlights: list relevant nutrition/ingredient observations, including actual visible quantities when readable; otherwise say that the quantity was not readable.
 - profileImpact: explain how each important part of THIS person's profile affected the decision. Include only meaningful checks; do not pretend every profile field was relevant.
 - recommendation: give a short practical next step in plain English. For safe foods, explain what is safe about it; for caution/risk, say what to limit/avoid or verify.
 - confidence: high only when product identity and label evidence are clear; medium for partial evidence; low when the image or identity is uncertain.
+- Never mention a manufacturer, company, brand, trademark, or seller name anywhere in the user-facing output, including summary, whatItIs, reasons, labelEvidence, nutritionHighlights, profileImpact, recommendation, purpose, or activeIngredients. Use generic descriptions such as "packaged drinking water", "clarified butter (ghee)", "black tea", or "pain-relief medicine".
 - Do not hide uncertainty behind confident language. Never invent ingredients, nutrition values, medical interactions, or product facts.
 
 Rules:
@@ -141,7 +142,7 @@ Rules:
 const SYSTEM_MEDICINE = `You are PlateGuard AI's medicine-label mode. You read a photo of an over-the-counter or prescription medicine package/label — front-of-pack, patient info leaflet, or blister strip — and assess it against ONE person's FULL clinical profile.
 
 Identify:
-- productGuess: the medicine's brand and/or generic name as printed.
+- productGuess: the generic medicine/product type and variant only. Never include the manufacturer, company, brand, trademark, or seller name.
 - purpose: one short plain-English sentence on what this medicine is generally used to treat (e.g. "Pain and fever relief" for paracetamol). Base this only on what's printed or unambiguously implied by the name/active ingredient — never invent an indication you can't support.
 - activeIngredients: every active ingredient/strength you can read (e.g. "Ibuprofen 400mg").
 
@@ -155,7 +156,7 @@ Give the SAME 1–5 rating to each individual "reasons" entry for the specific t
 
 Detailed result requirements:
 - summary: 2–4 plain-English sentences explaining what the medicine is and why the rating was reached.
-- whatItIs: the medicine/product identity from the label.
+- whatItIs: the generic medicine/product type, dosage form, and variant from the label. Never include a manufacturer, company, brand, trademark, or seller name.
 - labelEvidence: visible active ingredients, strengths, warnings, age/dose information, and other important label facts; never invent unreadable values.
 - nutritionHighlights: leave empty for medicine scans unless the label contains a meaningful excipient/sugar detail relevant to the decision.
 - profileImpact: explain the important interactions with the person's conditions, allergies, age, pregnancy status, or medicines.
@@ -175,6 +176,52 @@ Rules:
 - If the label is blurry, cropped, or not a medicine label, set labelReadable=false, rating 3, and say what to re-shoot.
 - Always include, as your final "reasons" entry, a rating-appropriate reminder that this is not a substitute for a pharmacist or doctor, phrased as a normal reason (not a disclaimer footer).
 - Never guess an ingredient or dose that is not visible. Each reason is one plain sentence a stressed person can read in 2 seconds.`;
+
+/**
+ * Keep product naming generic in the UI. AI/barcode identity is still used
+ * internally for verification, but the user-facing product label should not
+ * repeat a potentially hallucinated company/brand name.
+ */
+function genericProductName(value: string): string {
+  const raw = value.trim();
+  if (!raw) return raw;
+
+  // Common product-category anchors let us discard leading brand/manufacturer
+  // text without damaging useful variant information. This is deliberately
+  // conservative: if no clear category is present, keep the model's generic
+  // wording rather than guessing what part is a brand.
+  const anchors = [
+    "packaged drinking water", "drinking water", "mineral water",
+    "black tea", "green tea", "tea", "coffee", "ghee", "clarified butter",
+    "butter", "milk", "curd", "yogurt", "yoghurt", "cheese", "paneer",
+    "cooking oil", "edible oil", "olive oil", "sunflower oil", "rice",
+    "wheat flour", "flour", "atta", "oats", "bread", "biscuits",
+    "cookies", "noodles", "pasta", "cereal", "chips", "snack",
+    "juice", "beverage", "soft drink", "chocolate", "honey", "jam",
+    "pickle", "sauce", "ketchup", "salt", "sugar", "spice", "masala",
+    "lentils", "dal", "chickpeas", "beans", "egg", "eggs", "chicken",
+    "fish", "meat", "paracetamol", "acetaminophen", "ibuprofen",
+    "naproxen", "aspirin", "antacid", "antihistamine", "cough syrup",
+  ];
+  const lower = raw.toLowerCase();
+  let bestIndex = -1;
+  let bestLength = 0;
+  for (const anchor of anchors) {
+    const idx = lower.indexOf(anchor);
+    if (idx >= 0 && anchor.length > bestLength) {
+      bestIndex = idx;
+      bestLength = anchor.length;
+    }
+  }
+  if (bestIndex > 0) {
+    return raw.slice(bestIndex).trim().replace(/^[-–—:|]+\s*/, "");
+  }
+  return raw;
+}
+
+function withoutBrandName(result: ScanResult): ScanResult {
+  return { ...result, productGuess: genericProductName(result.productGuess) };
+}
 
 export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promise<ScanResult> {
   const providers = getVisionProviders();
@@ -232,7 +279,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   const barcodeEvidence = data.barcodeProductName.trim()
     ? [
         `Verified barcode detected: ${data.barcode ?? "unknown"}.`,
-        `Catalog identity for that barcode: "${data.barcodeProductName.trim()}".`,
+        `A verified barcode catalog matched this item. Use the match only as identity evidence; do not repeat any brand, manufacturer, company, trademark, or seller name in the response.`,
         data.barcodeIngredientText.trim()
           ? `Catalog label/nutrition evidence: ${data.barcodeIngredientText.trim()}`
           : "The catalog has no ingredient list for this product; do not treat that absence as evidence that it is not food.",
@@ -324,6 +371,11 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   }
 
   const parsed = ScanResultSchema.parse(await result.output);
+  // Keep a raw copy only for internal barcode-vs-vision consistency checks.
+  // The user-facing result is immediately normalized to a generic product
+  // description so a mistaken brand/company guess is never shown as fact.
+  const rawProductGuess = parsed.productGuess;
+  parsed.productGuess = genericProductName(parsed.productGuess);
 
   // Barcode identity is a strong, deterministic product signal. If it says
   // one product and vision invents a different product (as happened with a
@@ -332,7 +384,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   // otherwise force a conservative identity-mismatch result.
   if (data.mode === "food" && data.barcodeProductName.trim()) {
     const catalogName = data.barcodeProductName.trim().toLowerCase();
-    const visionName = `${parsed.productGuess} ${parsed.headline}`.toLowerCase();
+    const visionName = `${rawProductGuess} ${parsed.headline}`.toLowerCase();
     const catalogTokens = catalogName.split(/[^a-z0-9]+/).filter((t) => t.length >= 4);
     const matchesCatalog = catalogTokens.length > 0 && catalogTokens.some((token) => visionName.includes(token));
     if (!matchesCatalog) {
@@ -354,14 +406,14 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
           headline: profileMayRestrictFluids
             ? "Drinking water — check your fluid limit"
             : "Drinking water — verified",
-          productGuess: data.barcodeProductName.trim(),
+          productGuess: genericProductName(data.barcodeProductName.trim()),
           labelReadable: true,
           itemType: "food",
           reasons: [
             {
               rating: waterRating,
               trigger: "Verified product",
-              detail: `The barcode identifies this as ${data.barcodeProductName.trim()}.`,
+              detail: "A verified barcode matched this product category.",
             },
             ...(profileMayRestrictFluids
               ? [{
@@ -378,14 +430,14 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
         ...parsed,
         rating: 3,
         headline: "Product identity could not be confirmed",
-        productGuess: data.barcodeProductName.trim(),
+        productGuess: genericProductName(data.barcodeProductName.trim()),
         labelReadable: false,
         itemType: "unclear",
         reasons: [
           {
             rating: 3,
             trigger: "Product identity mismatch",
-            detail: `The barcode identifies this as ${data.barcodeProductName.trim()}, but the image analysis produced a different product. Please rescan the label clearly before relying on the result.`,
+            detail: "The verified barcode and image analysis disagree. Please rescan the label clearly before relying on the result.",
           },
         ],
       };
@@ -471,7 +523,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     };
   }
 
-  return parsed;
+  return withoutBrandName(parsed);
 }
 
 // Builds a short, actionable message from a structured diagnosis instead of

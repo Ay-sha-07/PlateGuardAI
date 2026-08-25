@@ -173,6 +173,13 @@ function ScannerPage() {
     setActiveId(store.activeId);
   }, []);
 
+  // Open the live camera automatically whenever the scanner page is entered.
+  // The camera component handles permission prompts, denied access, and
+  // unsupported browsers, with upload remaining available as a fallback.
+  useEffect(() => {
+    setCameraOpen(true);
+  }, []);
+
   const activeProfile = profiles.find((p) => p.id === activeId) ?? null;
   const hasProfile = !!activeProfile;
 
