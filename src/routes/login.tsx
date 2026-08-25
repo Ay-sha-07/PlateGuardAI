@@ -26,7 +26,7 @@ function LoginPage() {
       if(cloud) saveProfileStore(cloud); else await pushProfileStore(loadProfileStore());
       const cloudHistory=await pullHistory();
       if(cloudHistory) localStorage.setItem("PlateGuard.history.v1",JSON.stringify(cloudHistory)); else await pushHistory(loadHistory());
-      await nav({to:"/scan"});
+      await nav({to:"/home"});
     } catch(err:any) { setError(err?.message ?? "Unable to continue."); } finally { setBusy(false); }
   }
   return <main className="min-h-screen bg-background px-4 py-10 text-foreground flex items-center justify-center">

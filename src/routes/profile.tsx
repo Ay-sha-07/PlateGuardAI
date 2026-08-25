@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/multi-select";
+import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 import {
   Select,
   SelectContent,
@@ -143,10 +144,10 @@ function ProfilePage() {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 pb-28 pt-6">
+    <main className="mx-auto w-full max-w-md px-5 pb-44 pt-6">
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" className="rounded-full">
-          <Link to="/">
+          <Link to="/home">
             <ArrowLeft className="size-5" />
           </Link>
         </Button>
@@ -221,7 +222,10 @@ function ProfilePage() {
         {step === 4 && <StepLifestyle profile={profile} patch={patch} />}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md border-t border-border bg-background/95 px-5 py-4 backdrop-blur">
+      <div
+        className="fixed inset-x-0 z-30 mx-auto max-w-md border-t border-border bg-background/95 px-5 py-4 backdrop-blur"
+        style={{ bottom: BOTTOM_NAV_HEIGHT }}
+      >
         <div className="flex gap-2">
           {step > 0 && (
             <Button
@@ -254,6 +258,7 @@ function ProfilePage() {
           )}
         </div>
       </div>
+      <BottomNav />
     </main>
   );
 }

@@ -9,9 +9,14 @@ const DiabetesDetailSchema = z.object({
 const HypertensionDetailSchema = z.object({ status: z.string().default("") });
 const KidneyDetailSchema = z.object({ status: z.string().default("") });
 
-export const ScanInputSchema = z.object({
-  image: z.string().min(20), // data URL
-  mode: z.enum(["food", "medicine"]).default("food"),
+export const ScanInputSchema = z
+  .object({
+    // Either an image (data URL) or pasted label text must be given —
+    // enforced below since the two are mutually substitutable inputs.
+    image: z.string().min(20).optional(), // data URL
+    ingredientText: z.string().min(3).optional(), // pasted/typed label text, no photo
+    productName: z.string().default(""), // optional user-typed product name, or barcode-lookup result
+    mode: z.enum(["food", "medicine"]).default("food"),
 
   ageGroup: z.string().default(""),
   biologicalSex: z.string().default(""),
@@ -35,7 +40,11 @@ export const ScanInputSchema = z.object({
   dietaryPatterns: z.array(z.string()).default([]),
   medications: z.string().default(""),
   notes: z.string().default(""),
-});
+  })
+  .refine((v) => !!v.image || !!v.ingredientText, {
+    message: "Provide either a label photo or pasted ingredient text.",
+    path: ["image"],
+  });
 
 // 1 = safest, 5 = avoid. Graduated on purpose — a strict binary eat/don't-eat
 // verdict misidentifies borderline cases as often as it protects, so 2–4
@@ -172,10 +181,24 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     .filter(Boolean)
     .join("\n");
 
-  const instruction =
-    data.mode === "medicine"
-      ? `Scan this medicine label/package for the following person.\n\n${profileText}`
-      : `Scan this food label for the following person.\n\n${profileText}`;
+  const productNameNote = data.productName.trim()
+    ? `The shopper typed/scanned this product name: "${data.productName.trim()}".`
+    : "";
+
+  const hasImage = !!data.image;
+  const source = hasImage
+    ? "Scan this label photo"
+    : "Analyze this ingredient/nutrition text the shopper typed or pasted (no photo was provided)";
+
+  const instruction = [
+    `${source} for the following person.`,
+    productNameNote,
+    !hasImage && data.ingredientText ? `Label text:\n${data.ingredientText.trim()}` : "",
+    "",
+    profileText,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   let result: Awaited<ReturnType<typeof generateText>> | null = null;
   let lastDiagnosis: ReturnType<typeof diagnoseProviderError> | null = null;
@@ -201,10 +224,12 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
           messages: [
             {
               role: "user",
-              content: [
-                { type: "text", text: instruction },
-                { type: "file", data: data.image, mediaType: "image/jpeg" },
-              ],
+              content: hasImage
+                ? [
+                    { type: "text", text: instruction },
+                    { type: "file", data: data.image!, mediaType: "image/jpeg" },
+                  ]
+                : [{ type: "text", text: instruction }],
             },
           ],
         });

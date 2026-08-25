@@ -19,13 +19,19 @@ import {
   Soup,
   Users,
   X,
+  Barcode,
+  ClipboardPaste,
+  Search,
+  Sparkles,
 } from "lucide-react";
 import { scanLabel } from "@/lib/scan.functions";
+import { lookupBarcode } from "@/lib/barcode";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { addProfile, loadProfileStore, setActiveProfile, type StoredProfile } from "@/lib/profile";
 import { addHistoryEntry, makeThumbnail } from "@/lib/history";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BottomNav } from "@/components/bottom-nav";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
@@ -121,6 +127,16 @@ function ScannerPage() {
   const [preparing, setPreparing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
 
+  // Manual-entry alternative to the camera: product name, barcode lookup
+  // (via Open Food Facts), and pasted/typed ingredient text. Any one of
+  // these lets a shopper get a verdict without a usable photo.
+  const [manualOpen, setManualOpen] = useState(false);
+  const [productName, setProductName] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [barcodePending, setBarcodePending] = useState(false);
+  const [barcodeError, setBarcodeError] = useState<string | null>(null);
+  const [ingredientText, setIngredientText] = useState("");
+
   const fileRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const run = useServerFn(scanLabel);
@@ -149,6 +165,43 @@ function ScannerPage() {
     setSwitcherOpen(false);
   }
 
+  function profilePayload() {
+    return {
+      mode,
+      ageGroup: activeProfile?.ageGroup ?? "",
+      biologicalSex: activeProfile?.biologicalSex ?? "",
+      reproductiveStatus: activeProfile?.reproductiveStatus ?? "",
+      weightKg: activeProfile?.weightKg ?? "",
+      heightCm: activeProfile?.heightCm ?? "",
+      activityLevel: activeProfile?.activityLevel ?? "",
+      allergens: activeProfile?.allergens ?? [],
+      allergySeverity: activeProfile?.allergySeverity ?? "",
+      glutenStatus: activeProfile?.glutenStatus ?? "",
+      conditions: activeProfile?.conditions ?? [],
+      diabetes: activeProfile?.diabetes ?? { type: "", treatment: "" },
+      hypertension: activeProfile?.hypertension ?? { status: "" },
+      kidney: activeProfile?.kidney ?? { status: "" },
+      sensitivities: activeProfile?.sensitivities ?? [],
+      bowelHabits: activeProfile?.bowelHabits ?? [],
+      dietaryPatterns: activeProfile?.dietaryPatterns ?? [],
+      medications: activeProfile?.medications ?? "",
+      notes: activeProfile?.notes ?? "",
+    } as const;
+  }
+
+  function reportScanFailure(e: unknown) {
+    console.error("[scan] failed:", e);
+    const rawMessage = e instanceof Error ? e.message : "";
+    const looksLikeHtml = /^\s*<(!doctype|html)/i.test(rawMessage);
+    const detail =
+      rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
+    setError(
+      detail && !/^\s*<(!doctype|html)/i.test(detail)
+        ? "Scan failed — please try again. " + detail.slice(0, 140)
+        : "Scan failed — please try again. Check the browser console for details.",
+    );
+  }
+
   async function runScan(dataUrl: string) {
     setError(null);
     setResult(null);
@@ -156,28 +209,7 @@ function ScannerPage() {
     setPending(true);
     try {
       const res = (await run({
-        data: {
-          image: dataUrl,
-          mode,
-          ageGroup: activeProfile?.ageGroup ?? "",
-          biologicalSex: activeProfile?.biologicalSex ?? "",
-          reproductiveStatus: activeProfile?.reproductiveStatus ?? "",
-          weightKg: activeProfile?.weightKg ?? "",
-          heightCm: activeProfile?.heightCm ?? "",
-          activityLevel: activeProfile?.activityLevel ?? "",
-          allergens: activeProfile?.allergens ?? [],
-          allergySeverity: activeProfile?.allergySeverity ?? "",
-          glutenStatus: activeProfile?.glutenStatus ?? "",
-          conditions: activeProfile?.conditions ?? [],
-          diabetes: activeProfile?.diabetes ?? { type: "", treatment: "" },
-          hypertension: activeProfile?.hypertension ?? { status: "" },
-          kidney: activeProfile?.kidney ?? { status: "" },
-          sensitivities: activeProfile?.sensitivities ?? [],
-          bowelHabits: activeProfile?.bowelHabits ?? [],
-          dietaryPatterns: activeProfile?.dietaryPatterns ?? [],
-          medications: activeProfile?.medications ?? "",
-          notes: activeProfile?.notes ?? "",
-        },
+        data: { image: dataUrl, productName: productName.trim(), ...profilePayload() },
       })) as ScanResult;
       setResult(res);
 
@@ -192,18 +224,61 @@ function ScannerPage() {
         productGuess: res.productGuess,
       });
     } catch (e) {
-      console.error("[scan] failed:", e);
-      const rawMessage = e instanceof Error ? e.message : "";
-      const looksLikeHtml = /^\s*<(!doctype|html)/i.test(rawMessage);
-      const detail =
-        rawMessage && !looksLikeHtml ? rawMessage : !looksLikeHtml && e ? String(e) : "";
-      setError(
-        detail && !/^\s*<(!doctype|html)/i.test(detail)
-          ? "Scan failed — please try again. " + detail.slice(0, 140)
-          : "Scan failed — please try again. Check the browser console for details.",
-      );
+      reportScanFailure(e);
     } finally {
       setPending(false);
+    }
+  }
+
+  /** Alternative to the camera: scans pasted/typed ingredient text (e.g. from a barcode lookup) with no photo. */
+  async function runTextScan() {
+    if (!ingredientText.trim()) return;
+    setError(null);
+    setResult(null);
+    setImage(null);
+    setPending(true);
+    try {
+      const res = (await run({
+        data: {
+          ingredientText: ingredientText.trim(),
+          productName: productName.trim(),
+          ...profilePayload(),
+        },
+      })) as ScanResult;
+      setResult(res);
+
+      addHistoryEntry({
+        profileId: activeProfile?.id ?? "",
+        profileName: activeProfile?.name || "Unnamed profile",
+        mode,
+        image: TEXT_SCAN_THUMB,
+        rating: res.rating,
+        headline: res.headline,
+        productGuess: res.productGuess,
+      });
+    } catch (e) {
+      reportScanFailure(e);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function runBarcodeLookup() {
+    if (!barcode.trim()) return;
+    setBarcodePending(true);
+    setBarcodeError(null);
+    try {
+      const result = await lookupBarcode(barcode.trim());
+      if (!result.found) {
+        setBarcodeError("We couldn't find this barcode in the open catalog.");
+        return;
+      }
+      setProductName(result.productName);
+      setIngredientText(result.ingredientText);
+    } catch {
+      setBarcodeError("Barcode lookup failed — check your connection and try again.");
+    } finally {
+      setBarcodePending(false);
     }
   }
 
@@ -245,7 +320,7 @@ function ScannerPage() {
         />
       </div>
 
-      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-10 pt-6">
+      <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-24 pt-6">
         <header className="animate-rise-in flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Back to Home Button 👇 */}
@@ -255,7 +330,7 @@ function ScannerPage() {
               size="icon"
               className="size-9 rounded-full border border-border/50 bg-card/60 transition-transform active:scale-95"
             >
-              <Link to="/" title="Back to Home">
+              <Link to="/home" title="Back to Home">
                 <ArrowLeft className="size-4 text-foreground" />
               </Link>
             </Button>
@@ -444,6 +519,16 @@ function ScannerPage() {
                 alt="Captured label"
                 className="animate-rise-in size-full bg-background object-contain"
               />
+            ) : result ? (
+              <div className="animate-rise-in flex size-full flex-col items-center justify-center gap-3 p-6 text-center">
+                <span className="flex size-14 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <ClipboardPaste className="size-6" />
+                </span>
+                <p className="text-sm font-semibold text-foreground">
+                  {productName || result.productGuess || "Pasted label text"}
+                </p>
+                <p className="line-clamp-4 text-xs text-muted-foreground">{ingredientText}</p>
+              </div>
             ) : (
               <button
                 type="button"
@@ -588,7 +673,7 @@ function ScannerPage() {
             >
               <FileImage className="size-5" />
             </Button>
-            {image && (
+            {(image || result) && (
               <Button
                 size="lg"
                 variant="secondary"
@@ -598,12 +683,113 @@ function ScannerPage() {
                   setImage(null);
                   setResult(null);
                   setError(null);
+                  setIngredientText("");
+                  setBarcode("");
+                  setProductName("");
+                  setBarcodeError(null);
                 }}
               >
                 <RotateCcw className="size-5" />
               </Button>
             )}
           </div>
+
+          {!image && !result && (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setManualOpen((v) => !v)}
+                className="flex w-full items-center justify-center gap-1.5 text-xs font-medium text-primary underline-offset-4 hover:underline"
+              >
+                <ClipboardPaste className="size-3.5" />
+                {manualOpen ? "Hide barcode / paste-text entry" : "Or scan a barcode / paste ingredient text"}
+              </button>
+
+              {manualOpen && (
+                <div className="animate-rise-in mt-3 space-y-3 rounded-2xl border border-border bg-card/70 p-4 backdrop-blur">
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Product name
+                    </label>
+                    <input
+                      value={productName}
+                      onChange={(e) => setProductName(e.target.value)}
+                      placeholder="e.g. Harvest Oat Granola"
+                      className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Scan barcode
+                    </label>
+                    <div className="mt-1 flex gap-2">
+                      <div className="relative flex-1">
+                        <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                          value={barcode}
+                          onChange={(e) => setBarcode(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") void runBarcodeLookup();
+                          }}
+                          inputMode="numeric"
+                          placeholder="e.g. 8908010046488"
+                          className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="h-10 shrink-0 rounded-xl px-3"
+                        disabled={barcodePending || !barcode.trim()}
+                        onClick={() => void runBarcodeLookup()}
+                      >
+                        {barcodePending ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Search className="size-4" />
+                        )}
+                        Look up
+                      </Button>
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Looks up the free Open Food Facts catalog and fills in ingredients below.
+                    </p>
+                    {barcodeError && (
+                      <p className="mt-1 text-xs text-danger">{barcodeError}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Or paste / edit label text
+                    </label>
+                    <textarea
+                      value={ingredientText}
+                      onChange={(e) => setIngredientText(e.target.value)}
+                      rows={4}
+                      placeholder="Ingredients: oats, sugar, sodium…"
+                      className="mt-1 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="h-12 w-full rounded-xl text-sm font-semibold"
+                    disabled={pending || !ingredientText.trim()}
+                    onClick={() => void runTextScan()}
+                  >
+                    {pending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="size-4" />
+                    )}
+                    {pending ? "Analyzing…" : "Analyze label"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           {!image && !pending && (
             <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-card/60 py-2.5 backdrop-blur">
@@ -725,6 +911,7 @@ function ScannerPage() {
           }}
         />
       )}
+      <BottomNav />
     </div>
   );
 }
@@ -879,6 +1066,21 @@ function CameraCapture({
     </div>
   );
 }
+
+// Small inline placeholder thumbnail used for history entries created from
+// pasted text / barcode lookups, which have no captured photo.
+const TEXT_SCAN_THUMB =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+      <rect width="160" height="160" rx="20" fill="#1f2a24"/>
+      <g fill="none" stroke="#7fd996" stroke-width="6" stroke-linecap="round">
+        <line x1="40" y1="52" x2="120" y2="52"/>
+        <line x1="40" y1="80" x2="120" y2="80"/>
+        <line x1="40" y1="108" x2="90" y2="108"/>
+      </g>
+    </svg>`,
+  );
 
 const TICKER = [
   { text: "Granola bar — hidden almond butter", ok: false },
