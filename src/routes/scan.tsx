@@ -150,7 +150,6 @@ function ScannerPage() {
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [aiHealthOpen, setAiHealthOpen] = useState(false);
   const [mode, setMode] = useState<ScanMode>("food");
 
   const [image, setImage] = useState<string | null>(null);
@@ -482,67 +481,7 @@ function ScannerPage() {
             </div>
           </div>
 
-          <div className="relative flex items-center gap-2">
-            {aiHealth && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setAiHealthOpen((v) => !v)}
-                  aria-expanded={aiHealthOpen}
-                  aria-label={`AI capacity ${aiHealth.capacity}, ${aiHealth.ready} of ${aiHealth.total} providers ready`}
-                  className="flex h-11 items-center gap-2 rounded-full border border-border bg-card/80 px-3 backdrop-blur transition-colors hover:bg-card active:scale-95"
-                >
-                  <Activity className={`size-4 ${aiHealth.capacity === "High" ? "text-safe" : aiHealth.capacity === "Medium" ? "text-caution" : "text-danger"}`} />
-                  <span className="text-left leading-tight">
-                    <span className="block text-[10px] font-medium text-muted-foreground">AI</span>
-                    <span className="block text-xs font-bold text-foreground">{aiHealth.capacity}</span>
-                  </span>
-                  <span className="text-[10px] font-semibold text-muted-foreground">{aiHealth.ready}/{aiHealth.total}</span>
-                  <ChevronDown className={`size-3.5 text-muted-foreground transition-transform ${aiHealthOpen ? "rotate-180" : ""}`} />
-                </button>
-
-                {aiHealthOpen && (
-                  <div className="animate-rise-in absolute right-0 top-full z-[70] mt-2 w-[min(21rem,calc(100vw-2.5rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-                    <div className="border-b border-border bg-background/70 px-4 py-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-bold text-foreground">AI capacity</p>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground">Available providers for your next scan</p>
-                        </div>
-                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${aiHealth.capacity === "High" ? "bg-safe/15 text-safe" : aiHealth.capacity === "Medium" ? "bg-caution/15 text-caution" : "bg-danger/15 text-danger"}`}>
-                          {aiHealth.ready}/{aiHealth.total} ready
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="max-h-72 overflow-y-auto p-2">
-                      {aiHealth.providers.map((provider) => {
-                        const ready = provider.status === "ready";
-                        const blocked = provider.status === "blocked";
-                        return (
-                          <div key={provider.name} className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-accent/60">
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-foreground">{provider.name}</p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                {ready ? "Ready for scans" : blocked ? "Blocked until available again" : "Temporarily cooling down"}
-                              </p>
-                            </div>
-                            <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${ready ? "bg-safe/15 text-safe" : blocked ? "bg-danger/15 text-danger" : "bg-caution/15 text-caution"}`}>
-                              {ready ? "Ready" : blocked ? "Blocked" : "Cooling down"}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="border-t border-border px-4 py-2.5 text-[10px] text-muted-foreground">
-                      PlateGuard automatically skips unavailable providers and tries the next available AI.
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
+          <div className="flex items-center gap-2">
             <Button
               asChild
               variant="ghost"
@@ -614,6 +553,19 @@ function ScannerPage() {
             </div>
           )}
         </div>
+
+        {aiHealth && (
+          <div
+            className="mt-2 flex w-full items-center justify-between rounded-xl border border-border/70 bg-card/50 px-3 py-2"
+            aria-label={`AI capacity ${aiHealth.capacity}, ${aiHealth.ready} of ${aiHealth.total} providers ready`}
+          >
+            <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Activity className="size-3.5" />
+              AI capacity: <span className={aiHealth.capacity === "High" ? "text-safe" : aiHealth.capacity === "Medium" ? "text-caution" : "text-danger"}>{aiHealth.capacity}</span>
+            </span>
+            <span className="text-[11px] text-muted-foreground">{aiHealth.ready}/{aiHealth.total} ready</span>
+          </div>
+        )}
 
         <div
           className="animate-rise-in mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card/60 p-1"
