@@ -2,11 +2,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { hasAccessibilityEntry } from "@/lib/access-gate";
 
 /**
- * Wrap a page's content with this to require that the visitor either be
- * logged in, or have explicitly chosen the accessibility path on /login.
+ * Wrap a page's content with this to require the visitor be logged in.
  * Anyone else is redirected to /login before the page's content renders.
  */
 export function RequireEntry({ children }: { children: ReactNode }) {
@@ -18,14 +16,6 @@ export function RequireEntry({ children }: { children: ReactNode }) {
     let mounted = true;
 
     async function check() {
-      if (hasAccessibilityEntry()) {
-        if (mounted) {
-          setAllowed(true);
-          setChecked(true);
-        }
-        return;
-      }
-
       const loggedIn = supabase ? !!(await supabase.auth.getSession()).data.session : false;
       if (!mounted) return;
 

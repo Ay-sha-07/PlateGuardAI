@@ -1,16 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogIn, UserPlus, ShieldCheck, Accessibility } from "lucide-react";
+import { LogIn, UserPlus, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireSupabase } from "@/lib/supabase";
 import { setActiveScope } from "@/lib/account-scope";
-import { grantAccessibilityEntry } from "@/lib/access-gate";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
   const nav=useNavigate(); const [email,setEmail]=useState(""); const [password,setPassword]=useState("");
   const [mode,setMode]=useState<"login"|"signup">("login"); const [busy,setBusy]=useState(false); const [error,setError]=useState("");
+  const [showPassword,setShowPassword]=useState(false);
   async function signInWithGoogle() {
     setBusy(true);
     setError("");
@@ -46,19 +46,59 @@ function LoginPage() {
       await nav({to:"/"});
     } catch(err:any) { setError(err?.message ?? "Unable to continue."); } finally { setBusy(false); }
   }
-  return <main className="flex min-h-[100dvh] w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-background px-3 py-5 text-foreground sm:px-4 sm:py-10">
-    <section className="box-border w-full min-w-0 max-w-md overflow-hidden rounded-3xl border bg-card p-5 shadow-xl sm:p-7">
-      <div className="mb-6 text-center"><div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary"><ShieldCheck/></div>
-      <h1 className="font-display text-3xl font-bold">{mode==="login"?"Welcome back":"Create your account"}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Your profiles and scan history are securely saved to your account.</p></div>
-      <form onSubmit={submit} className="space-y-4">
-        <input required type="email" placeholder="Email address" value={email} onChange={e=>setEmail(e.target.value)} className="h-11 w-full min-w-0 rounded-xl border bg-background px-3"/>
-        <input required minLength={6} type="password" placeholder="Password (min. 6 characters)" value={password} onChange={e=>setPassword(e.target.value)} className="h-11 w-full min-w-0 rounded-xl border bg-background px-3"/>
-        {error && <p className="break-words text-sm text-destructive">{error}</p>}
-        <Button disabled={busy} className="h-11 w-full min-w-0 rounded-xl" type="submit">{mode==="login"?<LogIn/>:<UserPlus/>}{busy?"Please wait...":mode==="login"?"Log in":"Sign up"}</Button>
+  return <main className="flex min-h-[100dvh] w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
+    <section className="box-border w-full min-w-0 max-w-md overflow-hidden rounded-3xl border bg-card p-6 shadow-xl sm:p-8">
+      <div className="mb-7 text-center">
+        <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/15 text-primary"><ShieldCheck className="size-8"/></div>
+        <h1 className="font-display text-3xl font-bold sm:text-4xl">{mode==="login"?"Welcome back":"Create your account"}</h1>
+        <p className="mt-3 text-base leading-6 text-muted-foreground">Your profiles and scan history are saved securely to your account.</p>
+      </div>
+      <form onSubmit={submit} className="space-y-5">
+        <div className="space-y-2">
+          <label htmlFor="login-email" className="block text-base font-semibold">Email address</label>
+          <input
+            id="login-email"
+            required
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={e=>setEmail(e.target.value)}
+            className="h-14 w-full min-w-0 rounded-xl border bg-background px-4 text-base"
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="login-password" className="block text-base font-semibold">Password</label>
+          <div className="relative">
+            <input
+              id="login-password"
+              required
+              minLength={6}
+              type={showPassword ? "text" : "password"}
+              autoComplete={mode==="login" ? "current-password" : "new-password"}
+              placeholder="At least 6 characters"
+              value={password}
+              onChange={e=>setPassword(e.target.value)}
+              className="h-14 w-full min-w-0 rounded-xl border bg-background px-4 pr-14 text-base"
+            />
+            <button
+              type="button"
+              onClick={()=>setShowPassword(v=>!v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              {showPassword ? <EyeOff className="size-5"/> : <Eye className="size-5"/>}
+            </button>
+          </div>
+        </div>
+        {error && <p role="alert" className="break-words text-base leading-6 text-destructive">{error}</p>}
+        <Button disabled={busy} size="lg" className="h-14 w-full min-w-0 rounded-xl text-base font-semibold" type="submit">
+          {mode==="login"?<LogIn className="size-5"/>:<UserPlus className="size-5"/>}
+          {busy?"Please wait…":mode==="login"?"Log in":"Sign up"}
+        </Button>
       </form>
 
-      <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+      <div className="my-6 flex items-center gap-3 text-sm text-muted-foreground">
         <div className="h-px flex-1 bg-border" />
         <span>or</span>
         <div className="h-px flex-1 bg-border" />
@@ -67,31 +107,18 @@ function LoginPage() {
       <Button
         type="button"
         variant="outline"
+        size="lg"
         disabled={busy}
         onClick={signInWithGoogle}
-        className="h-11 w-full min-w-0 rounded-xl px-4"
+        className="h-14 w-full min-w-0 rounded-xl px-4 text-base font-semibold"
       >
-        <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-[#4285F4]">G</span>
+        <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-white text-base font-bold text-[#4285F4]">G</span>
         <span className="min-w-0 truncate">Continue with Google</span>
       </Button>
 
-      <button className="mt-5 w-full min-w-0 break-words text-sm text-primary hover:underline" onClick={()=>{setMode(mode==="login"?"signup":"login");setError("")}}>
+      <button className="mt-6 w-full min-w-0 break-words text-base text-primary hover:underline" onClick={()=>{setMode(mode==="login"?"signup":"login");setError("")}}>
         {mode==="login"?"New here? Create an account":"Already have an account? Log in"}
       </button>
-
-      <div className="mt-5 border-t pt-5">
-        <a
-          href="/scan"
-          onClick={() => grantAccessibilityEntry()}
-          className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 overflow-hidden rounded-xl border border-input bg-background px-4 py-3 text-left transition-colors hover:bg-accent"
-        >
-          <Accessibility className="size-5 shrink-0 text-primary" />
-          <span className="min-w-0 max-w-full overflow-hidden">
-            <span className="block break-words text-sm font-semibold leading-5">Accessibility: scan without logging in</span>
-            <span className="mt-1 block break-words text-xs font-normal leading-4 text-muted-foreground">Go directly to the scanner with the simplest path.</span>
-          </span>
-        </a>
-      </div>
     </section>
   </main>;
 }

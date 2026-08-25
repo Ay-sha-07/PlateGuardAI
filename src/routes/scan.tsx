@@ -33,6 +33,7 @@ import { addHistoryEntry, makeThumbnail } from "@/lib/history";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/bottom-nav";
+import { RequireEntry } from "@/components/require-entry";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
@@ -56,7 +57,9 @@ function ScanRouteWrapper() {
         </div>
       }
     >
-      <ScannerPage />
+      <RequireEntry>
+        <ScannerPage />
+      </RequireEntry>
     </ClientOnly>
   );
 }

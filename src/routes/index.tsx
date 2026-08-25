@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Camera,
@@ -27,14 +27,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   ShieldAlert,
-  Accessibility,
-  LogIn,
   Moon,
   Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
-import { requireSupabase, supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 
 export const Route = createFileRoute("/")({
@@ -62,91 +60,6 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-function LoginGate() {
-  const [googleBusy, setGoogleBusy] = useState(false);
-  const [googleError, setGoogleError] = useState("");
-
-  async function signInWithGoogle() {
-    setGoogleBusy(true);
-    setGoogleError("");
-    try {
-      const s = requireSupabase();
-      const { error } = await s.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        },
-      });
-      if (error) throw error;
-    } catch (err: any) {
-      setGoogleError(err?.message ?? "Unable to continue with Google.");
-      setGoogleBusy(false);
-    }
-  }
-
-  return (
-    <main className="flex min-h-[100dvh] w-full max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
-      <section className="login-gate-card box-border w-full min-w-0 overflow-hidden rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-7">
-        <div className="text-center">
-          <img
-            src="/icons/logo.png"
-            alt="PlateGuard AI"
-            className="mx-auto mb-5 size-16 rounded-2xl object-contain"
-          />
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-            PlateGuard AI
-          </p>
-          <h1 className="font-display text-3xl font-bold sm:text-4xl">Welcome to PlateGuard</h1>
-          <p className="mx-auto mt-3 max-w-md text-base leading-7 text-muted-foreground">
-            Sign in to access your personalised profiles, scan history, and the full PlateGuard experience.
-          </p>
-        </div>
-
-        <div className="mt-8 grid gap-3">
-          <Button asChild size="lg" className="h-12 w-full min-w-0 rounded-2xl text-base">
-            <Link to="/login" className="min-w-0 whitespace-normal">
-              <LogIn className="mr-2 size-5" />
-              Log in or create an account
-            </Link>
-          </Button>
-
-          <Button
-            type="button"
-            size="lg"
-            variant="outline"
-            disabled={googleBusy}
-            onClick={signInWithGoogle}
-            className="h-12 w-full min-w-0 rounded-2xl px-4 text-base"
-          >
-            <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-[#4285F4]">G</span>
-            <span className="min-w-0 truncate">{googleBusy ? "Connecting to Google…" : "Continue with Google"}</span>
-          </Button>
-          {googleError && (
-            <p role="alert" className="break-words text-sm text-destructive">{googleError}</p>
-          )}
-
-          <Link
-            to="/scan"
-            className="grid w-full min-w-0 max-w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3 overflow-hidden rounded-2xl border-2 border-input bg-background px-4 py-3 text-left transition-colors hover:bg-accent"
-          >
-            <Accessibility className="size-6 shrink-0 text-primary" />
-            <span className="min-w-0 max-w-full overflow-hidden">
-              <span className="block break-words text-sm font-bold leading-5 sm:text-base">Accessibility: go straight to scanner</span>
-              <span className="mt-1 block break-words text-xs font-normal leading-4 text-muted-foreground">
-                Skip account setup and open the scanner with larger, simpler controls.
-              </span>
-            </span>
-          </Link>
-        </div>
-
-        <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
-          The accessibility option is designed for elderly users and anyone who needs the quickest route to scanning.
-        </p>
-      </section>
-    </main>
-  );
-}
-
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
   { label: "What we scan", href: "#coverage" },
@@ -155,6 +68,7 @@ const NAV_LINKS = [
 ];
 
 function HomePage() {
+  const navigate = useNavigate();
   const [authReady, setAuthReady] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
@@ -183,7 +97,15 @@ function HomePage() {
     };
   }, []);
 
-  if (!authReady) {
+  // Single canonical sign-in surface: send anyone not logged in straight to
+  // /login instead of duplicating a second login screen here.
+  useEffect(() => {
+    if (authReady && !loggedIn) {
+      void navigate({ to: "/login" });
+    }
+  }, [authReady, loggedIn, navigate]);
+
+  if (!authReady || !loggedIn) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
         <div className="text-center">
@@ -192,10 +114,6 @@ function HomePage() {
         </div>
       </main>
     );
-  }
-
-  if (!loggedIn) {
-    return <LoginGate />;
   }
 
   return (
