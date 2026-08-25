@@ -144,7 +144,8 @@ function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    const cm = Number.parseFloat(profile.heightCm);
+    const raw = typeof profile.heightCm === "string" ? profile.heightCm : "";
+    const cm = Number.parseFloat(raw);
     if (!Number.isFinite(cm) || cm <= 0) {
       setHeightFeet("");
       setHeightInches("");
@@ -154,22 +155,16 @@ function ProfilePage() {
     const feet = Math.floor(totalInches / 12);
     const inches = Math.round((totalInches - feet * 12) * 10) / 10;
     setHeightFeet(String(feet));
-    setHeightInches(inches ? String(inches) : "");
+    setHeightInches(inches > 0 ? String(inches) : "");
   }, [profile.heightCm]);
 
   function updateHeightFromImperial(feetValue: string, inchesValue: string) {
     const feet = Number.parseFloat(feetValue);
     const inches = Number.parseFloat(inchesValue);
-    if (!Number.isFinite(feet) && !Number.isFinite(inches)) {
-      patch({ heightCm: "" });
-      return;
-    }
-    const totalInches = (Number.isFinite(feet) ? feet : 0) * 12 + (Number.isFinite(inches) ? inches : 0);
-    if (totalInches <= 0) {
-      patch({ heightCm: "" });
-      return;
-    }
-    patch({ heightCm: String(Math.round(totalInches * 2.54 * 10) / 10) });
+    const safeFeet = Number.isFinite(feet) ? Math.max(0, feet) : 0;
+    const safeInches = Number.isFinite(inches) ? Math.min(11.9, Math.max(0, inches)) : 0;
+    const totalInches = safeFeet * 12 + safeInches;
+    patch({ heightCm: totalInches > 0 ? String(Math.round(totalInches * 2.54 * 10) / 10) : "" });
   }
 
   function patch(partial: Partial<SafetyProfile>) {
@@ -504,19 +499,25 @@ function StepAbout({ profile, patch }: StepProps) {
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="height">Height (optional)</Label>
-            <Select
-              value={heightUnit}
-              onValueChange={(value) => setHeightUnit(value as "cm" | "ft")}
-            >
-              <SelectTrigger className="h-8 w-[82px] rounded-lg px-2 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cm">cm</SelectItem>
-                <SelectItem value="ft">ft / in</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor={heightUnit === "cm" ? "height" : "height-feet"}>Height (optional)</Label>
+            <div className="inline-flex rounded-lg border border-border bg-background p-0.5" role="group" aria-label="Height unit">
+              <button
+                type="button"
+                onClick={() => setHeightUnit("cm")}
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${heightUnit === "cm" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                aria-pressed={heightUnit === "cm"}
+              >
+                cm
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeightUnit("ft")}
+                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${heightUnit === "ft" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                aria-pressed={heightUnit === "ft"}
+              >
+                ft / in
+              </button>
+            </div>
           </div>
           {heightUnit === "cm" ? (
             <Input
