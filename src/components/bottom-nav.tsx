@@ -1,18 +1,18 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, ScanLine, History, ShieldCheck, UserRound } from "lucide-react";
+import { Home, ScanLine, History, IdCard, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/", label: "Home", Icon: Home },
   { to: "/scan", label: "Scan", Icon: ScanLine },
   { to: "/history", label: "History", Icon: History },
-  { to: "/safety", label: "Safety", Icon: ShieldCheck },
+  { to: "/card", label: "Card", Icon: IdCard },
   { to: "/profile", label: "Profile", Icon: UserRound },
 ] as const;
 
 /**
  * Fixed bottom tab bar shared by the main app screens (Home, Scan,
- * History, Safety, Profile). Renders inside a max-w-md shell to match the
+ * History, Card, Profile). Renders inside a max-w-md shell to match the
  * mobile-first layout the rest of the app uses.
  *
  * `stacked` renders it as a normal (non-fixed) bar instead — used on
@@ -39,9 +39,7 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
               to={to}
               className={cn(
                 "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition-colors",
-                active
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground",
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon className={cn("size-5", active && "fill-primary/15")} />
