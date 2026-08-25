@@ -93,12 +93,14 @@ function ProfileAvatar({
   size = "size-6",
   textSize = "text-[10px]",
   className = "",
+  active = false,
 }: {
   name: string;
   avatarUrl?: string;
   size?: string;
   textSize?: string;
   className?: string;
+  active?: boolean;
 }) {
   const initial = (name.trim() || "?").slice(0, 1).toUpperCase();
   if (avatarUrl) {
@@ -112,7 +114,7 @@ function ProfileAvatar({
   }
   return (
     <span
-      className={`flex ${size} shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 ${textSize} font-bold text-primary ${className}`}
+      className={`flex ${size} shrink-0 items-center justify-center rounded-full border ${active ? "border-primary-foreground/30 bg-primary-foreground/15 text-primary-foreground" : "border-primary/20 bg-primary/10 text-primary"} ${textSize} font-bold ${className}`}
       aria-label={`Default profile picture for ${name || "profile"}`}
     >
       {initial}
@@ -280,7 +282,7 @@ function ProfilePage() {
                   : "border-border bg-card/70 text-foreground hover:bg-accent"
               }`}
             >
-              <ProfileAvatar name={p.name} avatarUrl={p.avatarUrl} size="size-7" textSize="text-xs" />
+              <ProfileAvatar name={p.name} avatarUrl={p.avatarUrl} size="size-7" textSize="text-xs" active={p.id === activeId} />
               <span className="min-w-0 truncate">{p.name || "Unnamed"}</span>
             </button>
             {profiles.length > 1 && (

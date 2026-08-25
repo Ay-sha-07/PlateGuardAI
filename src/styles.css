@@ -355,10 +355,24 @@ textarea {
   max-width: 100%;
 }
 
+/* Keep the desktop login gate visually consistent with the compact phone
+ * design. The previous Tailwind max-width could be overridden by generated
+ * styles in some builds, so enforce the component width here as well. */
+.login-gate-card {
+  width: min(100%, 28rem) !important;
+}
+
 @media (max-width: 639px) {
   .login-gate-card {
-    width: 100%;
+    width: 100% !important;
+    max-width: 28rem !important;
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .login-gate-card {
+    padding: 1.75rem !important;
   }
 }

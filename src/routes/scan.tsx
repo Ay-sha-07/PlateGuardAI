@@ -25,7 +25,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { scanLabel } from "@/lib/scan.functions";
-import { lookupBarcode } from "@/lib/barcode";
+import { detectBarcodeFromDataUrl, lookupBarcode } from "@/lib/barcode";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { addProfile, loadProfileStore, setActiveProfile, type StoredProfile } from "@/lib/profile";
 import { addHistoryEntry, makeThumbnail } from "@/lib/history";
@@ -234,8 +234,33 @@ function ScannerPage() {
     setImage(dataUrl);
     setPending(true);
     try {
+      // Before asking the vision model to identify the product, try the
+      // browser's native barcode detector. A verified barcode/catalog match
+      // is much stronger identity evidence than package colour or a guessed
+      // brand name, and it is especially useful for bottled water and other
+      // products whose labels have little/no ingredient text.
+      let barcode = "";
+      let barcodeProductName = "";
+      let barcodeIngredientText = "";
+      const detectedBarcode = await detectBarcodeFromDataUrl(dataUrl);
+      if (detectedBarcode) {
+        const catalog = await lookupBarcode(detectedBarcode);
+        if (catalog.found) {
+          barcode = catalog.barcode;
+          barcodeProductName = catalog.productName;
+          barcodeIngredientText = catalog.ingredientText;
+        }
+      }
+
       const res = (await run({
-        data: { image: dataUrl, productName: productName.trim(), ...profilePayload() },
+        data: {
+          image: dataUrl,
+          productName: productName.trim(),
+          barcode,
+          barcodeProductName,
+          barcodeIngredientText,
+          ...profilePayload(),
+        },
       })) as ScanResult;
       setResult(res);
 

@@ -16,6 +16,9 @@ export const ScanInputSchema = z
     image: z.string().min(20).optional(), // data URL
     ingredientText: z.string().min(3).optional(), // pasted/typed label text, no photo
     productName: z.string().default(""), // optional user-typed product name, or barcode-lookup result
+    barcode: z.string().optional(),
+    barcodeProductName: z.string().default(""),
+    barcodeIngredientText: z.string().default(""),
     mode: z.enum(["food", "medicine"]).default("food"),
 
   ageGroup: z.string().default(""),
@@ -90,6 +93,10 @@ Output a RATING from 1 to 5, not a strict eat/don't-eat verdict — this is inte
 Give the SAME 1–5 rating to each individual "reasons" entry for the specific thing it flags, so the overall rating is a defensible aggregate of the reasons rather than a separate guess.
 
 Rules:
+- Identity accuracy is more important than producing a confident-looking answer. Never invent a brand/product from a blurry label. If the visible image and barcode/catalog evidence disagree, set itemType="unclear", rating=3, and ask the user to rescan the label or confirm the product.
+- Barcode/catalog evidence: when a verified barcode match is supplied, treat its product name as strong identity evidence. Do not replace a verified barcode product with an unrelated product merely because a logo/color/package shape resembles something else.
+- Water and beverages: drinking water is a food/beverage. If the product is clearly plain drinking water, do not call it unsafe merely because it has no ingredients. Only raise a health concern when the person's profile or visible product information provides a real reason (for example, a documented fluid restriction).
+- Common edible foods must not be classified as non-food: ghee/clarified butter, butter, milk, curd/yogurt, cheese, cooking oil, flour, rice, grains, spices, tea, coffee, packaged snacks, fruits, vegetables, meat, fish, eggs, and other clearly edible foods are itemType="food". A nutrition facts panel and an ingredient such as milk fat are strong evidence of a food product.
 - Food-mode hard gate: if itemType="non_food", rating MUST be 5, headline MUST clearly say "Not edible — do not eat", and include a reason stating that the scanned item is not food. Do not describe a non-food item as safe merely because no allergy or health trigger was found.
 - Food-mode uncertainty: if itemType="unclear", never call the item Safe; use rating 3 and clearly ask the user to verify the product type.
 - Allergen matches: any direct allergen or hidden derivative (e.g. "groundnut oil"/"arachis oil" = peanut; "casein"/"whey" = milk; "semolina"/"malt" = gluten) => rating 5. A vague shared-facility "may contain" statement alone => rating 3, or 4 if allergy severity is "severe / anaphylaxis risk".
@@ -188,6 +195,16 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
     ? `The shopper typed/scanned this product name: "${data.productName.trim()}".`
     : "";
 
+  const barcodeEvidence = data.barcodeProductName.trim()
+    ? [
+        `Verified barcode detected: ${data.barcode ?? "unknown"}.`,
+        `Catalog identity for that barcode: "${data.barcodeProductName.trim()}".`,
+        data.barcodeIngredientText.trim()
+          ? `Catalog label/nutrition evidence: ${data.barcodeIngredientText.trim()}`
+          : "The catalog has no ingredient list for this product; do not treat that absence as evidence that it is not food.",
+      ].join("\n")
+    : "";
+
   const hasImage = !!data.image;
   const source = hasImage
     ? "Scan this label photo"
@@ -196,6 +213,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   const instruction = [
     `${source} for the following person.`,
     productNameNote,
+    barcodeEvidence,
     !hasImage && data.ingredientText ? `Label text:\n${data.ingredientText.trim()}` : "",
     "",
     profileText,
@@ -272,6 +290,105 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
   }
 
   const parsed = ScanResultSchema.parse(await result.output);
+
+  // Barcode identity is a strong, deterministic product signal. If it says
+  // one product and vision invents a different product (as happened with a
+  // bottled-water scan being called tea), never display the hallucinated name.
+  // We retain the safety analysis only when it is still about the same item;
+  // otherwise force a conservative identity-mismatch result.
+  if (data.mode === "food" && data.barcodeProductName.trim()) {
+    const catalogName = data.barcodeProductName.trim().toLowerCase();
+    const visionName = `${parsed.productGuess} ${parsed.headline}`.toLowerCase();
+    const catalogTokens = catalogName.split(/[^a-z0-9]+/).filter((t) => t.length >= 4);
+    const matchesCatalog = catalogTokens.length > 0 && catalogTokens.some((token) => visionName.includes(token));
+    if (!matchesCatalog) {
+      const looksLikeWater = /\b(water|aquafina|bisleri|drinking water|mineral water|packaged drinking)\b/i.test(catalogName);
+
+      if (looksLikeWater) {
+        // Plain packaged water should not inherit tea/food-specific warnings
+        // from a hallucinated vision result. Only flag water when the profile
+        // itself contains a plausible fluid-restriction concern.
+        const profileMayRestrictFluids =
+          /\b(heart\s*failure|fluid\s*restriction|fluid\s*overload|oedema|edema|hyponatremia)\b/i.test(
+            data.conditions.join(" "),
+          ) || /ckd|kidney|dialysis/i.test(data.kidney.status);
+        const waterRating = profileMayRestrictFluids ? 3 : 1;
+
+        return {
+          ...parsed,
+          rating: waterRating,
+          headline: profileMayRestrictFluids
+            ? "Drinking water — check your fluid limit"
+            : "Drinking water — verified",
+          productGuess: data.barcodeProductName.trim(),
+          labelReadable: true,
+          itemType: "food",
+          reasons: [
+            {
+              rating: waterRating,
+              trigger: "Verified product",
+              detail: `The barcode identifies this as ${data.barcodeProductName.trim()}.`,
+            },
+            ...(profileMayRestrictFluids
+              ? [{
+                  rating: 3,
+                  trigger: "Fluid intake may need limits",
+                  detail: "Your profile may require a fluid limit; follow the amount advised by your clinician.",
+                }]
+              : []),
+          ],
+        };
+      }
+
+      return {
+        ...parsed,
+        rating: 3,
+        headline: "Product identity could not be confirmed",
+        productGuess: data.barcodeProductName.trim(),
+        labelReadable: false,
+        itemType: "unclear",
+        reasons: [
+          {
+            rating: 3,
+            trigger: "Product identity mismatch",
+            detail: `The barcode identifies this as ${data.barcodeProductName.trim()}, but the image analysis produced a different product. Please rescan the label clearly before relying on the result.`,
+          },
+        ],
+      };
+    }
+  }
+
+  // Deterministic food override: some ordinary edible products can be
+  // mislabeled by vision models as non-food (for example ghee because its
+  // label is dominated by nutrition facts and manufacturing text). Strong
+  // edible-food terms take precedence over a contradictory itemType.
+  const foodPattern = /\b(ghee|clarified\s+butter|butter|milk\s+fat|milk|curd|yogurt|yoghurt|cheese|paneer|cooking\s+oil|edible\s+oil|flour|atta|rice|wheat|oats|barley|rye|lentil|dal|chickpea|bean|tea|coffee|biscuit|cookie|bread|cereal|snack|chips|juice|drink|beverage|water|mineral\s+water|drinking\s+water|fruit|vegetable|meat|chicken|fish|egg|spice|masala|sugar|salt|honey|jam|pickle|sauce|ketchup)\b/i;
+  const foodEvidenceText = [
+    data.productName,
+    data.barcodeProductName,
+    data.barcodeIngredientText,
+    parsed.productGuess,
+    parsed.headline,
+    ...parsed.reasons.map((reason) => `${reason.trigger} ${reason.detail}`),
+  ].join(" ");
+  const clearlyEdible = data.mode === "food" && foodPattern.test(foodEvidenceText);
+
+  if (clearlyEdible && parsed.itemType === "non_food") {
+    const filteredReasons = parsed.reasons.filter(
+      (reason) => !/not (a )?food|non[- ]?food|cosmetic|lotion|perfume|soap|detergent|shampoo/i.test(`${reason.trigger} ${reason.detail}`),
+    );
+    return {
+      ...parsed,
+      itemType: "food",
+      rating: filteredReasons.length > 0 ? Math.min(5, Math.max(1, Math.max(...filteredReasons.map((reason) => reason.rating)))) : 1,
+      headline: filteredReasons.length > 0 ? parsed.headline.replace(/not edible[^—-]*[—-]?\s*/i, "") || "Food product — see profile checks" : "Food product — safe based on the scanned information",
+      reasons: filteredReasons.length > 0 ? filteredReasons : [{
+        rating: 1,
+        trigger: "Verified food product",
+        detail: "The label appears to be an edible food product intended for human consumption.",
+      }],
+    };
+  }
 
   // Deterministic non-food guard: if the model or the shopper's typed name
   // contains an unmistakable cosmetic/household/product term, never let the

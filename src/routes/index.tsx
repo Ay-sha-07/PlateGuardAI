@@ -84,7 +84,7 @@ function LoginGate() {
 
   return (
     <main className="flex min-h-[100dvh] w-full max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
-      <section className="login-gate-card box-border w-full min-w-0 max-w-md overflow-hidden rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-7">
+      <section className="login-gate-card box-border w-full min-w-0 overflow-hidden rounded-[2rem] border bg-card p-5 shadow-2xl sm:p-7">
         <div className="text-center">
           <img
             src="/icons/logo.png"
