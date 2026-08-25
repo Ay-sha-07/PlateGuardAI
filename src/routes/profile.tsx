@@ -32,6 +32,7 @@ import {
   loadProfileStore,
   REPRODUCTIVE_STATUSES,
   setActiveProfile,
+  subscribeProfileChanges,
   SENSITIVITIES,
   type SafetyProfile,
   type StoredProfile,
@@ -157,6 +158,19 @@ function ProfilePageContent() {
     setActiveId(store.activeId);
     const active = store.profiles.find((p) => p.id === store.activeId);
     if (active) setProfile(active);
+
+    // Cloud hydration can finish after this page mounts. Re-read the scoped
+    // profile store whenever it changes so another device's profile data
+    // appears without requiring a manual refresh.
+    const refresh = () => {
+      const next = loadProfileStore();
+      setProfiles(next.profiles);
+      setActiveId(next.activeId);
+      setProfile(next.profiles.find((p) => p.id === next.activeId) ?? EMPTY_PROFILE);
+    };
+    const unsubscribeProfile = subscribeProfileChanges(refresh);
+
+    return () => unsubscribeProfile();
   }, []);
 
   function patch(partial: Partial<SafetyProfile>) {

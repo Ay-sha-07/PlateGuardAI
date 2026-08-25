@@ -19,6 +19,7 @@ import {
   type ScanHistoryEntry,
 } from "@/lib/history";
 import { SCOPE_CHANGED_EVENT } from "@/lib/account-scope";
+import { isHistoryPullInFlight, subscribeHistoryPullStatus } from "@/lib/cloud-sync";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +66,7 @@ function HistoryPage() {
 function HistoryPageContent() {
   const [entries, setEntries] = useState<ScanHistoryEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [syncing, setSyncing] = useState(() => isHistoryPullInFlight());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -92,11 +94,13 @@ function HistoryPageContent() {
     // reach the screen until a manual refresh.
     const refresh = () => setEntries(loadHistory());
     const unsubscribeHistory = subscribeHistoryChanges(refresh);
+    const unsubscribePullStatus = subscribeHistoryPullStatus(setSyncing);
     window.addEventListener(SCOPE_CHANGED_EVENT, refresh);
 
     return () => {
       window.removeEventListener("popstate", onPopState);
       unsubscribeHistory();
+      unsubscribePullStatus();
       window.removeEventListener(SCOPE_CHANGED_EVENT, refresh);
     };
   }, []);
@@ -174,9 +178,17 @@ function HistoryPageContent() {
                 <ArrowLeft className="size-4" />
               </Link>
             </Button>
-            <h1 className="truncate text-xl font-bold text-foreground">
-              {compareMode ? `Select to compare (${compareIds.length}/3)` : "Scan history"}
-            </h1>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold text-foreground">
+                {compareMode ? `Select to compare (${compareIds.length}/3)` : "Scan history"}
+              </h1>
+              {syncing && (
+                <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground" role="status" aria-live="polite">
+                  <span className="size-1.5 animate-pulse rounded-full bg-primary" aria-hidden="true" />
+                  Syncing…
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {entries.length >= 2 && (

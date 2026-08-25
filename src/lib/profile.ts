@@ -312,12 +312,26 @@ export function loadProfileStore(): ProfileStore {
   return { profiles: [], activeId: "" };
 }
 
+const PROFILE_CHANGED_EVENT = "plateguard:profile-changed";
+
+export function subscribeProfileChanges(onChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(PROFILE_CHANGED_EVENT, onChange);
+  return () => window.removeEventListener(PROFILE_CHANGED_EVENT, onChange);
+}
+
+function notifyProfileChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(PROFILE_CHANGED_EVENT));
+}
+
 export function saveProfileStore(store: ProfileStore) {
   if (typeof window === "undefined") return;
   // localStorage is the fast local cache, scoped to whichever account is
   // active. It's also mirrored to Supabase (see cloud-sync) so a signed-in
   // account sees the same profiles on every device.
   window.localStorage.setItem(scopedKey(STORE_KEY_BASE), JSON.stringify(store));
+  notifyProfileChanged();
   void import("./cloud-sync").then(({ pushProfileStore }) => pushProfileStore(store));
 }
 

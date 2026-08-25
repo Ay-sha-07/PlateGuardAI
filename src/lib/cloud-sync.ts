@@ -1,5 +1,27 @@
 import type { ProfileStore } from "./profile";
 import type { ScanHistoryEntry } from "./history";
+
+const HISTORY_PULL_STATUS_EVENT = "plateguard:history-pull-status";
+let historyPullInFlight = false;
+
+function notifyHistoryPullStatus() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(HISTORY_PULL_STATUS_EVENT, { detail: { inFlight: historyPullInFlight } }));
+}
+
+export function isHistoryPullInFlight(): boolean {
+  return historyPullInFlight;
+}
+
+export function subscribeHistoryPullStatus(onChange: (inFlight: boolean) => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const handler = (event: Event) => {
+    onChange((event as CustomEvent<{ inFlight: boolean }>).detail?.inFlight === true);
+  };
+  window.addEventListener(HISTORY_PULL_STATUS_EVENT, handler);
+  return () => window.removeEventListener(HISTORY_PULL_STATUS_EVENT, handler);
+}
+
 import { supabase } from "./supabase";
 
 async function getUserId() {
@@ -131,30 +153,37 @@ export async function clearHistoryCloud() {
 }
 
 export async function pullHistory(): Promise<ScanHistoryEntry[] | null> {
-  const userId = await getUserId();
-  if (!userId || !supabase) return null;
+  historyPullInFlight = true;
+  notifyHistoryPullStatus();
+  try {
+    const userId = await getUserId();
+    if (!userId || !supabase) return null;
 
-  const { data, error } = await supabase
-    .from("scan_history")
-    .select("id,profileId,profileName,mode,image,rating,headline,productGuess,createdAt,aiResult")
-    .eq("user_id", userId)
-    .order("createdAt", { ascending: false });
+    const { data, error } = await supabase
+      .from("scan_history")
+      .select("id,profileId,profileName,mode,image,rating,headline,productGuess,createdAt,aiResult")
+      .eq("user_id", userId)
+      .order("createdAt", { ascending: false });
 
-  if (error) {
-    console.warn("[cloud-sync] history pull failed:", error.message);
-    return null;
+    if (error) {
+      console.warn("[cloud-sync] history pull failed:", error.message);
+      return null;
+    }
+
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      profileId: row.profileId ?? "",
+      profileName: row.profileName ?? "Me",
+      mode: row.mode === "medicine" ? "medicine" : "food",
+      image: row.image ?? "",
+      rating: Number(row.rating ?? 0),
+      headline: row.headline ?? "",
+      productGuess: row.productGuess ?? "Unknown product",
+      createdAt: Number(row.createdAt ?? Date.now()),
+      aiResult: row.aiResult ?? undefined,
+    }));
+  } finally {
+    historyPullInFlight = false;
+    notifyHistoryPullStatus();
   }
-
-  return (data ?? []).map((row: any) => ({
-    id: row.id,
-    profileId: row.profileId ?? "",
-    profileName: row.profileName ?? "Me",
-    mode: row.mode === "medicine" ? "medicine" : "food",
-    image: row.image ?? "",
-    rating: Number(row.rating ?? 0),
-    headline: row.headline ?? "",
-    productGuess: row.productGuess ?? "Unknown product",
-    createdAt: Number(row.createdAt ?? Date.now()),
-    aiResult: row.aiResult ?? undefined,
-  }));
 }
