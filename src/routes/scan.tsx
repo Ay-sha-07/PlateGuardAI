@@ -492,15 +492,18 @@ function ScannerPage() {
                 <HistoryIcon className="size-4" />
               </Link>
             </Button>
-            <div
-              className="hidden items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-1.5 text-[11px] font-semibold text-foreground backdrop-blur sm:flex"
-              title="AI provider capacity"
-              aria-label={`AI capacity ${aiHealth?.capacity ?? "loading"}`}
+            <button
+              type="button"
+              onClick={() => setHealthOpen((v) => !v)}
+              className="flex min-w-[76px] items-center justify-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-1.5 text-[11px] font-semibold text-foreground backdrop-blur transition-colors hover:bg-card active:scale-95"
+              title="View AI provider readiness"
+              aria-expanded={healthOpen}
+              aria-controls="ai-provider-status"
             >
               <Activity className="size-3.5" />
-              AI {aiHealth?.capacity ?? "…"}
+              <span>AI {aiHealth?.capacity ?? "…"}</span>
               {aiHealth && <span className="text-muted-foreground">{aiHealth.ready}/{aiHealth.total}</span>}
-            </div>
+            </button>
 
             <Button
               asChild
@@ -515,6 +518,88 @@ function ScannerPage() {
             </Button>
           </div>
         </header>
+
+        {healthOpen && aiHealth && (
+          <section
+            id="ai-provider-status"
+            className="animate-rise-in mt-3 rounded-2xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur"
+            aria-label="AI provider status"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">AI providers</p>
+                <p className="mt-1 text-sm font-medium text-foreground">
+                  {aiHealth.ready} of {aiHealth.total} ready right now
+                </p>
+              </div>
+              <span
+                className={`rounded-full px-2 py-1 text-[11px] font-bold ${
+                  aiHealth.capacity === "High"
+                    ? "bg-safe/15 text-safe"
+                    : aiHealth.capacity === "Medium"
+                      ? "bg-caution/15 text-caution"
+                      : "bg-danger/15 text-danger"
+                }`}
+              >
+                {aiHealth.capacity} capacity
+              </span>
+            </div>
+
+            <div className="mt-3 grid gap-2">
+              {[...aiHealth.providers]
+                .sort((a, b) => Number(b.status === "ready") - Number(a.status === "ready"))
+                .map((provider) => (
+                  <div
+                    key={provider.name}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/40 px-3 py-2.5"
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        className={`flex size-7 shrink-0 items-center justify-center rounded-full ${
+                          provider.status === "ready"
+                            ? "bg-safe/15 text-safe"
+                            : provider.status === "cooldown"
+                              ? "bg-caution/15 text-caution"
+                              : "bg-danger/15 text-danger"
+                        }`}
+                      >
+                        {provider.status === "ready" ? (
+                          <CheckCircle2 className="size-4" />
+                        ) : (
+                          <Activity className="size-4" />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">{provider.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {provider.status === "ready"
+                            ? "Available for the next scan"
+                            : provider.status === "cooldown"
+                              ? "Temporarily rate-limited"
+                              : "Temporarily unavailable"}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`shrink-0 text-xs font-semibold ${
+                        provider.status === "ready"
+                          ? "text-safe"
+                          : provider.status === "cooldown"
+                            ? "text-caution"
+                            : "text-danger"
+                      }`}
+                    >
+                      {provider.status === "ready" ? "Ready" : provider.status === "cooldown" ? "Cooling" : "Blocked"}
+                    </span>
+                  </div>
+                ))}
+            </div>
+
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+              Readiness is based on recent provider responses. A provider can be skipped automatically when it is rate-limited or unavailable.
+            </p>
+          </section>
+        )}
 
         <div className="animate-rise-in relative z-30 mt-4" style={{ animationDelay: "40ms" }}>
           <button
@@ -563,19 +648,6 @@ function ScannerPage() {
             </div>
           )}
         </div>
-
-        {aiHealth && (
-          <div
-            className="mt-2 flex w-full items-center justify-between rounded-xl border border-border/70 bg-card/50 px-3 py-2"
-            aria-label={`AI capacity ${aiHealth.capacity}, ${aiHealth.ready} of ${aiHealth.total} providers ready`}
-          >
-            <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
-              <Activity className="size-3.5" />
-              AI capacity: <span className={aiHealth.capacity === "High" ? "text-safe" : aiHealth.capacity === "Medium" ? "text-caution" : "text-danger"}>{aiHealth.capacity}</span>
-            </span>
-            <span className="text-[11px] text-muted-foreground">{aiHealth.ready}/{aiHealth.total} ready</span>
-          </div>
-        )}
 
         <div
           className="animate-rise-in mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-card/60 p-1"
