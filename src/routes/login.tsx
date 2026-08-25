@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { LogIn, UserPlus, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { LogIn, UserPlus, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireSupabase } from "@/lib/supabase";
 import { setActiveScope } from "@/lib/account-scope";
@@ -49,7 +49,11 @@ function LoginPage() {
   return <main className="flex min-h-[100dvh] w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
     <section className="box-border w-full min-w-0 max-w-md overflow-hidden rounded-3xl border bg-card p-6 shadow-xl sm:p-8">
       <div className="mb-7 text-center">
-        <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/15 text-primary"><ShieldCheck className="size-8"/></div>
+        <img
+          src="/icons/logo.png"
+          alt="PlateGuard AI"
+          className="mx-auto mb-4 size-16 rounded-2xl object-contain"
+        />
         <h1 className="font-display text-3xl font-bold sm:text-4xl">{mode==="login"?"Welcome back":"Create your account"}</h1>
         <p className="mt-3 text-base leading-6 text-muted-foreground">Your profiles and scan history are saved securely to your account.</p>
       </div>
