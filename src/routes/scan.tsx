@@ -492,16 +492,6 @@ function ScannerPage() {
                 <HistoryIcon className="size-4" />
               </Link>
             </Button>
-            <div
-              className="hidden items-center gap-1.5 rounded-full border border-border bg-card/70 px-2.5 py-1.5 text-[11px] font-semibold text-foreground backdrop-blur sm:flex"
-              title="AI provider capacity"
-              aria-label={`AI capacity ${aiHealth?.capacity ?? "loading"}`}
-            >
-              <Activity className="size-3.5" />
-              AI {aiHealth?.capacity ?? "…"}
-              {aiHealth && <span className="text-muted-foreground">{aiHealth.ready}/{aiHealth.total}</span>}
-            </div>
-
             <Button
               asChild
               variant="secondary"
