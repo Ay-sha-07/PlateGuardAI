@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         name: "description",
-        content: "Allergen and nutrition label scanning tailored to your medical profile.",
+        content: "Instant allergen and nutrition label scanning for your medical profile.",
       },
 
       {
@@ -115,7 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         property: "og:description",
-        content: "Allergen and nutrition label scanning tailored to your medical profile.",
+        content: "Instant allergen and nutrition label scanning for your medical profile.",
       },
 
       {

@@ -1,41 +1,41 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export const LANGUAGES = [
-  { code: "am", label: "አማርኛ" }, // Amharic
-  { code: "ar", label: "العربية" }, // Arabic
-  { code: "bn", label: "বাংলা" }, // Bengali
-  { code: "zh", label: "中文" }, // Chinese
-  { code: "nl", label: "Nederlands" }, // Dutch
   { code: "en", label: "English" },
+  { code: "ml", label: "മലയാളം" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ta", label: "தமிழ்" },
+  { code: "te", label: "తెలుగు" },
+  { code: "kn", label: "ಕನ್ನಡ" },
+  { code: "bn", label: "বাংলা" },
+  { code: "mr", label: "मराठी" },
+  { code: "gu", label: "ગુજરાતી" },
+  { code: "pa", label: "ਪੰਜਾਬੀ" },
+  { code: "ur", label: "اردو" },
+  { code: "ar", label: "العربية" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "it", label: "Italiano" },
+  { code: "pt", label: "Português" },
+  { code: "nl", label: "Nederlands" },
+  { code: "pl", label: "Polski" },
+  { code: "uk", label: "Українська" },
+  { code: "ru", label: "Русский" },
+  { code: "tr", label: "Türkçe" },
+  { code: "el", label: "Ελληνικά" },
+  { code: "zh", label: "中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "id", label: "Bahasa Indonesia" },
+  { code: "ms", label: "Bahasa Melayu" },
+  { code: "vi", label: "Tiếng Việt" },
+  { code: "th", label: "ไทย" },
+  { code: "sw", label: "Kiswahili" },
+  { code: "am", label: "አማርኛ" },
   { code: "fil", label: "Filipino" },
-  { code: "fr", label: "Français" }, // French
-  { code: "de", label: "Deutsch" }, // German
-  { code: "el", label: "Ελληνικά" }, // Greek
-  { code: "gu", label: "ગુજરાતી" }, // Gujarati
-  { code: "he", label: "עברית" }, // Hebrew
-  { code: "hi", label: "हिन्दी" }, // Hindi
-  { code: "id", label: "Bahasa Indonesia" }, // Indonesian
-  { code: "it", label: "Italiano" }, // Italian
-  { code: "ja", label: "日本語" }, // Japanese
-  { code: "kn", label: "ಕನ್ನಡ" }, // Kannada
-  { code: "ko", label: "한국어" }, // Korean
-  { code: "ms", label: "Bahasa Melayu" }, // Malay
-  { code: "ml", label: "മലയാളം" }, // Malayalam
-  { code: "mr", label: "मराठी" }, // Marathi
-  { code: "fa", label: "فارسی" }, // Persian
-  { code: "pl", label: "Polski" }, // Polish
-  { code: "pt", label: "Português" }, // Portuguese
-  { code: "pa", label: "ਪੰਜਾਬੀ" }, // Punjabi
-  { code: "ru", label: "Русский" }, // Russian
-  { code: "es", label: "Español" }, // Spanish
-  { code: "sw", label: "Kiswahili" }, // Swahili
-  { code: "ta", label: "தமிழ்" }, // Tamil
-  { code: "te", label: "తెలుగు" }, // Telugu
-  { code: "th", label: "ไทย" }, // Thai
-  { code: "tr", label: "Türkçe" }, // Turkish
-  { code: "uk", label: "Українська" }, // Ukrainian
-  { code: "ur", label: "اردو" }, // Urdu
-  { code: "vi", label: "Tiếng Việt" }, // Vietnamese
+  { code: "fa", label: "فارسی" },
+  { code: "he", label: "עברית" },
 ] as const;
 
 export type LanguageCode = (typeof LANGUAGES)[number]["code"];

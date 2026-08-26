@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Camera,
   Candy,
@@ -39,8 +39,7 @@ import { signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 import { useLanguage } from "@/lib/i18n";
-import { useTranslatedCopy } from "@/hooks/use-ai-translate";
-import { HOME_COPY, type HomeCopy } from "@/lib/home-copy";
+import { useAiTranslate } from "@/hooks/use-ai-translate";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -49,11 +48,11 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Point your camera at a packaged food label and get a clear green or red light, with the exact ingredient that puts you or your child at risk.",
+          "Point your camera at a packaged food label and get an instant green or red light, with the exact ingredient that puts you or your child at risk.",
       },
       {
         property: "og:title",
-        content: "PlateGuard AI — Allergen label scanner",
+        content: "PlateGuard AI — Instant allergen label scanner",
       },
       {
         property: "og:description",
@@ -77,11 +76,6 @@ const NAV_LINKS = [
   { key: "Verdicts", label: "Verdicts", href: "#verdicts" },
   { key: "Safety", label: "Safety", href: "#safety" },
 ] as const;
-
-const HomeCopyContext = createContext<HomeCopy>({ ...HOME_COPY });
-function useHomeCopy() {
-  return useContext(HomeCopyContext);
-}
 
 function HomePage() {
   const navigate = useNavigate();
@@ -126,34 +120,30 @@ function HomePage() {
       <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
         <div className="text-center">
           <div className="mx-auto mb-4 size-10 animate-pulse rounded-full bg-primary/20" />
-          <p className="text-sm text-muted-foreground">{HOME_COPY.checkingAccount}</p>
+          <p className="text-sm text-muted-foreground">Checking your account…</p>
         </div>
       </main>
     );
   }
 
-  const copy = useTranslatedCopy(HOME_COPY);
-
   return (
-    <HomeCopyContext.Provider value={copy}>
-      <div className="min-h-screen bg-background pb-20 text-foreground">
-        <SiteNav />
-        <HeroVideo />
-        <HeroWordmark />
-        <UserGuideVideo />
-        <Coverage />
-        <HowItWorks />
-        <RecentVerdicts />
-        <SnackCarousel />
-        <SafetyProcess />
-        <OneProfile />
-        <SiteFooter />
-        <div className="md:hidden" style={{ paddingBottom: BOTTOM_NAV_HEIGHT }} />
-        <div className="md:hidden">
-          <BottomNav />
-        </div>
+    <div className="min-h-screen bg-background pb-20 text-foreground">
+      <SiteNav />
+      <HeroVideo />
+      <HeroWordmark />
+      <UserGuideVideo />
+      <Coverage />
+      <HowItWorks />
+      <RecentVerdicts />
+      <SnackCarousel />
+      <SafetyProcess />
+      <OneProfile />
+      <SiteFooter />
+      <div className="md:hidden" style={{ paddingBottom: BOTTOM_NAV_HEIGHT }} />
+      <div className="md:hidden">
+        <BottomNav />
       </div>
-    </HomeCopyContext.Provider>
+    </div>
   );
 }
 
@@ -192,21 +182,22 @@ function ThemeToggle() {
 function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const { t } = useLanguage();
-  const copy = useHomeCopy();
+  const { t, language } = useLanguage();
 
-  const navLabelByKey: Record<string, string> = {
-    HowItWorks: copy.howItWorksLink,
-    UserGuide: copy.userGuideLink,
-    WhatWeScan: copy.whatWeScanLink,
-    Verdicts: copy.verdictsLink,
-    Safety: copy.safetyLink,
-  };
+  // English source strings for the menu. Static i18n covers ml/hi/ta/ar/es/fr;
+  // every other language is filled in by AI translation so the circled menu
+  // items never stay stuck in English.
+  const navEnglish = NAV_LINKS.map((l) => l.label);
+  const { texts: aiNavLabels } = useAiTranslate(navEnglish);
 
-  const navLinks = NAV_LINKS.map((l) => ({
-    ...l,
-    label: navLabelByKey[l.key] ?? t(l.key) ?? l.label,
-  }));
+  const navLinks = NAV_LINKS.map((l, i) => {
+    const staticLabel = t(l.key);
+    // Prefer static dictionary when it actually differs from English (or when
+    // language is English). Otherwise use the AI result.
+    const label =
+      language === "en" || staticLabel !== l.label ? staticLabel : (aiNavLabels[i] ?? l.label);
+    return { ...l, label };
+  });
 
   useEffect(() => {
     if (!supabase) return;
@@ -358,7 +349,6 @@ function SiteNav() {
 
 function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const copy = useHomeCopy();
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});
@@ -382,26 +372,26 @@ function HeroVideo() {
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-24 pt-40 sm:pb-28 md:px-8">
         <p className="animate-rise-in text-center text-xs font-semibold uppercase tracking-[0.35em] text-foreground/60 sm:text-left">
-          {copy.tasteOfCertainty}
+          The taste of certainty
         </p>
 
         <h1
           className="animate-rise-in mt-4 text-center font-display text-[13vw] font-bold uppercase leading-[0.95] tracking-tight sm:text-left sm:text-6xl lg:text-7xl"
           style={{ animationDelay: "80ms" }}
         >
-          {copy.readingEveryLabel}
+          Reading every label
           <br />
-          <span className="text-primary">{copy.protectingEveryBite}</span>
+          <span className="text-primary">Protecting every bite</span>
         </h1>
       </div>
 
       <a
         href="#wordmark"
-        aria-label={copy.scrollToLearnMore}
+        aria-label="Scroll to learn more"
         className="absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-foreground/50"
       >
         <span className="h-10 w-px bg-foreground/30" />
-        <span className="text-[10px] uppercase tracking-[0.3em]">{copy.scroll}</span>
+        <span className="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
       </a>
     </section>
   );
@@ -410,7 +400,6 @@ function HeroVideo() {
 /* --------------------------- Hero: giant wordmark scene --------------------------- */
 
 function HeroWordmark() {
-  const copy = useHomeCopy();
   return (
     <section
       id="wordmark"
@@ -423,14 +412,15 @@ function HeroWordmark() {
           </h2>
 
           <p className="mt-3 max-w-md text-base text-muted-foreground sm:text-lg">
-            {copy.smarterScans}
+            Smarter scans. Safer bites. Every label decoded in plain English, for every aisle in the
+            store.
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="h-14 rounded-full px-7 text-base">
               <Link to="/scan">
                 <Camera className="size-5" />
-                {copy.startScanning}
+                Start scanning
               </Link>
             </Button>
 
@@ -440,7 +430,7 @@ function HeroWordmark() {
               variant="outline"
               className="h-14 rounded-full border-2 px-7 text-base"
             >
-              <Link to="/profile">{copy.setYourProfile}</Link>
+              <Link to="/profile">Set your profile</Link>
             </Button>
           </div>
         </div>
@@ -459,13 +449,14 @@ function HeroWordmark() {
 
           <div className="absolute -bottom-4 -left-4 flex items-center gap-2 rounded-2xl bg-safe px-4 py-2.5 shadow-xl">
             <CheckCircle2 className="size-4 text-safe-foreground" />
-            <span className="text-sm font-bold text-safe-foreground">{copy.safeBadge}</span>
+            <span className="text-sm font-bold text-safe-foreground">SAFE</span>
           </div>
         </div>
       </div>
 
       <p className="mx-auto max-w-3xl px-5 pb-16 text-center text-sm text-muted-foreground sm:text-base md:px-8">
-        {copy.thoroughCheck}
+        Connecting a photo, an ingredient list, and your medical profile through one instant check —
+        making every trip down the snack aisle faster, calmer, and genuinely informed.
       </p>
 
       <StatsStrip />
@@ -473,14 +464,14 @@ function HeroWordmark() {
   );
 }
 
+const STATS = [
+  { value: "<1 sec", label: "Average time to a verdict" },
+  { value: "10", label: "Allergens tracked by default" },
+  { value: "8", label: "Health conditions supported" },
+  { value: "0", label: "Ingredients left to guesswork" },
+];
+
 function StatsStrip() {
-  const copy = useHomeCopy();
-  const STATS = [
-    { value: copy.statTimeValue, label: copy.typicalTime },
-    { value: "10", label: copy.allergensTracked },
-    { value: "8", label: copy.healthConditions },
-    { value: "0", label: copy.noGuesswork },
-  ];
   return (
     <div className="border-t border-border/60 bg-card/40">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4 md:px-8">
@@ -511,7 +502,6 @@ function formatTime(seconds: number): string {
 }
 
 function UserGuideVideo() {
-  const copy = useHomeCopy();
   const videoRef = useRef<HTMLVideoElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -609,13 +599,14 @@ function UserGuideVideo() {
     <section id="user-guide" className="bg-background py-24">
       <div className="mx-auto max-w-4xl px-5 text-center md:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          {copy.seeItInAction}
+          See it in action
         </p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          {copy.walkthroughTitle}
+          A 5-minute walkthrough of the whole app
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          {copy.walkthroughBody}
+          From setting up your profile to reading a verdict — watch at your own pace, pause
+          anywhere, or speed through the parts you already know.
         </p>
 
         <div className="group relative mx-auto mt-10 max-w-sm overflow-hidden rounded-3xl border border-border bg-black shadow-xl">
@@ -736,16 +727,17 @@ function UserGuideVideo() {
 
 /* -------------------------------- Coverage -------------------------------- */
 
+const CATEGORIES = [
+  { label: "Chips & crisps", Icon: Popcorn },
+  { label: "Cookies & biscuits", Icon: Cookie },
+  { label: "Bakery & pastries", Icon: Croissant },
+  { label: "Dairy & yoghurt", Icon: Milk },
+  { label: "Drinks & coffee", Icon: Coffee },
+  { label: "Candy & sweets", Icon: Candy },
+];
+
 function Coverage() {
-  const copy = useHomeCopy();
-  const CATEGORIES = [
-    { label: copy.chips, Icon: Popcorn },
-    { label: copy.cookies, Icon: Cookie },
-    { label: copy.bakery, Icon: Croissant },
-    { label: copy.dairy, Icon: Milk },
-    { label: copy.drinks, Icon: Coffee },
-    { label: copy.candy, Icon: Candy },
-  ];
+  const { t } = useLanguage();
   return (
     <section
       id="coverage"
@@ -760,11 +752,11 @@ function Coverage() {
 
       <div className="relative mx-auto max-w-6xl px-5 pt-24 md:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          {copy.whatWeScan}
+          {t("WhatWeScan")}
         </p>
 
         <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          {copy.everyCategory}
+          One camera, every packaged category
         </h2>
 
         <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -788,36 +780,37 @@ function Coverage() {
 
 /* ------------------------------ How it works ------------------------------ */
 
+const STEPS = [
+  {
+    n: "01",
+    title: "Set your profile",
+    body: "Add your allergies, medical conditions, or things you're just avoiding. Takes under a minute.",
+    Icon: SlidersHorizontal,
+  },
+  {
+    n: "02",
+    title: "Scan any label",
+    body: "Fill the frame with the ingredients panel. No barcode needed — just the printed text on the pack.",
+    Icon: ScanLine,
+  },
+  {
+    n: "03",
+    title: "Get a plain verdict",
+    body: "Safe, caution, or do-not-eat — with the exact ingredient responsible.",
+    Icon: ShieldCheck,
+  },
+];
+
 function HowItWorks() {
-  const copy = useHomeCopy();
-  const STEPS = [
-    {
-      n: "01",
-      title: copy.step1Title,
-      body: copy.step1Body,
-      Icon: SlidersHorizontal,
-    },
-    {
-      n: "02",
-      title: copy.step2Title,
-      body: copy.step2Body,
-      Icon: ScanLine,
-    },
-    {
-      n: "03",
-      title: copy.step3Title,
-      body: copy.step3Body,
-      Icon: ShieldCheck,
-    },
-  ];
+  const { t } = useLanguage();
   return (
     <section id="how-it-works" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
       <div className="max-w-xl">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          {copy.howItWorks}
+          {t("HowItWorks")}
         </p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          {copy.threeSteps}
+          Three steps between you and a safe snack
         </h2>
       </div>
 
@@ -843,38 +836,38 @@ function HowItWorks() {
 
 /* ------------------------------ Recent verdicts ------------------------------ */
 
-function RecentVerdicts() {
-  const copy = useHomeCopy();
-  const VERDICTS = [
+const VERDICTS = [
   {
-    tag: copy.danger,
+    tag: "Danger",
     tone: "danger" as const,
-    title: copy.verdict1Title,
-    detail: copy.verdict1Detail,
+    title: "Choco wafer bar flagged for hidden peanut oil",
+    detail: 'Listed as "groundnut oil" — a peanut derivative most labels don\'t spell out.',
     Icon: ShieldAlert,
   },
   {
-    tag: copy.caution,
+    tag: "Caution",
     tone: "caution" as const,
-    title: copy.verdict2Title,
-    detail: copy.verdict2Detail,
+    title: "Instant noodles came back at 42% daily sodium",
+    detail: "Within range for most people — flagged for anyone managing hypertension.",
     Icon: AlertTriangle,
   },
   {
-    tag: copy.safe,
+    tag: "Safe",
     tone: "safe" as const,
-    title: copy.verdict3Title,
-    detail: copy.verdict3Detail,
+    title: "Rice crackers cleared with no listed allergens",
+    detail: "Matched cleanly against a peanut and gluten profile in under a second.",
     Icon: CheckCircle2,
   },
 ];
+
+function RecentVerdicts() {
   return (
     <section id="verdicts" className="bg-card/40 py-24">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">{copy.realScans}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Real scans</p>
 
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          {copy.verdictLooksLike}
+          What a verdict actually looks like
         </h2>
 
         <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -938,18 +931,16 @@ function RecentVerdicts() {
 
 /* ------------------------------ Snack carousel ------------------------------ */
 
-
+const SNACKS = [
+  { label: "Peanut butter granola", Icon: Cookie },
+  { label: "Salted potato chips", Icon: Popcorn },
+  { label: "Sesame breadsticks", Icon: Croissant },
+  { label: "Flavoured yoghurt cup", Icon: Milk },
+  { label: "Bottled cold brew", Icon: Coffee },
+  { label: "Gummy fruit candy", Icon: Candy },
+];
 
 function SnackCarousel() {
-  const copy = useHomeCopy();
-  const SNACKS = [
-    { label: copy.peanutGranola, Icon: Cookie },
-    { label: copy.saltedChips, Icon: Popcorn },
-    { label: copy.sesameBreadsticks, Icon: Croissant },
-    { label: copy.yoghurtCup, Icon: Milk },
-    { label: copy.coldBrew, Icon: Coffee },
-    { label: copy.gummyCandy, Icon: Candy },
-  ];
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [index, setIndex] = useState(0);
 
@@ -1018,28 +1009,28 @@ function SnackCarousel() {
 
 /* ------------------------------ Safety process ------------------------------ */
 
-function SafetyProcess() {
-  const copy = useHomeCopy();
-  const PROCESS_TABS = [
+const PROCESS_TABS = [
   {
     n: "01",
-    label: copy.process1Label,
-    title: copy.process1Title,
-    body: copy.process1Body,
+    label: "Label scan",
+    title: "Every ingredient, read in place",
+    body: "Vision AI reads the printed ingredients panel exactly as it's written.",
   },
   {
     n: "02",
-    label: copy.process2Label,
-    title: copy.process2Title,
-    body: copy.process2Body,
+    label: "Cross-check",
+    title: "Matched against your profile",
+    body: "Every ingredient is checked against your saved allergens and conditions.",
   },
   {
     n: "03",
-    label: copy.process3Label,
-    title: copy.process3Title,
-    body: copy.process3Body,
+    label: "Instant verdict",
+    title: "One plain answer, one reason",
+    body: "Safe, caution, or do-not-eat — paired with the specific ingredient responsible.",
   },
 ];
+
+function SafetyProcess() {
   const [active, setActive] = useState(0);
   const tab = PROCESS_TABS[active] ?? PROCESS_TABS[0]!;
 
@@ -1057,11 +1048,11 @@ function SafetyProcess() {
       <div className="bg-gradient-to-b from-safe/15 via-primary/10 to-brand-amber/10 py-20">
         <div className="mx-auto max-w-6xl px-5 md:px-8">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-            {copy.builtForTrust}
+            Built for trust
           </p>
 
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            {copy.howScanBecomesVerdict}
+            How a scan becomes a verdict
           </h2>
 
           <div className="mt-10 flex flex-wrap gap-2">
@@ -1101,16 +1092,16 @@ function SafetyProcess() {
 
 /* ------------------------------ One profile ------------------------------ */
 
-function OneProfile() {
-  const copy = useHomeCopy();
-  const PROFILE_FEATURES = [
-  { label: copy.allergyMatch, body: copy.allergyMatchBody, Icon: ShieldCheck },
-  { label: copy.conditionCheck, body: copy.conditionCheckBody, Icon: ListChecks },
-  { label: copy.multiLabelOcr, body: copy.multiLabelOcrBody, Icon: ScanLine },
-  { label: copy.clearVerdict, body: copy.clearVerdictBody, Icon: Sparkles },
-  { label: copy.privateByDesign, body: copy.privateByDesignBody, Icon: Lock },
-  { label: copy.scanMemory, body: copy.scanMemoryBody, Icon: History },
+const PROFILE_FEATURES = [
+  { label: "Allergy match", body: "Checked against your exact list", Icon: ShieldCheck },
+  { label: "Condition check", body: "Sodium, sugar, gluten and more", Icon: ListChecks },
+  { label: "Multi-label OCR", body: "Reads dense, small-print panels", Icon: ScanLine },
+  { label: "Instant verdict", body: "Green, caution, or red — no delay", Icon: Sparkles },
+  { label: "Private by design", body: "Your profile stays protected", Icon: Lock },
+  { label: "Scan memory", body: "Revisit what you've already checked", Icon: History },
 ];
+
+function OneProfile() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -1143,7 +1134,7 @@ function OneProfile() {
           <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
             One profile.
             <br />
-            <span className="text-primary">{copy.everyAisle}</span>
+            <span className="text-primary">Every aisle, covered.</span>
           </h2>
 
           <p className="mt-4 max-w-lg text-white/70">
@@ -1170,7 +1161,6 @@ function OneProfile() {
 
 function SiteFooter() {
   const { t } = useLanguage();
-  const copy = useHomeCopy();
   return (
     <footer className="relative overflow-hidden bg-brand-amber text-brand-amber-foreground">
       <p
@@ -1193,7 +1183,8 @@ function SiteFooter() {
             </div>
 
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-brand-amber-foreground/80">
-              {copy.footerBlurb}
+              A camera, a profile, and a plain answer — built for the ten seconds before you decide
+              to eat something.
             </p>
 
             <div className="mt-5 flex gap-3">
@@ -1211,47 +1202,47 @@ function SiteFooter() {
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
             <div className="space-y-2.5 text-sm">
               <Link to="/" className="block font-semibold hover:underline">
-                {copy.home}
+                {t("Home")}
               </Link>
               <Link to="/scan" className="block hover:underline">
-                {copy.scan}
+                {t("Scan")}
               </Link>
               <a href="#how-it-works" className="block hover:underline">
-                {copy.howItWorksLink}
+                {t("HowItWorks")}
               </a>
               <a href="#coverage" className="block hover:underline">
-                {copy.whatWeScanLink}
+                {t("WhatWeScan")}
               </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
-              <p className="font-semibold">{copy.account}</p>
+              <p className="font-semibold">Account</p>
               <Link to="/profile" className="block hover:underline">
-                {copy.profile}
+                {t("Profile")}
               </Link>
               <Link to="/login" className="block hover:underline">
-                {copy.login}
+                {t("Login")}
               </Link>
               <a href="#verdicts" className="block hover:underline">
-                {copy.verdictsLink}
+                {t("Verdicts")}
               </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
-              <p className="font-semibold">{copy.languagesSupported}</p>
+              <p className="font-semibold">Languages supported</p>
               <p className="flex items-center gap-1.5 text-brand-amber-foreground/80">
-                <Languages className="size-3.5" /> {copy.autoDetected}
+                <Languages className="size-3.5" /> Auto-detected on scan
               </p>
               <p className="text-brand-amber-foreground/80">
-                {copy.assistsDisclaimer}
+                PlateGuard assists, it doesn't replace the printed label or medical advice.
               </p>
             </div>
           </div>
         </div>
 
         <div className="mt-12 flex flex-col gap-2 border-t border-brand-amber-foreground/15 pt-6 text-xs text-brand-amber-foreground/70 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} PlateGuard AI. {copy.copyrightNote}</p>
-          <p>{copy.whenInDoubt}</p>
+          <p>© {new Date().getFullYear()} PlateGuard AI. Not a substitute for medical advice.</p>
+          <p>When in doubt, don't eat it.</p>
         </div>
       </div>
     </footer>
