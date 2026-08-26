@@ -38,6 +38,8 @@ import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/bottom-nav";
 import { RequireEntry } from "@/components/require-entry";
 import { useLanguage } from "@/lib/i18n";
+import { useTranslatedCopy } from "@/hooks/use-ai-translate";
+import { SCAN_COPY } from "@/lib/scan-copy";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
@@ -150,6 +152,13 @@ function ProfileAvatar({
 
 function ScannerPage() {
   const { language } = useLanguage();
+  const copy = useTranslatedCopy(SCAN_COPY);
+  // Map English stage source strings → translated labels for the progress UI.
+  const stageLabel = (english: string) => {
+    const entry = Object.entries(SCAN_COPY).find(([, v]) => v === english);
+    if (!entry) return english;
+    return copy[entry[0] as keyof typeof SCAN_COPY] ?? english;
+  };
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -160,7 +169,7 @@ function ScannerPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
-  const [scanStage, setScanStage] = useState("Starting scan…");
+  const [scanStage, setScanStage] = useState(SCAN_COPY.startingScan);
   const [preparing, setPreparing] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
 
@@ -294,7 +303,7 @@ function ScannerPage() {
     setImage(dataUrl);
     setPending(true);
     setScanProgress(5);
-    setScanStage("Preparing label…");
+    setScanStage(SCAN_COPY.preparingLabel);
     try {
       // Before asking the vision model to identify the product, try the
       // browser's native barcode detector. A verified barcode/catalog match
@@ -305,11 +314,11 @@ function ScannerPage() {
       let barcodeProductName = "";
       let barcodeIngredientText = "";
       setScanProgress(18);
-      setScanStage("Checking product barcode…");
+      setScanStage(SCAN_COPY.checkingBarcode);
       const detectedBarcode = await detectBarcodeFromDataUrl(dataUrl);
       if (detectedBarcode) {
         setScanProgress(28);
-        setScanStage("Looking up product details…");
+        setScanStage(SCAN_COPY.lookingUpProduct);
         const catalog = await lookupBarcode(detectedBarcode);
         if (catalog.found) {
           barcode = catalog.barcode;
@@ -319,7 +328,7 @@ function ScannerPage() {
       }
 
       setScanProgress(42);
-      setScanStage("Analyzing label with AI…");
+      setScanStage(SCAN_COPY.analyzingLabel);
       const res = (await run({
         data: {
           image: dataUrl,
@@ -332,12 +341,12 @@ function ScannerPage() {
         },
       })) as ScanResult;
       setScanProgress(82);
-      setScanStage("Building your result…");
+      setScanStage(SCAN_COPY.buildingResult);
       setResult(res);
 
       const thumb = await makeThumbnail(dataUrl);
       setScanProgress(94);
-      setScanStage("Saving to history…");
+      setScanStage(SCAN_COPY.savingHistory);
       addHistoryEntry({
         profileId: activeProfile?.id ?? "",
         profileName: activeProfile?.name || "Unnamed profile",
@@ -349,7 +358,7 @@ function ScannerPage() {
         aiResult: res,
       });
       setScanProgress(100);
-      setScanStage("Scan complete");
+      setScanStage(SCAN_COPY.scanComplete);
     } catch (e) {
       reportScanFailure(e);
     } finally {
@@ -380,10 +389,10 @@ function ScannerPage() {
     setImage(null);
     setPending(true);
     setScanProgress(15);
-    setScanStage("Preparing product information…");
+    setScanStage(SCAN_COPY.preparingProduct);
     try {
       setScanProgress(45);
-      setScanStage("Analyzing with AI…");
+      setScanStage(SCAN_COPY.analyzingAi);
       const res = (await run({
         data: {
           ingredientText: analysisText,
@@ -396,11 +405,11 @@ function ScannerPage() {
         },
       })) as ScanResult;
       setScanProgress(82);
-      setScanStage("Building your result…");
+      setScanStage(SCAN_COPY.buildingResult);
       setResult(res);
 
       setScanProgress(94);
-      setScanStage("Saving to history…");
+      setScanStage(SCAN_COPY.savingHistory);
       addHistoryEntry({
         profileId: activeProfile?.id ?? "",
         profileName: activeProfile?.name || "Unnamed profile",
@@ -412,7 +421,7 @@ function ScannerPage() {
         aiResult: res,
       });
       setScanProgress(100);
-      setScanStage("Scan complete");
+      setScanStage(SCAN_COPY.scanComplete);
     } catch (e) {
       reportScanFailure(e);
     } finally {
@@ -427,7 +436,7 @@ function ScannerPage() {
     try {
       const result = await lookupBarcode(barcode.trim());
       if (!result.found) {
-        setBarcodeError("We couldn't find this barcode in the open catalog.");
+        setBarcodeError(copy.barcodeNotFound);
         return;
       }
       setProductName(result.productName);
@@ -444,7 +453,7 @@ function ScannerPage() {
         barcodeIngredientText: result.ingredientText,
       });
     } catch {
-      setBarcodeError("Barcode lookup failed — check your connection and try again.");
+      setBarcodeError(copy.barcodeLookupFailed);
     } finally {
       setBarcodePending(false);
     }
@@ -646,7 +655,7 @@ function ScannerPage() {
           className="animate-rise-in mt-3 rounded-2xl border border-border bg-card/80 p-4 backdrop-blur"
           style={{ animationDelay: "80ms" }}
         >
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Scanning for</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">{copy.scanningFor}</p>
           {hasProfile ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {activeProfile!.allergens.map((a, i) => (
@@ -796,7 +805,7 @@ function ScannerPage() {
             {preparing && !image && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/70 backdrop-blur-[2px]">
                 <Loader2 className="size-7 animate-spin text-primary" />
-                <p className="animate-pulse text-sm text-foreground">Preparing file…</p>
+                <p className="animate-pulse text-sm text-foreground">{copy.preparingFile}</p>
               </div>
             )}
 
@@ -828,8 +837,8 @@ function ScannerPage() {
                   <div className="flex size-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
                     <Loader2 className="size-7 animate-spin text-primary" />
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-foreground">{scanStage}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">This may take a few seconds</p>
+                  <p className="mt-3 text-sm font-semibold text-foreground">{stageLabel(scanStage)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{copy.scanTakesTime}</p>
                   <div
                     className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted/70"
                     role="progressbar"
@@ -844,7 +853,7 @@ function ScannerPage() {
                     />
                   </div>
                   <div className="mt-1.5 flex w-full justify-between text-[11px] text-muted-foreground">
-                    <span>{scanStage}</span>
+                    <span>{stageLabel(scanStage)}</span>
                     <span>{scanProgress}%</span>
                   </div>
                 </div>
@@ -916,7 +925,7 @@ function ScannerPage() {
                 className="h-14 rounded-2xl px-4 transition-transform active:scale-95"
                 disabled={pending || preparing}
                 onClick={() => galleryRef.current?.click()}
-                title="Upload a photo or PDF"
+                title={copy.uploadPhoto}
               >
                 <FileImage className="size-5" />
               </Button>
