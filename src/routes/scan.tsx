@@ -512,7 +512,7 @@ function ScannerPage() {
               </h1>
               <p className="text-xs text-muted-foreground">
                 <span className="mr-1.5 inline-block size-2 animate-pulse rounded-full bg-primary align-middle" />
-                Label check in 10s - 30s
+                Label check in 10-30s
               </p>
             </div>
           </div>
