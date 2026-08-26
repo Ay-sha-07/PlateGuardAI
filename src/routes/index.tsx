@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
+import { useLanguage } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -177,6 +178,7 @@ function ThemeToggle() {
 function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!supabase) return;
@@ -229,7 +231,7 @@ function SiteNav() {
             to="/profile"
             className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
           >
-            Profile
+            {t("Profile")}
           </Link>
 
           {loggedIn ? (
@@ -237,14 +239,14 @@ function SiteNav() {
               onClick={logout}
               className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
             >
-              Logout
+              {t("Logout")}
             </button>
           ) : (
             <Link
               to="/login"
               className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
             >
-              Login
+              {t("Login")}
             </Link>
           )}
         </nav>
@@ -253,7 +255,7 @@ function SiteNav() {
           <div className="hidden md:block">
             <Button asChild size="sm" className="rounded-full px-5">
               <Link to="/scan">
-                Start Scanning <ChevronRight className="size-4" />
+                {t("StartScanning")} <ChevronRight className="size-4" />
               </Link>
             </Button>
           </div>
@@ -292,7 +294,7 @@ function SiteNav() {
               onClick={() => setMenuOpen(false)}
               className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
             >
-              Profile
+              {t("Profile")}
             </Link>
 
             {loggedIn ? (
@@ -300,7 +302,7 @@ function SiteNav() {
                 onClick={logout}
                 className="rounded-lg px-2 py-2.5 text-left text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
-                Logout
+                {t("Logout")}
               </button>
             ) : (
               <Link
@@ -308,14 +310,14 @@ function SiteNav() {
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
-                Login
+                {t("Login")}
               </Link>
             )}
           </nav>
 
           <Button asChild className="mt-3 w-full justify-center rounded-full">
             <Link to="/scan" onClick={() => setMenuOpen(false)}>
-              Start Scanning
+              {t("StartScanning")}
             </Link>
           </Button>
         </div>

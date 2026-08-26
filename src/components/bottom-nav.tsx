@@ -32,30 +32,33 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
       )}
       aria-label="Primary"
     >
-      <div className="mx-auto grid w-full max-w-md grid-cols-5 px-2 py-2">
-        {TABS.map(({ to, label, Icon }) => {
-          const active = pathname === to || pathname.startsWith(`${to}/`);
-          return (
-            <Link
-              key={to}
-              to={to}
-              onClick={() => {
-                // Clicking a tab you're already on doesn't trigger a route
-                // change (same URL), so the router's scroll reset never
-                // runs — do it manually so "Home" reliably jumps back to
-                // the top of the page instead of appearing to do nothing.
-                if (active) window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={cn(
-                "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition-colors",
-                active ? "text-primary" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Icon className={cn("size-5", active && "fill-primary/15")} />
-              {t(label)}
-            </Link>
-          );
-        })}
+      <div className="mx-auto flex w-full max-w-md items-stretch px-2 py-2">
+        <div className="grid flex-1 grid-cols-5">
+          {TABS.map(({ to, label, Icon }) => {
+            const active = pathname === to || pathname.startsWith(`${to}/`);
+            return (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => {
+                  // Clicking a tab you're already on doesn't trigger a route
+                  // change (same URL), so the router's scroll reset never
+                  // runs — do it manually so "Home" reliably jumps back to
+                  // the top of the page instead of appearing to do nothing.
+                  if (active) window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className={cn(
+                  "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition-colors",
+                  active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Icon className={cn("size-5", active && "fill-primary/15")} />
+                {t(label)}
+              </Link>
+            );
+          })}
+        </div>
+
       </div>
     </nav>
   );

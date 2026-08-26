@@ -216,7 +216,9 @@ function RootShell({ children }: { children: ReactNode }) {
 
       <body>
         <LanguageProvider>
-          <div className="fixed right-3 top-3 z-[100] sm:right-5 sm:top-5"><LanguageSelector compact /></div>
+          <div className="fixed right-3 top-3 z-[100] rounded-xl border border-border/70 bg-background/90 p-1 shadow-lg backdrop-blur" data-no-ai-translate>
+            <LanguageSelector compact />
+          </div>
           {children}
           <Scripts />
         </LanguageProvider>

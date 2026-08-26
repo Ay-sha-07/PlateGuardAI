@@ -48,7 +48,7 @@ function LoginPage() {
     } catch(err:any) { setError(err?.message ?? "Unable to continue."); } finally { setBusy(false); }
   }
   return <main className="flex min-h-[100dvh] w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
-    <section className="box-border w-full min-w-0 max-w-md overflow-hidden rounded-3xl border bg-card p-6 shadow-xl sm:p-8">
+    <section className="relative box-border w-full min-w-0 max-w-md overflow-hidden rounded-3xl border bg-card p-6 shadow-xl sm:p-8">
       <div className="mb-7 text-center">
         <img
           src="/icons/logo.png"
