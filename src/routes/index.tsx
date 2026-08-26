@@ -201,36 +201,6 @@ function ThemeToggle() {
   );
 }
 
-function ThemeToggle() {
-  const [dark, setDark] = useState(true);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("plateguard-theme");
-    setDark(saved ? saved === "dark" : true);
-  }, []);
-
-  const toggleTheme = () => {
-    const nextDark = !dark;
-    document.documentElement.classList.toggle("dark", nextDark);
-    window.localStorage.setItem("plateguard-theme", nextDark ? "dark" : "light");
-    setDark(nextDark);
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={`Switch to ${dark ? "light" : "dark"} mode`}
-      aria-pressed={dark}
-      title={`Switch to ${dark ? "light" : "dark"} mode`}
-      className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-xl transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-      <span className="sr-only">{dark ? "Light" : "Dark"}</span>
-    </button>
-  );
-}
-
 function SiteNav() {
   const tp = usePhrases(HOME_PHRASES);
   const [menuOpen, setMenuOpen] = useState(false);
