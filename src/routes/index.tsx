@@ -39,7 +39,8 @@ import { signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 import { useLanguage } from "@/lib/i18n";
-import { useAiTranslate } from "@/hooks/use-ai-translate";
+import { useAiTranslate, usePhrases } from "@/hooks/use-ai-translate";
+import { HOME_PHRASES } from "@/lib/ui-phrases";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -69,6 +70,26 @@ export const Route = createFileRoute("/")({
 /** English source labels + i18n keys for the top / mobile menu.
  *  Static keys cover ml/hi/ta/ar/es/fr; all other languages use AI translation
  *  via useAiTranslate so the menu never stays stuck in English. */
+
+/** Landing-page copy — English source of truth; translated via AI when language ≠ en. */
+function useHomeCopy() {
+  const tp = usePhrases(HOME_PHRASES);
+  return {
+    tasteOfCertainty: tp("The taste of certainty"),
+    readingEveryLabel: tp("Reading every label"),
+    protectingEveryBite: tp("Protecting every bite"),
+    smarterScans: tp("Smarter scans. Safer bites. Every label decoded in plain English, for every aisle in the store."),
+    startScanning: tp("Start scanning"),
+    setYourProfile: tp("Set your profile"),
+    scroll: tp("Scroll"),
+    typicalTime: tp("Typical time to a verdict"),
+    allergensTracked: tp("Allergens tracked by default"),
+    healthConditions: tp("Health conditions supported"),
+    ingredientsGuesswork: tp("Ingredients left to guesswork"),
+    connectingCopy: tp("Connecting a photo, an ingredient list, and your medical profile through one careful check — making every trip down the snack aisle faster, calmer, and genuinely informed."),
+  };
+}
+
 const NAV_LINKS = [
   { key: "HowItWorks", label: "How it works", href: "#how-it-works" },
   { key: "UserGuide", label: "User guide", href: "#user-guide" },
@@ -78,6 +99,7 @@ const NAV_LINKS = [
 ] as const;
 
 function HomePage() {
+  const tp = usePhrases(HOME_PHRASES);
   const navigate = useNavigate();
   const [authReady, setAuthReady] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -120,7 +142,7 @@ function HomePage() {
       <main className="flex min-h-screen items-center justify-center bg-background px-6 text-foreground">
         <div className="text-center">
           <div className="mx-auto mb-4 size-10 animate-pulse rounded-full bg-primary/20" />
-          <p className="text-sm text-muted-foreground">Checking your account…</p>
+          <p className="text-sm text-muted-foreground">{tp("Checking your account…")}</p>
         </div>
       </main>
     );
@@ -180,6 +202,7 @@ function ThemeToggle() {
 }
 
 function SiteNav() {
+  const tp = usePhrases(HOME_PHRASES);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const { t, language } = useLanguage();
@@ -198,6 +221,18 @@ function SiteNav() {
       language === "en" || staticLabel !== l.label ? staticLabel : (aiNavLabels[i] ?? l.label);
     return { ...l, label };
   });
+
+  /** Static dictionary first; fall back to AI phrase pack so every language gets a translation. */
+  function navT(key: string, englishFallback: string): string {
+    try {
+      if (language === "en") return englishFallback;
+      const staticLabel = t(key);
+      if (staticLabel && staticLabel !== key && staticLabel !== englishFallback) return staticLabel;
+      return tp(englishFallback);
+    } catch {
+      return englishFallback;
+    }
+  }
 
   useEffect(() => {
     if (!supabase) return;
@@ -250,7 +285,7 @@ function SiteNav() {
             to="/profile"
             className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
           >
-            {t("Profile")}
+            {navT("Profile", "Profile")}
           </Link>
 
           {loggedIn ? (
@@ -258,14 +293,14 @@ function SiteNav() {
               onClick={logout}
               className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
             >
-              {t("Logout")}
+              {navT("Logout", "Logout")}
             </button>
           ) : (
             <Link
               to="/login"
               className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
             >
-              {t("Login")}
+              {navT("Login", "Login")}
             </Link>
           )}
         </nav>
@@ -274,7 +309,7 @@ function SiteNav() {
           <div className="hidden md:block">
             <Button asChild size="sm" className="rounded-full px-5">
               <Link to="/scan">
-                {t("StartScanning")} <ChevronRight className="size-4" />
+                {navT("StartScanning", "Start scanning")} <ChevronRight className="size-4" />
               </Link>
             </Button>
           </div>
@@ -286,7 +321,7 @@ function SiteNav() {
           <button
             className="flex size-9 items-center justify-center rounded-full text-foreground md:hidden"
             onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label="Toggle menu"
+            aria-label={tp("Toggle menu")}
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -313,7 +348,7 @@ function SiteNav() {
               onClick={() => setMenuOpen(false)}
               className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
             >
-              {t("Profile")}
+              {navT("Profile", "Profile")}
             </Link>
 
             {loggedIn ? (
@@ -321,7 +356,7 @@ function SiteNav() {
                 onClick={logout}
                 className="rounded-lg px-2 py-2.5 text-left text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
-                {t("Logout")}
+                {navT("Logout", "Logout")}
               </button>
             ) : (
               <Link
@@ -329,14 +364,14 @@ function SiteNav() {
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
-                {t("Login")}
+                {navT("Login", "Login")}
               </Link>
             )}
           </nav>
 
           <Button asChild className="mt-3 w-full justify-center rounded-full">
             <Link to="/scan" onClick={() => setMenuOpen(false)}>
-              {t("StartScanning")}
+              {navT("StartScanning", "Start scanning")}
             </Link>
           </Button>
         </div>
@@ -349,6 +384,8 @@ function SiteNav() {
 
 function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const copy = useHomeCopy();
+  const tp = usePhrases(HOME_PHRASES);
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});
@@ -372,26 +409,26 @@ function HeroVideo() {
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-24 pt-40 sm:pb-28 md:px-8">
         <p className="animate-rise-in text-center text-xs font-semibold uppercase tracking-[0.35em] text-foreground/60 sm:text-left">
-          The taste of certainty
+          {copy.tasteOfCertainty}
         </p>
 
         <h1
           className="animate-rise-in mt-4 text-center font-display text-[13vw] font-bold uppercase leading-[0.95] tracking-tight sm:text-left sm:text-6xl lg:text-7xl"
           style={{ animationDelay: "80ms" }}
         >
-          Reading every label
+          {copy.readingEveryLabel}
           <br />
-          <span className="text-primary">Protecting every bite</span>
+          <span className="text-primary">{copy.protectingEveryBite}</span>
         </h1>
       </div>
 
       <a
         href="#wordmark"
-        aria-label="Scroll to learn more"
+        aria-label={tp("Scroll to learn more")}
         className="absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-foreground/50"
       >
         <span className="h-10 w-px bg-foreground/30" />
-        <span className="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
+        <span className="text-[10px] uppercase tracking-[0.3em]">{copy.scroll}</span>
       </a>
     </section>
   );
@@ -400,6 +437,7 @@ function HeroVideo() {
 /* --------------------------- Hero: giant wordmark scene --------------------------- */
 
 function HeroWordmark() {
+  const copy = useHomeCopy();
   return (
     <section
       id="wordmark"
@@ -412,15 +450,14 @@ function HeroWordmark() {
           </h2>
 
           <p className="mt-3 max-w-md text-base text-muted-foreground sm:text-lg">
-            Smarter scans. Safer bites. Every label decoded in plain English, for every aisle in the
-            store.
+            {copy.smarterScans}
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="h-14 rounded-full px-7 text-base">
               <Link to="/scan">
                 <Camera className="size-5" />
-                Start scanning
+                {copy.startScanning}
               </Link>
             </Button>
 
@@ -430,7 +467,7 @@ function HeroWordmark() {
               variant="outline"
               className="h-14 rounded-full border-2 px-7 text-base"
             >
-              <Link to="/profile">Set your profile</Link>
+              <Link to="/profile">{copy.setYourProfile}</Link>
             </Button>
           </div>
         </div>
@@ -454,28 +491,34 @@ function HeroWordmark() {
         </div>
       </div>
 
-      <p className="mx-auto max-w-3xl px-5 pb-16 text-center text-sm text-muted-foreground sm:text-base md:px-8">
-        Connecting a photo, an ingredient list, and your medical profile through one instant check —
-        making every trip down the snack aisle faster, calmer, and genuinely informed.
-      </p>
+      <ConnectingCopy />
 
       <StatsStrip />
     </section>
   );
 }
 
-const STATS = [
-  { value: "<1 sec", label: "Average time to a verdict" },
-  { value: "10", label: "Allergens tracked by default" },
-  { value: "8", label: "Health conditions supported" },
-  { value: "0", label: "Ingredients left to guesswork" },
-];
+function ConnectingCopy() {
+  const copy = useHomeCopy();
+  return (
+    <p className="mx-auto max-w-3xl px-5 pb-16 text-center text-sm text-muted-foreground sm:text-base md:px-8">
+      {copy.connectingCopy}
+    </p>
+  );
+}
 
 function StatsStrip() {
+  const copy = useHomeCopy();
+  const stats = [
+    { value: "15–30s", label: copy.typicalTime },
+    { value: "10", label: copy.allergensTracked },
+    { value: "8", label: copy.healthConditions },
+    { value: "0", label: copy.ingredientsGuesswork },
+  ];
   return (
     <div className="border-t border-border/60 bg-card/40">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4 md:px-8">
-        {STATS.map((s, i) => (
+        {stats.map((s, i) => (
           <div
             key={s.label}
             className="animate-rise-in text-center md:text-left"
@@ -502,6 +545,7 @@ function formatTime(seconds: number): string {
 }
 
 function UserGuideVideo() {
+  const tp = usePhrases(HOME_PHRASES);
   const videoRef = useRef<HTMLVideoElement>(null);
   const scrubberRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -634,7 +678,7 @@ function UserGuideVideo() {
             <button
               type="button"
               onClick={togglePlay}
-              aria-label="Play video"
+              aria-label={tp("Play video")}
               className="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30"
             >
               <span className="flex size-16 items-center justify-center rounded-full bg-white/90 text-black shadow-lg transition-transform group-hover:scale-105">
@@ -695,7 +739,7 @@ function UserGuideVideo() {
                   type="button"
                   onClick={() => setSpeedMenuOpen((v) => !v)}
                   className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/15"
-                  aria-label="Playback speed"
+                  aria-label={tp("Playback speed")}
                 >
                   <Gauge className="size-3.5" />
                   {speed}×
@@ -738,6 +782,7 @@ const CATEGORIES = [
 
 function Coverage() {
   const { t } = useLanguage();
+  const tp = usePhrases(HOME_PHRASES);
   return (
     <section
       id="coverage"
@@ -769,7 +814,7 @@ function Coverage() {
               <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                 <c.Icon className="size-6" />
               </div>
-              <p className="mt-4 text-sm font-semibold sm:text-base">{c.label}</p>
+              <p className="mt-4 text-sm font-semibold sm:text-base">{tp(c.label)}</p>
             </div>
           ))}
         </div>
@@ -803,6 +848,7 @@ const STEPS = [
 
 function HowItWorks() {
   const { t } = useLanguage();
+  const tp = usePhrases(HOME_PHRASES);
   return (
     <section id="how-it-works" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
       <div className="max-w-xl">
@@ -810,7 +856,7 @@ function HowItWorks() {
           {t("HowItWorks")}
         </p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Three steps between you and a safe snack
+          {tp("Three steps between you and a safe snack")}
         </h2>
       </div>
 
@@ -825,8 +871,8 @@ function HowItWorks() {
             <div className="mt-4 flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary">
               <s.Icon className="size-5" />
             </div>
-            <h3 className="mt-5 text-lg font-semibold">{s.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+            <h3 className="mt-5 text-lg font-semibold">{tp(s.title)}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{tp(s.body)}</p>
           </div>
         ))}
       </div>
@@ -855,16 +901,17 @@ const VERDICTS = [
     tag: "Safe",
     tone: "safe" as const,
     title: "Rice crackers cleared with no listed allergens",
-    detail: "Matched cleanly against a peanut and gluten profile in under a second.",
+    detail: "Matched cleanly against a peanut and gluten profile in about 15–30 seconds.",
     Icon: CheckCircle2,
   },
 ];
 
 function RecentVerdicts() {
+  const tp = usePhrases(HOME_PHRASES);
   return (
     <section id="verdicts" className="bg-card/40 py-24">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Real scans</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">{tp("Real scans")}</p>
 
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           What a verdict actually looks like
@@ -907,11 +954,11 @@ function RecentVerdicts() {
                         : "bg-danger/15 text-danger"
                   }`}
                 >
-                  {v.tag}
+                  {tp(v.tag)}
                 </span>
 
-                <h3 className="mt-3 text-base font-semibold leading-snug">{v.title}</h3>
-                <p className="mt-2 flex-1 text-sm text-muted-foreground">{v.detail}</p>
+                <h3 className="mt-3 text-base font-semibold leading-snug">{tp(v.title)}</h3>
+                <p className="mt-2 flex-1 text-sm text-muted-foreground">{tp(v.detail)}</p>
               </div>
             </div>
           ))}
@@ -920,7 +967,7 @@ function RecentVerdicts() {
         <div className="mt-10 text-center">
           <Button asChild size="lg" className="rounded-full px-7">
             <Link to="/scan">
-              Try your own scan <ChevronRight className="size-4" />
+              {tp("Try your own scan")} <ChevronRight className="size-4" />
             </Link>
           </Button>
         </div>
@@ -941,6 +988,7 @@ const SNACKS = [
 ];
 
 function SnackCarousel() {
+  const tp = usePhrases(HOME_PHRASES);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [index, setIndex] = useState(0);
 
@@ -959,11 +1007,11 @@ function SnackCarousel() {
     <section className="bg-gradient-to-b from-safe/10 via-safe/15 to-safe/10 py-24">
       <div className="mx-auto max-w-6xl px-5 text-center md:px-8">
         <h2 className="font-mascot text-3xl font-bold tracking-tight sm:text-4xl">
-          Snacks we catch <span className="text-primary">every day</span>
+          {tp("Snacks we catch")} <span className="text-primary">{tp("every day")}</span>
         </h2>
 
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          A rotating look at the everyday packaged foods people scan most.
+          {tp("A rotating look at the everyday packaged foods people scan most.")}
         </p>
       </div>
 
@@ -981,7 +1029,7 @@ function SnackCarousel() {
             <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
               <s.Icon className="size-7" />
             </span>
-            <p className="text-sm font-semibold leading-snug">{s.label}</p>
+            <p className="text-sm font-semibold leading-snug">{tp(s.label)}</p>
           </div>
         ))}
       </div>
@@ -989,7 +1037,7 @@ function SnackCarousel() {
       <div className="mt-6 flex justify-center gap-3">
         <button
           onClick={() => goTo(index - 1)}
-          aria-label="Scroll left"
+          aria-label={tp("Scroll left")}
           className="flex size-10 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent active:scale-95"
         >
           <ChevronLeft className="size-4" />
@@ -997,7 +1045,7 @@ function SnackCarousel() {
 
         <button
           onClick={() => goTo(index + 1)}
-          aria-label="Scroll right"
+          aria-label={tp("Scroll right")}
           className="flex size-10 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent active:scale-95"
         >
           <ChevronRight className="size-4" />
@@ -1024,13 +1072,14 @@ const PROCESS_TABS = [
   },
   {
     n: "03",
-    label: "Instant verdict",
+    label: "Clear verdict",
     title: "One plain answer, one reason",
     body: "Safe, caution, or do-not-eat — paired with the specific ingredient responsible.",
   },
 ];
 
 function SafetyProcess() {
+  const tp = usePhrases(HOME_PHRASES);
   const [active, setActive] = useState(0);
   const tab = PROCESS_TABS[active] ?? PROCESS_TABS[0]!;
 
@@ -1066,14 +1115,14 @@ function SafetyProcess() {
                     : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {t.n} · {t.label}
+                {t.n} · {tp(t.label)}
               </button>
             ))}
           </div>
 
           <div className="animate-rise-in mt-8 max-w-2xl" key={tab.n}>
-            <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">{tab.title}</h3>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground">{tab.body}</p>
+            <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">{tp(tab.title)}</h3>
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground">{tp(tab.body)}</p>
           </div>
         </div>
       </div>
@@ -1096,12 +1145,13 @@ const PROFILE_FEATURES = [
   { label: "Allergy match", body: "Checked against your exact list", Icon: ShieldCheck },
   { label: "Condition check", body: "Sodium, sugar, gluten and more", Icon: ListChecks },
   { label: "Multi-label OCR", body: "Reads dense, small-print panels", Icon: ScanLine },
-  { label: "Instant verdict", body: "Green, caution, or red — no delay", Icon: Sparkles },
+  { label: "Clear verdict", body: "Green, caution, or red — typically ready in 15–30 seconds", Icon: Sparkles },
   { label: "Private by design", body: "Your profile stays protected", Icon: Lock },
   { label: "Scan memory", body: "Revisit what you've already checked", Icon: History },
 ];
 
 function OneProfile() {
+  const tp = usePhrases(HOME_PHRASES);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -1134,20 +1184,19 @@ function OneProfile() {
           <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
             One profile.
             <br />
-            <span className="text-primary">Every aisle, covered.</span>
+            <span className="text-primary">{tp("Every aisle, covered.")}</span>
           </h2>
 
           <p className="mt-4 max-w-lg text-white/70">
-            Your allergies and conditions are saved to your account and checked automatically on
-            every scan.
+            {tp("Your allergies and conditions are saved to your account and checked automatically on every scan.")}
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {PROFILE_FEATURES.map((f) => (
               <div key={f.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <f.Icon className="size-5 text-primary" />
-                <p className="mt-3 text-sm font-semibold">{f.label}</p>
-                <p className="mt-1 text-xs text-white/60">{f.body}</p>
+                <p className="mt-3 text-sm font-semibold">{tp(f.label)}</p>
+                <p className="mt-1 text-xs text-white/60">{tp(f.body)}</p>
               </div>
             ))}
           </div>
@@ -1160,7 +1209,18 @@ function OneProfile() {
 /* --------------------------------- Footer --------------------------------- */
 
 function SiteFooter() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const tp = usePhrases(HOME_PHRASES);
+  function footerT(key: string, english: string): string {
+    try {
+      if (language === "en") return english;
+      const s = t(key);
+      if (s && s !== key && s !== english) return s;
+      return tp(english);
+    } catch {
+      return english;
+    }
+  }
   return (
     <footer className="relative overflow-hidden bg-brand-amber text-brand-amber-foreground">
       <p
@@ -1202,39 +1262,39 @@ function SiteFooter() {
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
             <div className="space-y-2.5 text-sm">
               <Link to="/" className="block font-semibold hover:underline">
-                {t("Home")}
+                {footerT("Home", "Home")}
               </Link>
               <Link to="/scan" className="block hover:underline">
-                {t("Scan")}
+                {footerT("Scan", "Scan")}
               </Link>
               <a href="#how-it-works" className="block hover:underline">
-                {t("HowItWorks")}
+                {footerT("HowItWorks", "How it works")}
               </a>
               <a href="#coverage" className="block hover:underline">
-                {t("WhatWeScan")}
+                {footerT("WhatWeScan", "What we scan")}
               </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
-              <p className="font-semibold">Account</p>
+              <p className="font-semibold">{tp("Account")}</p>
               <Link to="/profile" className="block hover:underline">
-                {t("Profile")}
+                {footerT("Profile", "Profile")}
               </Link>
               <Link to="/login" className="block hover:underline">
-                {t("Login")}
+                {footerT("Login", "Login")}
               </Link>
               <a href="#verdicts" className="block hover:underline">
-                {t("Verdicts")}
+                {footerT("Verdicts", "Verdicts")}
               </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
-              <p className="font-semibold">Languages supported</p>
+              <p className="font-semibold">{tp("Languages supported")}</p>
               <p className="flex items-center gap-1.5 text-brand-amber-foreground/80">
-                <Languages className="size-3.5" /> Auto-detected on scan
+                <Languages className="size-3.5" /> {tp("Auto-detected on scan")}
               </p>
               <p className="text-brand-amber-foreground/80">
-                PlateGuard assists, it doesn't replace the printed label or medical advice.
+                {tp("PlateGuard assists, it doesn't replace the printed label or medical advice.")}
               </p>
             </div>
           </div>
@@ -1242,7 +1302,7 @@ function SiteFooter() {
 
         <div className="mt-12 flex flex-col gap-2 border-t border-brand-amber-foreground/15 pt-6 text-xs text-brand-amber-foreground/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} PlateGuard AI. Not a substitute for medical advice.</p>
-          <p>When in doubt, don't eat it.</p>
+          <p>{tp("When in doubt, don't eat it.")}</p>
         </div>
       </div>
     </footer>

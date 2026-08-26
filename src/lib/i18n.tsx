@@ -1,6 +1,45 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-export const LANGUAGES = [
+/** English display names used only for alphabetical ordering in the picker. */
+const LANGUAGE_SORT_NAME: Record<string, string> = {
+  en: "English",
+  am: "Amharic",
+  ar: "Arabic",
+  id: "Bahasa Indonesia",
+  ms: "Bahasa Melayu",
+  bn: "Bengali",
+  zh: "Chinese",
+  nl: "Dutch",
+  fil: "Filipino",
+  fr: "French",
+  de: "German",
+  el: "Greek",
+  gu: "Gujarati",
+  he: "Hebrew",
+  hi: "Hindi",
+  it: "Italian",
+  ja: "Japanese",
+  kn: "Kannada",
+  sw: "Kiswahili",
+  ko: "Korean",
+  ml: "Malayalam",
+  mr: "Marathi",
+  fa: "Persian",
+  pl: "Polish",
+  pt: "Portuguese",
+  pa: "Punjabi",
+  ru: "Russian",
+  es: "Spanish",
+  ta: "Tamil",
+  te: "Telugu",
+  th: "Thai",
+  tr: "Turkish",
+  uk: "Ukrainian",
+  ur: "Urdu",
+  vi: "Vietnamese",
+};
+
+const LANGUAGES_RAW = [
   { code: "en", label: "English" },
   { code: "ml", label: "മലയാളം" },
   { code: "hi", label: "हिन्दी" },
@@ -38,7 +77,21 @@ export const LANGUAGES = [
   { code: "he", label: "עברית" },
 ] as const;
 
-export type LanguageCode = (typeof LANGUAGES)[number]["code"];
+/** English first, then every other language sorted A→Z by English name. */
+export const LANGUAGES = [
+  LANGUAGES_RAW.find((l) => l.code === "en")!,
+  ...[...LANGUAGES_RAW]
+    .filter((l) => l.code !== "en")
+    .sort((a, b) =>
+      (LANGUAGE_SORT_NAME[a.code] ?? a.label).localeCompare(
+        LANGUAGE_SORT_NAME[b.code] ?? b.label,
+        "en",
+        { sensitivity: "base" },
+      ),
+    ),
+] as unknown as typeof LANGUAGES_RAW;
+
+export type LanguageCode = (typeof LANGUAGES_RAW)[number]["code"];
 
 const base: Record<string, string> = {
   Home: "Home",
@@ -51,18 +104,24 @@ const base: Record<string, string> = {
   Login: "Login",
   Logout: "Logout",
   StartScanning: "Start Scanning",
-  // Home-page section / mobile-menu labels (circled in the UI)
   HowItWorks: "How it works",
   UserGuide: "User guide",
   WhatWeScan: "What we scan",
   Verdicts: "Verdicts",
   Safety: "Safety",
+  TryAgain: "Try again",
+  GoHome: "Go home",
+  PageNotFound: "Page not found",
+  PageDidntLoad: "This page didn't load",
+  SomethingWentWrong: "Something went wrong on our end. You can try refreshing or head back home.",
+  Scroll: "Scroll",
+  SetYourProfile: "Set your profile",
+  AverageTimeToVerdict: "Average time to a verdict",
+  AllergensTracked: "Allergens tracked by default",
+  HealthConditions: "Health conditions supported",
+  IngredientsGuesswork: "Ingredients left to guesswork",
 };
 
-// Per-language overrides. Languages not listed here fall back to English
-// (see the `t` function below) rather than being silently mistranslated.
-// Nav section labels are included so the mobile/desktop menu matches the
-// rest of the chrome even before AI translation finishes.
 const overrides: Partial<Record<LanguageCode, Record<string, string>>> = {
   ml: {
     Home: "ഹോം",
@@ -166,14 +225,264 @@ const overrides: Partial<Record<LanguageCode, Record<string, string>>> = {
     Verdicts: "Verdicts",
     Safety: "Sécurité",
   },
+  de: {
+    Home: "Start",
+    Scan: "Scannen",
+    History: "Verlauf",
+    Card: "Karte",
+    Profile: "Profil",
+    Language: "Sprache",
+    SelectLanguage: "Sprache wählen",
+    Login: "Anmelden",
+    Logout: "Abmelden",
+    StartScanning: "Scannen starten",
+    HowItWorks: "So funktioniert's",
+    UserGuide: "Benutzerhandbuch",
+    WhatWeScan: "Was wir scannen",
+    Verdicts: "Bewertungen",
+    Safety: "Sicherheit",
+  },
+  it: {
+    Home: "Home",
+    Scan: "Scansiona",
+    History: "Cronologia",
+    Card: "Scheda",
+    Profile: "Profilo",
+    Language: "Lingua",
+    SelectLanguage: "Scegli lingua",
+    Login: "Accedi",
+    Logout: "Esci",
+    StartScanning: "Inizia scansione",
+    HowItWorks: "Come funziona",
+    UserGuide: "Guida utente",
+    WhatWeScan: "Cosa scansioniamo",
+    Verdicts: "Verdetti",
+    Safety: "Sicurezza",
+  },
+  pt: {
+    Home: "Início",
+    Scan: "Digitalizar",
+    History: "Histórico",
+    Card: "Cartão",
+    Profile: "Perfil",
+    Language: "Idioma",
+    SelectLanguage: "Escolher idioma",
+    Login: "Entrar",
+    Logout: "Sair",
+    StartScanning: "Começar a digitalizar",
+    HowItWorks: "Como funciona",
+    UserGuide: "Guia do utilizador",
+    WhatWeScan: "O que digitalizamos",
+    Verdicts: "Vereditos",
+    Safety: "Segurança",
+  },
+  te: {
+    Home: "హోమ్",
+    Scan: "స్కాన్",
+    History: "చరిత్ర",
+    Card: "కార్డ్",
+    Profile: "ప్రొఫైల్",
+    Language: "భాష",
+    SelectLanguage: "భాషను ఎంచుకోండి",
+    Login: "లాగిన్",
+    Logout: "లాగ్ అవుట్",
+    StartScanning: "స్కాన్ ప్రారంభించండి",
+    HowItWorks: "ఇది ఎలా పనిచేస్తుంది",
+    UserGuide: "వినియోగదారు గైడ్",
+    WhatWeScan: "మేము స్కాన్ చేసేది",
+    Verdicts: "తీర్పులు",
+    Safety: "భద్రత",
+  },
+  kn: {
+    Home: "ಮುಖಪುಟ",
+    Scan: "ಸ್ಕ್ಯಾನ್",
+    History: "ಇತಿಹಾಸ",
+    Card: "ಕಾರ್ಡ್",
+    Profile: "ಪ್ರೊಫೈಲ್",
+    Language: "ಭಾಷೆ",
+    SelectLanguage: "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",
+    Login: "ಲಾಗಿನ್",
+    Logout: "ಲಾಗ್ ಔಟ್",
+    StartScanning: "ಸ್ಕ್ಯಾನ್ ಪ್ರಾರಂಭಿಸಿ",
+    HowItWorks: "ಇದು ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ",
+    UserGuide: "ಬಳಕೆದಾರ ಮಾರ್ಗದರ್ಶಿ",
+    WhatWeScan: "ನಾವು ಸ್ಕ್ಯಾನ್ ಮಾಡುವುದು",
+    Verdicts: "ತೀರ್ಪುಗಳು",
+    Safety: "ಸುರಕ್ಷತೆ",
+  },
+  bn: {
+    Home: "হোম",
+    Scan: "স্ক্যান",
+    History: "ইতিহাস",
+    Card: "কার্ড",
+    Profile: "প্রোফাইল",
+    Language: "ভাষা",
+    SelectLanguage: "ভাষা বেছে নিন",
+    Login: "লগ ইন",
+    Logout: "লগ আউট",
+    StartScanning: "স্ক্যান শুরু করুন",
+    HowItWorks: "এটি কীভাবে কাজ করে",
+    UserGuide: "ব্যবহারকারী নির্দেশিকা",
+    WhatWeScan: "আমরা যা স্ক্যান করি",
+    Verdicts: "রায়",
+    Safety: "নিরাপত্তা",
+  },
+  zh: {
+    Home: "首页",
+    Scan: "扫描",
+    History: "历史",
+    Card: "卡片",
+    Profile: "个人资料",
+    Language: "语言",
+    SelectLanguage: "选择语言",
+    Login: "登录",
+    Logout: "退出",
+    StartScanning: "开始扫描",
+    HowItWorks: "工作原理",
+    UserGuide: "用户指南",
+    WhatWeScan: "我们扫描什么",
+    Verdicts: "判定",
+    Safety: "安全",
+  },
+  ja: {
+    Home: "ホーム",
+    Scan: "スキャン",
+    History: "履歴",
+    Card: "カード",
+    Profile: "プロフィール",
+    Language: "言語",
+    SelectLanguage: "言語を選択",
+    Login: "ログイン",
+    Logout: "ログアウト",
+    StartScanning: "スキャンを開始",
+    HowItWorks: "使い方",
+    UserGuide: "ユーザーガイド",
+    WhatWeScan: "スキャン対象",
+    Verdicts: "判定結果",
+    Safety: "安全",
+  },
+  ko: {
+    Home: "홈",
+    Scan: "스캔",
+    History: "기록",
+    Card: "카드",
+    Profile: "프로필",
+    Language: "언어",
+    SelectLanguage: "언어 선택",
+    Login: "로그인",
+    Logout: "로그아웃",
+    StartScanning: "스캔 시작",
+    HowItWorks: "사용 방법",
+    UserGuide: "사용자 가이드",
+    WhatWeScan: "스캔 대상",
+    Verdicts: "판정",
+    Safety: "안전",
+  },
+  id: {
+    Home: "Beranda",
+    Scan: "Pindai",
+    History: "Riwayat",
+    Card: "Kartu",
+    Profile: "Profil",
+    Language: "Bahasa",
+    SelectLanguage: "Pilih bahasa",
+    Login: "Masuk",
+    Logout: "Keluar",
+    StartScanning: "Mulai memindai",
+    HowItWorks: "Cara kerja",
+    UserGuide: "Panduan pengguna",
+    WhatWeScan: "Yang kami pindai",
+    Verdicts: "Keputusan",
+    Safety: "Keamanan",
+  },
+  ru: {
+    Home: "Главная",
+    Scan: "Сканировать",
+    History: "История",
+    Card: "Карта",
+    Profile: "Профиль",
+    Language: "Язык",
+    SelectLanguage: "Выберите язык",
+    Login: "Войти",
+    Logout: "Выйти",
+    StartScanning: "Начать сканирование",
+    HowItWorks: "Как это работает",
+    UserGuide: "Руководство",
+    WhatWeScan: "Что мы сканируем",
+    Verdicts: "Вердикты",
+    Safety: "Безопасность",
+  },
+  tr: {
+    Home: "Ana sayfa",
+    Scan: "Tara",
+    History: "Geçmiş",
+    Card: "Kart",
+    Profile: "Profil",
+    Language: "Dil",
+    SelectLanguage: "Dil seçin",
+    Login: "Giriş",
+    Logout: "Çıkış",
+    StartScanning: "Taramaya başla",
+    HowItWorks: "Nasıl çalışır",
+    UserGuide: "Kullanıcı kılavuzu",
+    WhatWeScan: "Neyi tarıyoruz",
+    Verdicts: "Sonuçlar",
+    Safety: "Güvenlik",
+  },
+  vi: {
+    Home: "Trang chủ",
+    Scan: "Quét",
+    History: "Lịch sử",
+    Card: "Thẻ",
+    Profile: "Hồ sơ",
+    Language: "Ngôn ngữ",
+    SelectLanguage: "Chọn ngôn ngữ",
+    Login: "Đăng nhập",
+    Logout: "Đăng xuất",
+    StartScanning: "Bắt đầu quét",
+    HowItWorks: "Cách hoạt động",
+    UserGuide: "Hướng dẫn",
+    WhatWeScan: "Chúng tôi quét gì",
+    Verdicts: "Kết luận",
+    Safety: "An toàn",
+  },
+  th: {
+    Home: "หน้าแรก",
+    Scan: "สแกน",
+    History: "ประวัติ",
+    Card: "บัตร",
+    Profile: "โปรไฟล์",
+    Language: "ภาษา",
+    SelectLanguage: "เลือกภาษา",
+    Login: "เข้าสู่ระบบ",
+    Logout: "ออกจากระบบ",
+    StartScanning: "เริ่มสแกน",
+    HowItWorks: "วิธีใช้งาน",
+    UserGuide: "คู่มือผู้ใช้",
+    WhatWeScan: "สิ่งที่เราสแกน",
+    Verdicts: "ผลการตรวจ",
+    Safety: "ความปลอดภัย",
+  },
+  ur: {
+    Home: "ہوم",
+    Scan: "اسکین",
+    History: "تاریخ",
+    Card: "کارڈ",
+    Profile: "پروفائل",
+    Language: "زبان",
+    SelectLanguage: "زبان منتخب کریں",
+    Login: "لاگ ان",
+    Logout: "لاگ آؤٹ",
+    StartScanning: "اسکین شروع کریں",
+    HowItWorks: "یہ کیسے کام کرتا ہے",
+    UserGuide: "صارف گائیڈ",
+    WhatWeScan: "ہم کیا اسکین کرتے ہیں",
+    Verdicts: "فیصلے",
+    Safety: "حفاظت",
+  },
 };
 
-// Each language starts from English, then gets its own override object
-// merged in individually so translations never bleed into each other
-// (a previous version chained every language into a single Object.assign,
-// which caused English to end up showing French and every other
-// language to stay untranslated).
-const text = LANGUAGES.reduce(
+const text = LANGUAGES_RAW.reduce(
   (acc, l) => {
     acc[l.code] = { ...base, ...(overrides[l.code] ?? {}) };
     return acc;
@@ -191,21 +500,33 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<LanguageCode>("en");
 
   const apply = (v: LanguageCode) => {
-    document.documentElement.lang = v;
-    document.documentElement.dir = ["ar", "ur", "fa", "he"].includes(v) ? "rtl" : "ltr";
+    try {
+      document.documentElement.lang = v;
+      document.documentElement.dir = ["ar", "ur", "fa", "he"].includes(v) ? "rtl" : "ltr";
+    } catch {
+      // SSR / non-DOM — ignore
+    }
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem("plateguard-language") as LanguageCode | null;
-    if (saved && LANGUAGES.some((x) => x.code === saved)) {
-      setLanguageState(saved);
-      apply(saved);
+    try {
+      const saved = localStorage.getItem("plateguard-language") as LanguageCode | null;
+      if (saved && LANGUAGES_RAW.some((x) => x.code === saved)) {
+        setLanguageState(saved);
+        apply(saved);
+      }
+    } catch {
+      // private mode / blocked storage
     }
   }, []);
 
   const setLanguage = (v: LanguageCode) => {
     setLanguageState(v);
-    localStorage.setItem("plateguard-language", v);
+    try {
+      localStorage.setItem("plateguard-language", v);
+    } catch {
+      // ignore
+    }
     apply(v);
   };
 
@@ -213,7 +534,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     () => ({
       language,
       setLanguage,
-      t: (key: string) => text[language][key] ?? text.en[key] ?? key,
+      t: (key: string) => text[language]?.[key] ?? text.en[key] ?? key,
     }),
     [language],
   );
@@ -223,6 +544,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
 export const useLanguage = () => useContext(LanguageContext);
 
-export function languageName(code: LanguageCode) {
+/**
+ * English name of a language code — used for AI translation prompts.
+ * Native-script labels (മലയാളം, हिन्दी, …) are for the picker only;
+ * models are far more reliable when asked to translate "into Hindi"
+ * than "into हिन्दी".
+ */
+export function languageName(code: LanguageCode): string {
+  return LANGUAGE_SORT_NAME[code] ?? LANGUAGES.find((x) => x.code === code)?.label ?? "English";
+}
+
+/** Native label shown in the language picker. */
+export function languageLabel(code: LanguageCode): string {
   return LANGUAGES.find((x) => x.code === code)?.label ?? "English";
 }

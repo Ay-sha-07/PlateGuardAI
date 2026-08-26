@@ -4,10 +4,9 @@ import { languageName, useLanguage, type LanguageCode } from "@/lib/i18n";
 import { translateTexts } from "@/lib/translate.functions";
 
 const CACHE_PREFIX = "plateguard-ai-i18n:";
-const MAX_CACHE_ENTRIES = 40;
+const MAX_CACHE_ENTRIES = 60;
 
 function cacheKey(lang: LanguageCode, texts: string[]): string {
-  // Stable fingerprint of the English source strings
   let h = 0;
   const joined = texts.join("\u0001");
   for (let i = 0; i < joined.length; i++) {
@@ -31,7 +30,6 @@ function readCache(key: string): string[] | null {
 function writeCache(key: string, values: string[]) {
   try {
     localStorage.setItem(key, JSON.stringify(values));
-    // Soft bound: drop oldest cache keys if we grow too large
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
@@ -47,10 +45,15 @@ function writeCache(key: string, values: string[]) {
   }
 }
 
+/** Share one in-flight server request across many usePhrases callers with the same pack. */
+const inflight = new Map<string, Promise<string[]>>();
+
+
 /**
  * Translates an ordered list of English UI strings into the active language
  * via the AI translation server function. Results are cached per language.
  * While loading (or on failure) the original English strings are shown.
+ * Failures never throw to the React tree — they stay in the error field.
  */
 export function useAiTranslate(englishTexts: readonly string[]): {
   texts: string[];
@@ -68,47 +71,68 @@ export function useAiTranslate(englishTexts: readonly string[]): {
 
   const run = useCallback(
     async (lang: LanguageCode, src: string[]) => {
-      if (lang === "en" || src.length === 0) {
+      try {
+        if (lang === "en" || src.length === 0) {
+          setTexts(src);
+          setLoading(false);
+          setError(null);
+          return;
+        }
+
+        const key = cacheKey(lang, src);
+        const cached = readCache(key);
+        if (cached && cached.length === src.length) {
+          setTexts(cached);
+          setLoading(false);
+          setError(null);
+          return;
+        }
+
+        const id = ++requestId.current;
+        setLoading(true);
+        setError(null);
+        setTexts(src);
+
+        try {
+          let pending = inflight.get(key);
+          if (!pending) {
+            pending = (async () => {
+              try {
+                const result = (await translate({
+                  data: { language: languageName(lang), texts: src },
+                })) as string[];
+                if (Array.isArray(result) && result.length === src.length) {
+                  writeCache(key, result);
+                  return result;
+                }
+                return src;
+              } finally {
+                inflight.delete(key);
+              }
+            })();
+            inflight.set(key, pending);
+          }
+          const translated = await pending;
+          if (id !== requestId.current) return;
+          if (Array.isArray(translated) && translated.length === src.length) {
+            setTexts(translated);
+            setError(null);
+          } else {
+            setError("Incomplete translation");
+            setTexts(src);
+          }
+        } catch (e) {
+          if (id !== requestId.current) return;
+          const message = e instanceof Error ? e.message : "Translation failed";
+          setError(message);
+          setTexts(src);
+        } finally {
+          if (id === requestId.current) setLoading(false);
+        }
+      } catch {
         setTexts(src);
         setLoading(false);
-        setError(null);
-        return;
-      }
-
-      const key = cacheKey(lang, src);
-      const cached = readCache(key);
-      if (cached && cached.length === src.length) {
-        setTexts(cached);
-        setLoading(false);
-        setError(null);
-        return;
-      }
-
-      const id = ++requestId.current;
-      setLoading(true);
-      setError(null);
-      setTexts(src); // show English until translation arrives
-
-      try {
-        // Pass a human language name (e.g. "മലയാളം") so the model targets the
-        // right script, not a bare ISO code.
-        const translated = (await translate({
-          data: { language: languageName(lang), texts: src },
-        })) as string[];
-        if (id !== requestId.current) return;
-        if (Array.isArray(translated) && translated.length === src.length) {
-          writeCache(key, translated);
-          setTexts(translated);
-        } else {
-          setError("Incomplete translation");
-        }
-      } catch (e) {
-        if (id !== requestId.current) return;
-        const message = e instanceof Error ? e.message : "Translation failed";
-        setError(message);
-        // keep English fallback
-      } finally {
-        if (id === requestId.current) setLoading(false);
+        setError("Translation unavailable");
       }
     },
     [translate],
@@ -118,7 +142,65 @@ export function useAiTranslate(englishTexts: readonly string[]): {
     void run(language, sources);
   }, [language, sources, run]);
 
+  useEffect(() => {
+    if (language === "en") setTexts(sources);
+  }, [language, sources]);
+
   return { texts, loading, error };
+}
+
+/**
+ * Translate a fixed set of English UI phrases. Returns `tp(english)` which
+ * yields the active-language string (falling back to English while loading).
+ * Keep the English string as the source of truth in state/logic; only call
+ * `tp` at render time for display.
+ */
+export function usePhrases(phrases: readonly string[]): (english: string) => string {
+  // Deduplicate while preserving order so the AI batch stays stable
+  const phraseKey = useMemo(() => {
+    try {
+      return (phrases ?? []).join("\u0001");
+    } catch {
+      return "";
+    }
+  }, [phrases]);
+
+  const unique = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    try {
+      for (const p of phrases ?? []) {
+        if (typeof p !== "string") continue;
+        const s = p.trim();
+        if (!s || seen.has(s)) continue;
+        seen.add(s);
+        out.push(s);
+      }
+    } catch {
+      // ignore malformed packs
+    }
+    return out;
+  }, [phraseKey]);
+
+  const { texts } = useAiTranslate(unique);
+
+  const map = useMemo(() => {
+    const m = new Map<string, string>();
+    unique.forEach((p, i) => m.set(p, texts[i] ?? p));
+    return m;
+  }, [unique, texts]);
+
+  return useCallback(
+    (english: string) => {
+      try {
+        if (!english) return english;
+        return map.get(english) ?? english;
+      } catch {
+        return english;
+      }
+    },
+    [map],
+  );
 }
 
 /**
