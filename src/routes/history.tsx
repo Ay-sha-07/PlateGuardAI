@@ -323,8 +323,6 @@ function HistoryPageContent() {
 }
 
 function CompareView({
-  const tp = usePhrases(HISTORY_PHRASES);
-
   entries,
   onBack,
   onExit,
@@ -333,6 +331,7 @@ function CompareView({
   onBack: () => void;
   onExit: () => void;
 }) {
+  const tp = usePhrases(HISTORY_PHRASES);
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-24 pt-6">
@@ -462,8 +461,8 @@ function CompareView({
 }
 
 function HistoryDetail({
-  const tp = usePhrases(HISTORY_PHRASES);
  entry, onDelete }: { entry: ScanHistoryEntry; onDelete: () => void }) {
+  const tp = usePhrases(HISTORY_PHRASES);
   const result = entry.aiResult;
 
   return (
@@ -533,8 +532,8 @@ function HistoryDetail({
 }
 
 function DetailedResult({
-  const tp = usePhrases(HISTORY_PHRASES);
  result }: { result: ScanResult }) {
+  const tp = usePhrases(HISTORY_PHRASES);
   return (
     <>
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">

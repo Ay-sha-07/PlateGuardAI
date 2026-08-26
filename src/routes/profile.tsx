@@ -436,9 +436,8 @@ type StepProps = {
   patch: (partial: Partial<SafetyProfile>) => void;
 };
 
-function StepAbout({
+function StepAbout({ profile, patch }: StepProps) {
   const tp = usePhrases(PROFILE_PHRASES);
- profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
@@ -658,9 +657,8 @@ function HeightField({ profile, patch }: StepProps) {
   );
 }
 
-function StepAllergies({
+function StepAllergies({ profile, patch }: StepProps) {
   const tp = usePhrases(PROFILE_PHRASES);
- profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
@@ -725,9 +723,8 @@ function StepAllergies({
   );
 }
 
-function StepConditions({
+function StepConditions({ profile, patch }: StepProps) {
   const tp = usePhrases(PROFILE_PHRASES);
- profile, patch }: StepProps) {
   function toggle(value: string) {
     patch({
       conditions: profile.conditions.includes(value)
@@ -867,9 +864,8 @@ function StepConditions({
   );
 }
 
-function StepSensitivities({
+function StepSensitivities({ profile, patch }: StepProps) {
   const tp = usePhrases(PROFILE_PHRASES);
- profile, patch }: StepProps) {
   function toggleBowel(value: string) {
     patch({
       bowelHabits: profile.bowelHabits.includes(value)
@@ -924,9 +920,8 @@ function StepSensitivities({
   );
 }
 
-function StepLifestyle({
+function StepLifestyle({ profile, patch }: StepProps) {
   const tp = usePhrases(PROFILE_PHRASES);
- profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
