@@ -44,7 +44,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/multi-select";
-import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
+import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav"
+import { usePhrases } from "@/hooks/use-ai-translate";
+import { PROFILE_PHRASES } from "@/lib/ui-phrases";
 import {
   Select,
   SelectContent,
@@ -143,6 +145,8 @@ function ProfilePage() {
 }
 
 function ProfilePageContent() {
+  const tp = usePhrases(PROFILE_PHRASES);
+
   const router = useRouter();
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
@@ -237,9 +241,9 @@ function ProfilePageContent() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-xl font-bold text-foreground">Health profile</h1>
+          <h1 className="text-xl font-bold text-foreground">{tp("Health profile")}</h1>
           <p className="text-xs text-muted-foreground">
-            Every field feeds one rating — nothing here is judged in isolation.
+            {tp("Every field feeds one rating — nothing here is judged in isolation.")}
           </p>
         </div>
       </div>
@@ -266,7 +270,7 @@ function ProfilePageContent() {
                 type="button"
                 onClick={() => patch({ avatarUrl: "" })}
                 className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-accent"
-                aria-label="Remove profile photo"
+                aria-label={tp("Remove profile photo")}
               >
                 <X className="size-3" />
               </button>
@@ -275,8 +279,8 @@ function ProfilePageContent() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-foreground">Profile photo</h2>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">Optional • helps identify profiles</p>
+                <h2 className="text-sm font-semibold text-foreground">{tp("Profile photo")}</h2>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{tp("Optional • helps identify profiles")}</p>
               </div>
               <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-accent">
                 <ImagePlus className="size-3.5" />
@@ -358,12 +362,12 @@ function ProfilePageContent() {
               type="button"
               onClick={() => setStep(i)}
               className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-secondary"}`}
-              aria-label={`Go to step ${i + 1}: ${label}`}
+              aria-label={`Go to step ${i + 1}: ${tp(label)}`}
             />
           ))}
         </div>
         <p className="mt-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Step {step + 1} of {STEPS.length} — {STEPS[step]}
+          Step {step + 1} of {STEPS.length} — {tp(STEPS[step]!)}
         </p>
       </div>
 
@@ -408,7 +412,7 @@ function ProfilePageContent() {
               onClick={submit}
             >
               <Check className="size-5" />
-              Save profile
+              {tp("Save profile")}
             </Button>
           ) : (
             <Button
@@ -416,7 +420,7 @@ function ProfilePageContent() {
               className="h-14 flex-1 rounded-2xl text-base font-semibold"
               onClick={() => setStep((s) => s + 1)}
             >
-              Continue
+              {tp("Continue")}
               <ArrowRight className="size-5" />
             </Button>
           )}
@@ -432,18 +436,20 @@ type StepProps = {
   patch: (partial: Partial<SafetyProfile>) => void;
 };
 
-function StepAbout({ profile, patch }: StepProps) {
+function StepAbout({
+  const tp = usePhrases(PROFILE_PHRASES);
+ profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
-        title="Who is this for?"
-        body="Age, sex, and body baseline change what's actually risky in a food — not just what's flagged."
+        title={tp("Who is this for?")}
+        body={tp("Age, sex, and body baseline change what's actually risky in a food — not just what's flagged.")}
       />
       <div className="space-y-2">
-        <Label htmlFor="name">Name (optional)</Label>
+        <Label htmlFor="name">{tp("Name (optional)")}</Label>
         <Input
           id="name"
-          placeholder="e.g. Maya"
+          placeholder={tp("e.g. Maya")}
           value={profile.name}
           onChange={(e) => patch({ name: e.target.value })}
           className="h-11 rounded-xl"
@@ -452,13 +458,13 @@ function StepAbout({ profile, patch }: StepProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Age group</Label>
+          <Label>{tp("Age group")}</Label>
           <Select
             value={profile.ageGroup}
             onValueChange={(v) => patch({ ageGroup: v as SafetyProfile["ageGroup"] })}
           >
             <SelectTrigger className="h-11 rounded-xl">
-              <SelectValue placeholder="Select" />
+              <SelectValue placeholder={tp("Select")} />
             </SelectTrigger>
             <SelectContent>
               {AGE_GROUPS.map((g) => (
@@ -470,13 +476,13 @@ function StepAbout({ profile, patch }: StepProps) {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label>Biological sex</Label>
+          <Label>{tp("Biological sex")}</Label>
           <Select
             value={profile.biologicalSex}
             onValueChange={(v) => patch({ biologicalSex: v as SafetyProfile["biologicalSex"] })}
           >
             <SelectTrigger className="h-11 rounded-xl">
-              <SelectValue placeholder="Select" />
+              <SelectValue placeholder={tp("Select")} />
             </SelectTrigger>
             <SelectContent>
               {BIOLOGICAL_SEXES.map((s) => (
@@ -490,7 +496,7 @@ function StepAbout({ profile, patch }: StepProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Pregnancy / breastfeeding status</Label>
+        <Label>{tp("Pregnancy / breastfeeding status")}</Label>
         <Select
           value={profile.reproductiveStatus}
           onValueChange={(v) =>
@@ -498,7 +504,7 @@ function StepAbout({ profile, patch }: StepProps) {
           }
         >
           <SelectTrigger className="h-11 rounded-xl">
-            <SelectValue placeholder="Select if relevant" />
+            <SelectValue placeholder={tp("Select if relevant")} />
           </SelectTrigger>
           <SelectContent>
             {REPRODUCTIVE_STATUSES.map((s) => (
@@ -512,12 +518,12 @@ function StepAbout({ profile, patch }: StepProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="weight">Weight (kg, optional)</Label>
+          <Label htmlFor="weight">{tp("Weight (kg, optional)")}</Label>
           <Input
             id="weight"
             type="number"
             inputMode="decimal"
-            placeholder="e.g. 62"
+            placeholder={tp("e.g. 62")}
             value={profile.weightKg}
             onChange={(e) => patch({ weightKg: e.target.value })}
             className="h-11 rounded-xl"
@@ -529,13 +535,13 @@ function StepAbout({ profile, patch }: StepProps) {
       </div>
 
       <div className="space-y-2">
-        <Label>Activity level (optional)</Label>
+        <Label>{tp("Activity level (optional)")}</Label>
         <Select
           value={profile.activityLevel}
           onValueChange={(v) => patch({ activityLevel: v as SafetyProfile["activityLevel"] })}
         >
           <SelectTrigger className="h-11 rounded-xl">
-            <SelectValue placeholder="Select" />
+            <SelectValue placeholder={tp("Select")} />
           </SelectTrigger>
           <SelectContent>
             {ACTIVITY_LEVELS.map((a) => (
@@ -557,6 +563,7 @@ function StepAbout({ profile, patch }: StepProps) {
  * history) needs to know which unit the person prefers to type in.
  */
 function HeightField({ profile, patch }: StepProps) {
+  const tp = usePhrases(PROFILE_PHRASES);
   const [unit, setUnit] = useState<"cm" | "ft">("cm");
   const cmValue = parseFloat(profile.heightCm);
   const hasCm = Number.isFinite(cmValue) && cmValue > 0;
@@ -583,7 +590,7 @@ function HeightField({ profile, patch }: StepProps) {
   return (
     <>
       <div className="flex items-center justify-between">
-        <Label htmlFor="height">Height (optional)</Label>
+        <Label htmlFor="height">{tp("Height (optional)")}</Label>
         <div className="flex rounded-full border border-border p-0.5 text-xs">
           <button
             type="button"
@@ -611,7 +618,7 @@ function HeightField({ profile, patch }: StepProps) {
           id="height"
           type="number"
           inputMode="decimal"
-          placeholder="e.g. 165"
+          placeholder={tp("e.g. 165")}
           value={profile.heightCm}
           onChange={(e) => patch({ heightCm: e.target.value })}
           className="h-11 rounded-xl"
@@ -623,7 +630,7 @@ function HeightField({ profile, patch }: StepProps) {
               id="height"
               type="number"
               inputMode="numeric"
-              placeholder="e.g. 5"
+              placeholder={tp("e.g. 5")}
               value={hasCm ? feetDisplay : ""}
               onChange={(e) => setFromFeetInches(parseFloat(e.target.value), inchesDisplay)}
               className="h-11 rounded-xl pr-9"
@@ -636,7 +643,7 @@ function HeightField({ profile, patch }: StepProps) {
             <Input
               type="number"
               inputMode="numeric"
-              placeholder="e.g. 5"
+              placeholder={tp("e.g. 5")}
               value={hasCm ? inchesDisplay : ""}
               onChange={(e) => setFromFeetInches(feetDisplay, parseFloat(e.target.value))}
               className="h-11 rounded-xl pr-9"
@@ -651,33 +658,35 @@ function HeightField({ profile, patch }: StepProps) {
   );
 }
 
-function StepAllergies({ profile, patch }: StepProps) {
+function StepAllergies({
+  const tp = usePhrases(PROFILE_PHRASES);
+ profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
-        title="Allergies"
-        body="Treated as life-critical — any direct ingredient or hidden derivative triggers the highest-risk rating."
+        title={tp("Allergies")}
+        body={tp("Treated as life-critical — any direct ingredient or hidden derivative triggers the highest-risk rating.")}
       />
       <div className="space-y-2">
-        <Label>Select every allergen that applies</Label>
+        <Label>{tp("Select every allergen that applies")}</Label>
         <MultiSelect
           options={COMMON_ALLERGENS}
           selected={profile.allergens}
           onChange={(v) => patch({ allergens: v })}
-          placeholder="Select allergens"
+          placeholder={tp("Select allergens")}
           searchPlaceholder="Search allergens…"
         />
       </div>
 
       {profile.allergens.length > 0 && (
         <div className="animate-rise-in space-y-2">
-          <Label>How severe is the reaction, typically?</Label>
+          <Label>{tp("How severe is the reaction, typically?")}</Label>
           <Select
             value={profile.allergySeverity}
             onValueChange={(v) => patch({ allergySeverity: v as SafetyProfile["allergySeverity"] })}
           >
             <SelectTrigger className="h-11 rounded-xl">
-              <SelectValue placeholder="Select severity" />
+              <SelectValue placeholder={tp("Select severity")} />
             </SelectTrigger>
             <SelectContent>
               {ALLERGY_SEVERITIES.map((s) => (
@@ -691,13 +700,13 @@ function StepAllergies({ profile, patch }: StepProps) {
       )}
 
       <div className="space-y-2">
-        <Label>Gluten status (optional)</Label>
+        <Label>{tp("Gluten status (optional)")}</Label>
         <Select
           value={profile.glutenStatus}
           onValueChange={(v) => patch({ glutenStatus: v as SafetyProfile["glutenStatus"] })}
         >
           <SelectTrigger className="h-11 rounded-xl">
-            <SelectValue placeholder="Not applicable" />
+            <SelectValue placeholder={tp("Not applicable")} />
           </SelectTrigger>
           <SelectContent>
             {GLUTEN_STATUSES.map((s) => (
@@ -716,7 +725,9 @@ function StepAllergies({ profile, patch }: StepProps) {
   );
 }
 
-function StepConditions({ profile, patch }: StepProps) {
+function StepConditions({
+  const tp = usePhrases(PROFILE_PHRASES);
+ profile, patch }: StepProps) {
   function toggle(value: string) {
     patch({
       conditions: profile.conditions.includes(value)
@@ -732,8 +743,8 @@ function StepConditions({ profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
-        title="Health conditions"
-        body="Select everything that applies, not just the most urgent one — conditions are weighed together, since combinations can even reverse each other's dietary advice."
+        title={tp("Health conditions")}
+        body={tp("Select everything that applies, not just the most urgent one — conditions are weighed together, since combinations can even reverse each other's dietary advice.")}
       />
       {CONDITION_CATEGORIES.map((group) => (
         <div key={group.category} className="space-y-2.5">
@@ -764,15 +775,15 @@ function StepConditions({ profile, patch }: StepProps) {
 
       {hasDiabetes && (
         <div className="animate-rise-in space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-          <p className="text-sm font-semibold text-foreground">Diabetes detail</p>
+          <p className="text-sm font-semibold text-foreground">{tp("Diabetes detail")}</p>
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label>{tp("Type")}</Label>
             <Select
               value={profile.diabetes.type}
               onValueChange={(v) => patch({ diabetes: { ...profile.diabetes, type: v as never } })}
             >
               <SelectTrigger className="h-11 rounded-xl bg-background">
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder={tp("Select type")} />
               </SelectTrigger>
               <SelectContent>
                 {DIABETES_TYPES.map((t) => (
@@ -784,7 +795,7 @@ function StepConditions({ profile, patch }: StepProps) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Treatment</Label>
+            <Label>{tp("Treatment")}</Label>
             <Select
               value={profile.diabetes.treatment}
               onValueChange={(v) =>
@@ -792,7 +803,7 @@ function StepConditions({ profile, patch }: StepProps) {
               }
             >
               <SelectTrigger className="h-11 rounded-xl bg-background">
-                <SelectValue placeholder="Select treatment" />
+                <SelectValue placeholder={tp("Select treatment")} />
               </SelectTrigger>
               <SelectContent>
                 {DIABETES_TREATMENTS.map((t) => (
@@ -816,7 +827,7 @@ function StepConditions({ profile, patch }: StepProps) {
             onValueChange={(v) => patch({ hypertension: { status: v as never } })}
           >
             <SelectTrigger className="h-11 rounded-xl bg-background">
-              <SelectValue placeholder="Select status" />
+              <SelectValue placeholder={tp("Select status")} />
             </SelectTrigger>
             <SelectContent>
               {HYPERTENSION_STATUSES.map((s) => (
@@ -831,13 +842,13 @@ function StepConditions({ profile, patch }: StepProps) {
 
       {hasKidney && (
         <div className="animate-rise-in space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-          <p className="text-sm font-semibold text-foreground">Kidney detail</p>
+          <p className="text-sm font-semibold text-foreground">{tp("Kidney detail")}</p>
           <Select
             value={profile.kidney.status}
             onValueChange={(v) => patch({ kidney: { status: v as never } })}
           >
             <SelectTrigger className="h-11 rounded-xl bg-background">
-              <SelectValue placeholder="Select status" />
+              <SelectValue placeholder={tp("Select status")} />
             </SelectTrigger>
             <SelectContent>
               {KIDNEY_STATUSES.map((s) => (
@@ -856,7 +867,9 @@ function StepConditions({ profile, patch }: StepProps) {
   );
 }
 
-function StepSensitivities({ profile, patch }: StepProps) {
+function StepSensitivities({
+  const tp = usePhrases(PROFILE_PHRASES);
+ profile, patch }: StepProps) {
   function toggleBowel(value: string) {
     patch({
       bowelHabits: profile.bowelHabits.includes(value)
@@ -868,22 +881,22 @@ function StepSensitivities({ profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
-        title="Specific sensitivities"
-        body="Not allergies, but things that still change what's comfortable to eat — only flagged if you select them."
+        title={tp("Specific sensitivities")}
+        body={tp("Not allergies, but things that still change what's comfortable to eat — only flagged if you select them.")}
       />
       <div className="space-y-2">
-        <Label>Chemical / additive sensitivities (optional)</Label>
+        <Label>{tp("Chemical / additive sensitivities (optional)")}</Label>
         <MultiSelect
           options={SENSITIVITIES}
           selected={profile.sensitivities}
           onChange={(v) => patch({ sensitivities: v })}
-          placeholder="Select any that apply"
+          placeholder={tp("Select any that apply")}
           searchPlaceholder="Search…"
         />
       </div>
 
       <div className="space-y-2.5">
-        <Label>Digestive symptom pattern (optional)</Label>
+        <Label>{tp("Digestive symptom pattern (optional)")}</Label>
         <div className="flex flex-wrap gap-2">
           {BOWEL_HABITS.map((o) => {
             const on = profile.bowelHabits.includes(o);
@@ -911,30 +924,32 @@ function StepSensitivities({ profile, patch }: StepProps) {
   );
 }
 
-function StepLifestyle({ profile, patch }: StepProps) {
+function StepLifestyle({
+  const tp = usePhrases(PROFILE_PHRASES);
+ profile, patch }: StepProps) {
   return (
     <div className="space-y-6">
       <FieldIntro
-        title="Lifestyle, medications & anything else"
-        body="Dietary and religious patterns add a separate layer of checks; medications matter only for well-established food-drug interactions."
+        title={tp("Lifestyle, medications & anything else")}
+        body={tp("Dietary and religious patterns add a separate layer of checks; medications matter only for well-established food-drug interactions.")}
       />
       <div className="space-y-2">
-        <Label>Dietary / religious pattern (optional)</Label>
+        <Label>{tp("Dietary / religious pattern (optional)")}</Label>
         <MultiSelect
           options={DIETARY_PATTERNS}
           selected={profile.dietaryPatterns}
           onChange={(v) => patch({ dietaryPatterns: v })}
-          placeholder="Select any that apply"
+          placeholder={tp("Select any that apply")}
           searchPlaceholder="Search…"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="medications">Current medications (optional)</Label>
+        <Label htmlFor="medications">{tp("Current medications (optional)")}</Label>
         <Textarea
           id="medications"
           rows={2}
-          placeholder="e.g. warfarin, lisinopril"
+          placeholder={tp("e.g. warfarin, lisinopril")}
           value={profile.medications}
           onChange={(e) => patch({ medications: e.target.value })}
           className="rounded-xl"
@@ -945,11 +960,11 @@ function StepLifestyle({ profile, patch }: StepProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Anything else to watch for?</Label>
+        <Label htmlFor="notes">{tp("Anything else to watch for?")}</Label>
         <Textarea
           id="notes"
           rows={3}
-          placeholder="e.g. also avoid red food dye; sodium under 140mg per serving"
+          placeholder={tp("e.g. also avoid red food dye; sodium under 140mg per serving")}
           value={profile.notes}
           onChange={(e) => patch({ notes: e.target.value })}
           className="rounded-xl"

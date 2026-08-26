@@ -7,6 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import * as React from "react";
 import { useEffect, type ReactNode } from "react";
 import { LanguageProvider } from "@/lib/i18n";
 
@@ -48,12 +49,42 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
 
   const router = useRouter();
+  const retried = React.useRef(false);
 
   useEffect(() => {
-    reportError(error, {
-      boundary: "tanstack_root_error_component",
-    });
+    try {
+      reportError(error, {
+        boundary: "tanstack_root_error_component",
+      });
+    } catch {
+      // reporting must never block recovery
+    }
   }, [error]);
+
+  // One automatic soft retry for transient client errors (e.g. language switch race).
+  // Keyed by error message so a permanent failure does not loop forever.
+  useEffect(() => {
+    if (retried.current) return;
+    let already = false;
+    try {
+      const key = `pg-err-retry:${(error?.message || "unknown").slice(0, 80)}`;
+      already = sessionStorage.getItem(key) === "1";
+      if (!already) sessionStorage.setItem(key, "1");
+    } catch {
+      already = false;
+    }
+    if (already) return;
+    retried.current = true;
+    const t = window.setTimeout(() => {
+      try {
+        router.invalidate();
+        reset();
+      } catch {
+        // ignore
+      }
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [error, router, reset]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -69,8 +100,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
-              reset();
+              try {
+                router.invalidate();
+                reset();
+              } catch {
+                window.location.assign("/");
+              }
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -105,7 +140,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         name: "description",
-        content: "Instant allergen and nutrition label scanning for your medical profile.",
+        content: "Allergen and nutrition label scanning for your medical profile.",
       },
 
       {
@@ -115,7 +150,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         property: "og:description",
-        content: "Instant allergen and nutrition label scanning for your medical profile.",
+        content: "Allergen and nutrition label scanning for your medical profile.",
       },
 
       {

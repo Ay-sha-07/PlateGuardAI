@@ -22,6 +22,8 @@ import { SCOPE_CHANGED_EVENT } from "@/lib/account-scope";
 import { isHistoryPullInFlight, subscribeHistoryPullStatus } from "@/lib/cloud-sync";
 import { RATING_LABELS, type ScanResult } from "@/lib/scan.server";
 import { Button } from "@/components/ui/button";
+import { usePhrases } from "@/hooks/use-ai-translate";
+import { HISTORY_PHRASES } from "@/lib/ui-phrases";
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/bottom-nav";
 import { RequireEntry } from "@/components/require-entry";
@@ -64,6 +66,7 @@ function HistoryPage() {
 }
 
 function HistoryPageContent() {
+  const tp = usePhrases(HISTORY_PHRASES);
   const [entries, setEntries] = useState<ScanHistoryEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [syncing, setSyncing] = useState(() => isHistoryPullInFlight());
@@ -121,7 +124,7 @@ function HistoryPageContent() {
   }
 
   function removeAll() {
-    if (!window.confirm("Clear all scan history on this device?")) return;
+    if (!window.confirm(tp("Clear all scan history on this device?"))) return;
     clearHistory();
     setEntries([]);
     window.history.replaceState({}, "", "/history");
@@ -180,7 +183,7 @@ function HistoryPageContent() {
             </Button>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-bold text-foreground">
-                {compareMode ? `Select to compare (${compareIds.length}/3)` : "Scan history"}
+                {compareMode ? `Select to compare (${compareIds.length}/3)` : tp("Scan history")}
               </h1>
               {syncing && (
                 <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground" role="status" aria-live="polite">
@@ -209,7 +212,7 @@ function HistoryPageContent() {
                 onClick={removeAll}
               >
                 <Trash2 className="size-4" />
-                Clear all
+                {tp("Clear history")}
               </Button>
             )}
           </div>
@@ -220,12 +223,12 @@ function HistoryPageContent() {
             <div className="flex size-16 items-center justify-center rounded-full bg-primary/12 text-primary">
               <Soup className="size-7" />
             </div>
-            <p className="text-sm font-medium text-foreground">No scans yet</p>
+            <p className="text-sm font-medium text-foreground">{tp("No scans yet")}</p>
             <p className="max-w-xs text-sm text-muted-foreground">
               Verdicts you get from scanning a food or medicine label will show up here.
             </p>
             <Button asChild className="mt-2">
-              <Link to="/scan">Scan a label</Link>
+              <Link to="/scan">{tp("Scan a label")}</Link>
             </Button>
           </div>
         )}
@@ -273,7 +276,7 @@ function HistoryPageContent() {
                       className={`size-2 shrink-0 rounded-full ${RATING_DOT[e.rating] ?? "bg-caution"}`}
                     />
                     <p className="truncate text-sm font-semibold text-foreground">
-                      {e.productGuess || "Unreadable label"}
+                      {e.productGuess || tp("Unreadable label")}
                     </p>
                   </div>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">{e.headline}</p>
@@ -284,7 +287,7 @@ function HistoryPageContent() {
                       ) : (
                         <Soup className="size-3" />
                       )}
-                      {RATING_LABELS[e.rating] ?? "Use caution"}
+                      {tp(RATING_LABELS[e.rating] ?? "Use caution")}
                     </Badge>
                     <span className="text-[11px] text-muted-foreground">{e.profileName}</span>
                     <span className="text-[11px] text-muted-foreground">
@@ -320,6 +323,8 @@ function HistoryPageContent() {
 }
 
 function CompareView({
+  const tp = usePhrases(HISTORY_PHRASES);
+
   entries,
   onBack,
   onExit,
@@ -340,7 +345,7 @@ function CompareView({
               <h1 className="truncate text-lg font-bold text-foreground">
                 Comparing {entries.length}
               </h1>
-              <p className="text-xs text-muted-foreground">Swipe to see each product</p>
+              <p className="text-xs text-muted-foreground">{tp("Swipe to see each product")}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onExit}>
@@ -363,7 +368,7 @@ function CompareView({
 
               <div>
                 <p className="truncate text-sm font-bold text-foreground">
-                  {e.productGuess || "Unreadable label"}
+                  {e.productGuess || tp("Unreadable label")}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
                   {e.profileName} ·{" "}
@@ -384,7 +389,7 @@ function CompareView({
                   ) : (
                     <Soup className="size-3" />
                   )}
-                  {RATING_LABELS[e.rating] ?? "Use caution"}
+                  {tp(RATING_LABELS[e.rating] ?? "Use caution")}
                 </Badge>
               </div>
 
@@ -395,7 +400,7 @@ function CompareView({
                   {e.aiResult.flaggedIngredients.length > 0 && (
                     <div>
                       <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                        Flagged
+                        {tp("Flagged ingredients")}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {e.aiResult.flaggedIngredients.map((f) => (
@@ -409,7 +414,7 @@ function CompareView({
                   {e.aiResult.profileImpact.length > 0 && (
                     <div>
                       <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                        Profile impact
+                        {tp("What the AI found")}
                       </p>
                       <div className="mt-1 space-y-1.5">
                         {e.aiResult.profileImpact.map((item, i) => (
@@ -428,7 +433,7 @@ function CompareView({
                   {e.aiResult.recommendation && (
                     <div>
                       <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                        Recommendation
+                        {tp("Recommendation")}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-foreground">
                         {e.aiResult.recommendation}
@@ -456,7 +461,9 @@ function CompareView({
   );
 }
 
-function HistoryDetail({ entry, onDelete }: { entry: ScanHistoryEntry; onDelete: () => void }) {
+function HistoryDetail({
+  const tp = usePhrases(HISTORY_PHRASES);
+ entry, onDelete }: { entry: ScanHistoryEntry; onDelete: () => void }) {
   const result = entry.aiResult;
 
   return (
@@ -473,7 +480,7 @@ function HistoryDetail({ entry, onDelete }: { entry: ScanHistoryEntry; onDelete:
           </Button>
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-bold text-foreground">
-              {entry.productGuess || "Scan details"}
+              {entry.productGuess || tp("Scan details")}
             </p>
             <p className="text-xs text-muted-foreground">
               {new Date(entry.createdAt).toLocaleString()} · {entry.profileName}
@@ -484,7 +491,7 @@ function HistoryDetail({ entry, onDelete }: { entry: ScanHistoryEntry; onDelete:
             size="icon"
             className="shrink-0 text-danger hover:text-danger"
             onClick={onDelete}
-            aria-label="Delete scan"
+            aria-label={tp("Delete scan")}
           >
             <Trash2 className="size-4" />
           </Button>
@@ -498,7 +505,7 @@ function HistoryDetail({ entry, onDelete }: { entry: ScanHistoryEntry; onDelete:
           />
 
           <div className="rounded-2xl border border-border bg-card/80 p-4">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">AI verdict</p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">{tp("AI verdict")}</p>
             <div className="mt-2 flex items-center gap-2">
               <span
                 className={`text-2xl font-black ${RATING_TEXT[entry.rating] ?? "text-caution"}`}
@@ -525,20 +532,22 @@ function HistoryDetail({ entry, onDelete }: { entry: ScanHistoryEntry; onDelete:
   );
 }
 
-function DetailedResult({ result }: { result: ScanResult }) {
+function DetailedResult({
+  const tp = usePhrases(HISTORY_PHRASES);
+ result }: { result: ScanResult }) {
   return (
     <>
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
         <div className="flex items-center gap-2 text-primary">
           <Sparkles className="size-4" />
-          <p className="text-xs font-semibold uppercase tracking-widest">What the AI found</p>
+          <p className="text-xs font-semibold uppercase tracking-widest">{tp("What the AI found")}</p>
         </div>
         {result.summary && (
           <p className="mt-2 text-sm leading-6 text-foreground">{result.summary}</p>
         )}
         {result.whatItIs && (
           <div className="mt-3">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">What it is</p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">{tp("What it is")}</p>
             <p className="mt-1 text-sm text-foreground">{result.whatItIs}</p>
           </div>
         )}
@@ -547,24 +556,24 @@ function DetailedResult({ result }: { result: ScanResult }) {
         </p>
       </div>
 
-      {result.purpose && <DetailBlock title="Purpose" items={[result.purpose]} />}
+      {result.purpose && <DetailBlock title={tp("Purpose")} items={[result.purpose]} />}
       {result.activeIngredients.length > 0 && (
-        <DetailBlock title="Active ingredients" items={result.activeIngredients} />
+        <DetailBlock title={tp("Active ingredients")} items={result.activeIngredients} />
       )}
       {result.labelEvidence.length > 0 && (
-        <DetailBlock title="Label evidence" items={result.labelEvidence} />
+        <DetailBlock title={tp("Label evidence")} items={result.labelEvidence} />
       )}
       {result.nutritionHighlights.length > 0 && (
-        <DetailBlock title="Nutrition & ingredient highlights" items={result.nutritionHighlights} />
+        <DetailBlock title={tp("Nutrition & ingredient highlights")} items={result.nutritionHighlights} />
       )}
       {result.flaggedIngredients.length > 0 && (
-        <DetailBlock title="Flagged ingredients" items={result.flaggedIngredients} danger />
+        <DetailBlock title={tp("Flagged ingredients")} items={result.flaggedIngredients} danger />
       )}
 
       {result.profileImpact.length > 0 && (
         <div className="rounded-2xl border border-border bg-card/80 p-4">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            How it affected the profile
+            {tp("What the AI found")}
           </p>
           <div className="mt-3 space-y-4">
             {result.profileImpact.map((item, i) => (
@@ -582,7 +591,7 @@ function DetailedResult({ result }: { result: ScanResult }) {
       )}
 
       <div className="rounded-2xl border border-border bg-card/80 p-4">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">AI reasons</p>
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">{tp("AI reasons")}</p>
         <div className="mt-3 space-y-4">
           {result.reasons.map((reason, i) => (
             <div key={i}>
@@ -598,7 +607,7 @@ function DetailedResult({ result }: { result: ScanResult }) {
       </div>
 
       {result.recommendation && (
-        <DetailBlock title="Recommendation" items={[result.recommendation]} />
+        <DetailBlock title={tp("Recommendation")} items={[result.recommendation]} />
       )}
     </>
   );
