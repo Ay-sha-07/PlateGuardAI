@@ -3,38 +3,25 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 /** English display names used only for alphabetical ordering in the picker. */
 const LANGUAGE_SORT_NAME: Record<string, string> = {
   en: "English",
-  am: "Amharic",
   ar: "Arabic",
   id: "Bahasa Indonesia",
-  ms: "Bahasa Melayu",
   bn: "Bengali",
   zh: "Chinese",
-  nl: "Dutch",
-  fil: "Filipino",
   fr: "French",
   de: "German",
-  el: "Greek",
-  gu: "Gujarati",
-  he: "Hebrew",
   hi: "Hindi",
   it: "Italian",
   ja: "Japanese",
   kn: "Kannada",
-  sw: "Kiswahili",
   ko: "Korean",
   ml: "Malayalam",
-  mr: "Marathi",
-  fa: "Persian",
-  pl: "Polish",
   pt: "Portuguese",
-  pa: "Punjabi",
   ru: "Russian",
   es: "Spanish",
   ta: "Tamil",
   te: "Telugu",
   th: "Thai",
   tr: "Turkish",
-  uk: "Ukrainian",
   ur: "Urdu",
   vi: "Vietnamese",
 };
@@ -47,9 +34,6 @@ const LANGUAGES_RAW = [
   { code: "te", label: "తెలుగు" },
   { code: "kn", label: "ಕನ್ನಡ" },
   { code: "bn", label: "বাংলা" },
-  { code: "mr", label: "मराठी" },
-  { code: "gu", label: "ગુજરાતી" },
-  { code: "pa", label: "ਪੰਜਾਬੀ" },
   { code: "ur", label: "اردو" },
   { code: "ar", label: "العربية" },
   { code: "es", label: "Español" },
@@ -57,24 +41,14 @@ const LANGUAGES_RAW = [
   { code: "de", label: "Deutsch" },
   { code: "it", label: "Italiano" },
   { code: "pt", label: "Português" },
-  { code: "nl", label: "Nederlands" },
-  { code: "pl", label: "Polski" },
-  { code: "uk", label: "Українська" },
   { code: "ru", label: "Русский" },
   { code: "tr", label: "Türkçe" },
-  { code: "el", label: "Ελληνικά" },
   { code: "zh", label: "中文" },
   { code: "ja", label: "日本語" },
   { code: "ko", label: "한국어" },
   { code: "id", label: "Bahasa Indonesia" },
-  { code: "ms", label: "Bahasa Melayu" },
   { code: "vi", label: "Tiếng Việt" },
   { code: "th", label: "ไทย" },
-  { code: "sw", label: "Kiswahili" },
-  { code: "am", label: "አማርኛ" },
-  { code: "fil", label: "Filipino" },
-  { code: "fa", label: "فارسی" },
-  { code: "he", label: "עברית" },
 ] as const;
 
 /** English first, then every other language sorted A→Z by English name. */
@@ -502,7 +476,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const apply = (v: LanguageCode) => {
     try {
       document.documentElement.lang = v;
-      document.documentElement.dir = ["ar", "ur", "fa", "he"].includes(v) ? "rtl" : "ltr";
+      document.documentElement.dir = ["ar", "ur"].includes(v) ? "rtl" : "ltr";
     } catch {
       // SSR / non-DOM — ignore
     }
