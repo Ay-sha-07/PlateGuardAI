@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, ScanLine, History, IdCard, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 
 const TABS = [
   { to: "/", label: "Home", Icon: Home },
@@ -21,6 +22,7 @@ const TABS = [
  */
 export function BottomNav({ stacked = false }: { stacked?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { t } = useLanguage();
 
   return (
     <nav
@@ -50,7 +52,7 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
               )}
             >
               <Icon className={cn("size-5", active && "fill-primary/15")} />
-              {label}
+              {t(label)}
             </Link>
           );
         })}

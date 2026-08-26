@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/bottom-nav";
 import { RequireEntry } from "@/components/require-entry";
+import { useLanguage } from "@/lib/i18n";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
@@ -148,6 +149,7 @@ function ProfileAvatar({
 }
 
 function ScannerPage() {
+  const { language } = useLanguage();
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -325,6 +327,7 @@ function ScannerPage() {
           barcode,
           barcodeProductName,
           barcodeIngredientText,
+          language,
           ...profilePayload(),
         },
       })) as ScanResult;
@@ -388,6 +391,7 @@ function ScannerPage() {
           barcode: code,
           barcodeProductName: barcodeName,
           barcodeIngredientText: overrides?.barcodeIngredientText ?? "",
+          language,
           ...profilePayload(),
         },
       })) as ScanResult;

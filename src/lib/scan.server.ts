@@ -22,6 +22,7 @@ export const ScanInputSchema = z
     barcodeProductName: z.string().default(""),
     barcodeIngredientText: z.string().default(""),
     mode: z.enum(["food", "medicine"]).default("food"),
+    language: z.enum(["en", "ml", "hi", "ta", "te", "kn", "bn", "mr", "gu", "pa", "ur", "ar", "es", "fr", "de", "it", "pt", "nl", "pl", "uk", "ru", "tr", "el", "zh", "ja", "ko", "id", "ms", "vi", "th", "sw", "am", "fil", "fa", "he"]).default("en"),
 
   ageGroup: z.string().default(""),
   biologicalSex: z.string().default(""),
@@ -252,7 +253,9 @@ function toSafetyScale(result: ScanResult): ScanResult {
 
 export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promise<ScanResult> {
   const providers = getVisionProviders();
-  const system = data.mode === "medicine" ? SYSTEM_MEDICINE : SYSTEM;
+  const baseSystem = data.mode === "medicine" ? SYSTEM_MEDICINE : SYSTEM;
+  const outputLanguage: Record<string, string> = { en:"English",ml:"Malayalam",hi:"Hindi",ta:"Tamil",te:"Telugu",kn:"Kannada",bn:"Bengali",mr:"Marathi",gu:"Gujarati",pa:"Punjabi",ur:"Urdu",ar:"Arabic",es:"Spanish",fr:"French",de:"German",it:"Italian",pt:"Portuguese",nl:"Dutch",pl:"Polish",uk:"Ukrainian",ru:"Russian",tr:"Turkish",el:"Greek",zh:"Chinese",ja:"Japanese",ko:"Korean",id:"Indonesian",ms:"Malay",vi:"Vietnamese",th:"Thai",sw:"Swahili",am:"Amharic",fil:"Filipino",fa:"Persian",he:"Hebrew" };
+  const system = `${baseSystem}\n\nLANGUAGE REQUIREMENT: Write every user-facing text field (headline, summary, productGuess, reasons, labelEvidence, nutritionHighlights, profileImpact, recommendation, purpose, activeIngredients) in ${outputLanguage[data.language] ?? "English"}. Keep numbers, medicine names, ingredient names, units and ratings accurate. Do not translate technical names when that would reduce safety or recognition.`;
 
   const bmiNote =
     data.weightKg && data.heightCm

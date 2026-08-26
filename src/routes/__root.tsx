@@ -8,6 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { LanguageProvider } from "@/lib/i18n";
+import { LanguageSelector } from "@/components/language-selector";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
@@ -213,8 +215,11 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
 
       <body>
-        {children}
-        <Scripts />
+        <LanguageProvider>
+          <div className="fixed right-3 top-3 z-[100] sm:right-5 sm:top-5"><LanguageSelector compact /></div>
+          {children}
+          <Scripts />
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
   Camera,
