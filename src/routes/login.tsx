@@ -6,13 +6,10 @@ import { Button } from "@/components/ui/button";
 import { requireSupabase } from "@/lib/supabase";
 import { setActiveScope } from "@/lib/account-scope";
 import { LanguageSelector } from "@/components/language-selector";
-import { usePhrases } from "@/hooks/use-ai-translate";
-import { LOGIN_PHRASES } from "@/lib/ui-phrases";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
-  const tp = usePhrases(LOGIN_PHRASES);
   const nav=useNavigate(); const [email,setEmail]=useState(""); const [password,setPassword]=useState("");
   const [mode,setMode]=useState<"login"|"signup">("login"); const [busy,setBusy]=useState(false); const [error,setError]=useState("");
   const [showPassword,setShowPassword]=useState(false);
@@ -60,18 +57,18 @@ function LoginPage() {
           alt="PlateGuard AI"
           className="mx-auto mb-4 size-16 rounded-2xl object-contain"
         />
-        <h1 className="font-display text-3xl font-bold sm:text-4xl">{mode==="login" ? tp("Welcome back") : tp("Create your account")}</h1>
-        <p className="mt-3 text-base leading-6 text-muted-foreground">{tp("Your profiles and scan history are saved securely to your account.")}</p>
+        <h1 className="font-display text-3xl font-bold sm:text-4xl">{mode==="login"?"Welcome back":"Create your account"}</h1>
+        <p className="mt-3 text-base leading-6 text-muted-foreground">Your profiles and scan history are saved securely to your account.</p>
       </div>
       <form onSubmit={submit} className="space-y-5">
         <div className="space-y-2">
-          <label htmlFor="login-email" className="block text-base font-semibold">{tp("Email address")}</label>
+          <label htmlFor="login-email" className="block text-base font-semibold">Email address</label>
           <input
             id="login-email"
             required
             type="email"
             autoComplete="email"
-            placeholder={tp("you@example.com")}
+            placeholder="you@example.com"
             value={email}
             onChange={e=>setEmail(e.target.value)}
             className="h-14 w-full min-w-0 rounded-xl border bg-background px-4 text-base"
@@ -86,7 +83,7 @@ function LoginPage() {
               minLength={6}
               type={showPassword ? "text" : "password"}
               autoComplete={mode==="login" ? "current-password" : "new-password"}
-              placeholder={tp("At least 6 characters")}
+              placeholder="At least 6 characters"
               value={password}
               onChange={e=>setPassword(e.target.value)}
               className="h-14 w-full min-w-0 rounded-xl border bg-background px-4 pr-14 text-base"
@@ -94,7 +91,7 @@ function LoginPage() {
             <button
               type="button"
               onClick={()=>setShowPassword(v=>!v)}
-              aria-label={showPassword ? tp("Hide password") : tp("Show password")}
+              aria-label={showPassword ? "Hide password" : "Show password"}
               className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               {showPassword ? <EyeOff className="size-5"/> : <Eye className="size-5"/>}
@@ -104,7 +101,7 @@ function LoginPage() {
         {error && <p role="alert" className="break-words text-base leading-6 text-destructive">{error}</p>}
         <Button disabled={busy} size="lg" className="h-14 w-full min-w-0 rounded-xl text-base font-semibold" type="submit">
           {mode==="login"?<LogIn className="size-5"/>:<UserPlus className="size-5"/>}
-          {busy ? tp("Please wait…") : mode==="login" ? tp("Log in") : tp("Sign up")}
+          {busy?"Please wait…":mode==="login"?"Log in":"Sign up"}
         </Button>
       </form>
 
@@ -123,11 +120,11 @@ function LoginPage() {
         className="h-14 w-full min-w-0 rounded-xl px-4 text-base font-semibold"
       >
         <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full bg-white text-base font-bold text-[#4285F4]">G</span>
-        <span className="min-w-0 truncate">{tp("Continue with Google")}</span>
+        <span className="min-w-0 truncate">Continue with Google</span>
       </Button>
 
       <button className="mt-6 w-full min-w-0 break-words text-base text-primary hover:underline" onClick={()=>{setMode(mode==="login"?"signup":"login");setError("")}}>
-        {mode==="login" ? tp("New here? Create an account") : tp("Already have an account? Log in")}
+        {mode==="login"?"New here? Create an account":"Already have an account? Log in"}
       </button>
     </section>
   </main>;

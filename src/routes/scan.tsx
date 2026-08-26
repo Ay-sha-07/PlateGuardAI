@@ -38,8 +38,6 @@ import { Badge } from "@/components/ui/badge";
 import { BottomNav } from "@/components/bottom-nav";
 import { RequireEntry } from "@/components/require-entry";
 import { useLanguage } from "@/lib/i18n";
-import { usePhrases } from "@/hooks/use-ai-translate";
-import { SCAN_PHRASES } from "@/lib/ui-phrases";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
@@ -119,9 +117,9 @@ const RATING_STYLE: Record<
   },
 };
 
-function ratingTheme(rating: number, translate: (s: string) => string = (s) => s) {
+function ratingTheme(rating: number) {
   const style = RATING_STYLE[rating] ?? RATING_STYLE[3]!;
-  return { ...style, label: translate(RATING_LABELS[rating] ?? "Use caution") };
+  return { ...style, label: RATING_LABELS[rating] ?? "Use caution" };
 }
 
 function ProfileAvatar({
@@ -151,7 +149,6 @@ function ProfileAvatar({
 }
 
 function ScannerPage() {
-  const tp = usePhrases(SCAN_PHRASES);
   const { language } = useLanguage();
   const [profiles, setProfiles] = useState<StoredProfile[]>([]);
   const [activeId, setActiveId] = useState<string>("");
@@ -474,7 +471,7 @@ function ScannerPage() {
     await runScan(dataUrl);
   }
 
-  const theme = result ? ratingTheme(result.rating, tp) : null;
+  const theme = result ? ratingTheme(result.rating) : null;
   const scanTargetLabel = mode === "medicine" ? "medicine label" : "food label";
 
   return (
@@ -501,7 +498,7 @@ function ScannerPage() {
               size="icon"
               className="size-9 rounded-full border border-border/50 bg-card/60 transition-transform active:scale-95"
             >
-              <Link to="/" title={tp("Back to Home")}>
+              <Link to="/" title="Back to Home">
                 <ArrowLeft className="size-4 text-foreground" />
               </Link>
             </Button>
@@ -524,7 +521,7 @@ function ScannerPage() {
               size="icon"
               className="rounded-full transition-transform active:scale-95"
             >
-              <Link to="/history" title={tp("Scan history")}>
+              <Link to="/history" title="Scan history">
                 <HistoryIcon className="size-4" />
               </Link>
             </Button>
@@ -555,7 +552,7 @@ function ScannerPage() {
                 <Users className="size-4 shrink-0 text-primary" />
               )}
               <span className="truncate">
-                {hasProfile ? activeProfile!.name : tp("No profile yet")}
+                {hasProfile ? activeProfile!.name : "No profile yet"}
               </span>
             </span>
             <ChevronDown
@@ -640,7 +637,7 @@ function ScannerPage() {
               }`}
             >
               <m.Icon className="size-4" />
-              {tp(m.label)}
+              {m.label}
             </button>
           ))}
         </div>
@@ -649,7 +646,7 @@ function ScannerPage() {
           className="animate-rise-in mt-3 rounded-2xl border border-border bg-card/80 p-4 backdrop-blur"
           style={{ animationDelay: "80ms" }}
         >
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">{tp("Scanning for")}</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Scanning for</p>
           {hasProfile ? (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {activeProfile!.allergens.map((a, i) => (
@@ -702,7 +699,7 @@ function ScannerPage() {
           ) : (
             <div className="mt-2 space-y-2">
               <p className="text-sm text-muted-foreground">
-                {tp("No profile yet")}. {tp("Every scan is judged against it, so we need it before your first scan.")}
+                No profile yet. Add allergies and conditions so scans mean something.
               </p>
               <Button size="sm" onClick={createProfile}>
                 <Plus className="size-4" />
@@ -722,7 +719,7 @@ function ScannerPage() {
             {image ? (
               <img
                 src={image}
-                alt={tp("Captured label")}
+                alt="Captured label"
                 className="animate-rise-in size-full bg-background object-contain"
               />
             ) : result ? (
@@ -731,7 +728,7 @@ function ScannerPage() {
                   <ClipboardPaste className="size-6" />
                 </span>
                 <p className="text-sm font-semibold text-foreground">
-                  {productName || result.productGuess || tp("Pasted label text")}
+                  {productName || result.productGuess || "Pasted label text"}
                 </p>
                 <p className="line-clamp-4 text-xs text-muted-foreground">{ingredientText}</p>
               </div>
@@ -799,7 +796,7 @@ function ScannerPage() {
             {preparing && !image && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/70 backdrop-blur-[2px]">
                 <Loader2 className="size-7 animate-spin text-primary" />
-                <p className="animate-pulse text-sm text-foreground">{tp("Preparing file…")}</p>
+                <p className="animate-pulse text-sm text-foreground">Preparing file…</p>
               </div>
             )}
 
@@ -831,15 +828,15 @@ function ScannerPage() {
                   <div className="flex size-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
                     <Loader2 className="size-7 animate-spin text-primary" />
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-foreground">{tp(scanStage)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{tp("This may take about 15–30 seconds")}</p>
+                  <p className="mt-3 text-sm font-semibold text-foreground">{scanStage}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">This may take a few seconds</p>
                   <div
                     className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted/70"
                     role="progressbar"
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={scanProgress}
-                    aria-label={tp("Scan progress")}
+                    aria-label="Scan progress"
                   >
                     <div
                       className="h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
@@ -847,7 +844,7 @@ function ScannerPage() {
                     />
                   </div>
                   <div className="mt-1.5 flex w-full justify-between text-[11px] text-muted-foreground">
-                    <span>{tp(scanStage)}</span>
+                    <span>{scanStage}</span>
                     <span>{scanProgress}%</span>
                   </div>
                 </div>
@@ -909,7 +906,7 @@ function ScannerPage() {
                 onClick={() => setCameraOpen(true)}
               >
                 <Camera className="size-5" />
-                {image ? tp("Scan another label") : tp("Scan a label")}
+                {image ? "Scan another label" : "Scan a label"}
               </Button>
             )}
             {!result && !cameraOpen && (
@@ -919,7 +916,7 @@ function ScannerPage() {
                 className="h-14 rounded-2xl px-4 transition-transform active:scale-95"
                 disabled={pending || preparing}
                 onClick={() => galleryRef.current?.click()}
-                title={tp("Upload a photo or PDF")}
+                title="Upload a photo or PDF"
               >
                 <FileImage className="size-5" />
               </Button>
@@ -941,7 +938,7 @@ function ScannerPage() {
                 }}
               >
                 <Camera className="size-5" />
-                {tp("Scan another label")}
+                Scan another label
               </Button>
             )}
           </div>
@@ -968,7 +965,7 @@ function ScannerPage() {
                     <input
                       value={productName}
                       onChange={(e) => setProductName(e.target.value)}
-                      placeholder={tp("e.g. Harvest Oat Granola")}
+                      placeholder="e.g. Harvest Oat Granola"
                       className="mt-1 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
@@ -1003,7 +1000,7 @@ function ScannerPage() {
                             if (e.key === "Enter") void runBarcodeLookup();
                           }}
                           inputMode="numeric"
-                          placeholder={tp("e.g. 8908010046488")}
+                          placeholder="e.g. 8908010046488"
                           className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground"
                         />
                       </div>
@@ -1080,7 +1077,7 @@ function ScannerPage() {
                       value={ingredientText}
                       onChange={(e) => setIngredientText(e.target.value)}
                       rows={4}
-                      placeholder={tp("Ingredients: oats, sugar, sodium…")}
+                      placeholder="Ingredients: oats, sugar, sodium…"
                       className="mt-1 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
                     />
                   </div>
@@ -1101,7 +1098,7 @@ function ScannerPage() {
                     ) : (
                       <Sparkles className="size-4" />
                     )}
-                    {pending ? tp("Analyzing…") : tp("Analyze product")}
+                    {pending ? "Analyzing…" : "Analyze product"}
                   </Button>
                   <p className="text-center text-[11px] text-muted-foreground">
                     Paste text, enter a product, or use a verified barcode. A successful barcode
@@ -1145,11 +1142,11 @@ function ScannerPage() {
                     {mode === "medicine"
                       ? "Medicine"
                       : result.itemType === "non_food"
-                        ? tp("Non-food item")
+                        ? "Non-food item"
                         : "Product"}
                   </p>
                   {mode === "food" && result.itemType === "non_food" && (
-                    <Badge variant="destructive">{tp("Do not eat")}</Badge>
+                    <Badge variant="destructive">Do not eat</Badge>
                   )}
                 </div>
                 <p className="mt-1 text-base font-semibold text-foreground">
@@ -1242,7 +1239,7 @@ function ScannerPage() {
                   </p>
                   <div className="mt-2 space-y-3">
                     {result.profileImpact.map((item, i) => {
-                      const t = ratingTheme(item.rating, tp);
+                      const t = ratingTheme(item.rating);
                       return (
                         <div key={i}>
                           <div className={`flex items-center gap-2 ${t.text}`}>
@@ -1260,7 +1257,7 @@ function ScannerPage() {
               )}
 
               {result.reasons.map((r, i) => {
-                const t = ratingTheme(r.rating, tp);
+                const t = ratingTheme(r.rating);
                 return (
                   <div
                     key={i}
@@ -1305,7 +1302,7 @@ function ScannerPage() {
 
               {result.recommendation && (
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                  <p className="text-xs uppercase tracking-widest text-primary">{tp("Recommendation")}</p>
+                  <p className="text-xs uppercase tracking-widest text-primary">Recommendation</p>
                   <p className="mt-1 text-sm leading-6 text-foreground">{result.recommendation}</p>
                 </div>
               )}
@@ -1334,8 +1331,6 @@ function BarcodeCameraCapture({
   onClose: () => void;
   onDetected: (barcode: string) => void;
 }) {
-  const tp = usePhrases(SCAN_PHRASES);
-
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanningRef = useRef(false);
@@ -1422,7 +1417,7 @@ function BarcodeCameraCapture({
         {status === "requesting" && (
           <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
             <Loader2 className="size-7 animate-spin text-primary" />
-            <p className="text-sm">{tp("Opening barcode camera…")}</p>
+            <p className="text-sm">Opening barcode camera…</p>
           </div>
         )}
         {status === "unsupported" && (
@@ -1439,7 +1434,7 @@ function BarcodeCameraCapture({
         {status === "denied" && (
           <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
             <ShieldAlert className="size-8 text-caution" />
-            <p className="text-sm font-medium">{tp("Camera access was blocked.")}</p>
+            <p className="text-sm font-medium">Camera access was blocked.</p>
             <p className="text-xs text-white/70">
               Allow camera access for this site and try again.
             </p>
@@ -1455,13 +1450,13 @@ function BarcodeCameraCapture({
           </div>
         )}
         <div className="absolute inset-x-0 bottom-3 text-center text-xs font-medium text-white drop-shadow">
-          {status === "ready" ? tp("Point the barcode inside the box — scanning automatically") : ""}
+          {status === "ready" ? "Point the barcode inside the box — scanning automatically" : ""}
         </div>
         <button
           type="button"
           onClick={onClose}
           className="absolute right-3 top-3 z-10 flex size-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur"
-          aria-label={tp("Close barcode camera")}
+          aria-label="Close barcode camera"
         >
           <X className="size-4" />
         </button>
@@ -1483,8 +1478,6 @@ function CameraCapture({
   onFallbackToFile: () => void;
   onOpenPhoneCamera: () => void;
 }) {
-  const tp = usePhrases(SCAN_PHRASES);
-
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<"requesting" | "ready" | "denied" | "unsupported">(
@@ -1625,14 +1618,14 @@ function CameraCapture({
         {status === "requesting" && (
           <div className="flex size-full flex-col items-center justify-center gap-3 text-white">
             <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm">{tp("Requesting camera permission…")}</p>
+            <p className="text-sm">Requesting camera permission…</p>
           </div>
         )}
 
         {status === "denied" && (
           <div className="flex size-full flex-col items-center justify-center gap-3 px-8 text-center text-white">
             <ShieldAlert className="size-8 text-caution" />
-            <p className="text-sm font-medium">{tp("Camera access was blocked")}</p>
+            <p className="text-sm font-medium">Camera access was blocked</p>
             <p className="text-xs text-white/70">
               Allow camera access for this site in your browser settings, or upload a photo instead.
             </p>
@@ -1646,7 +1639,7 @@ function CameraCapture({
         {status === "unsupported" && (
           <div className="flex size-full flex-col items-center justify-center gap-3 px-8 text-center text-white">
             <ShieldAlert className="size-8 text-caution" />
-            <p className="text-sm font-medium">{tp("Live camera isn't supported here")}</p>
+            <p className="text-sm font-medium">Live camera isn't supported here</p>
             <Button size="sm" className="mt-2" onClick={onFallbackToFile}>
               <FileImage className="size-4" />
               Upload a photo instead
@@ -1675,7 +1668,7 @@ function CameraCapture({
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 z-20 flex size-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-transform active:scale-95"
-          aria-label={tp("Close camera")}
+          aria-label="Close camera"
         >
           <X className="size-5" />
         </button>
@@ -1697,8 +1690,8 @@ function CameraCapture({
               type="button"
               onClick={onFallbackToFile}
               className="flex size-12 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-transform active:scale-90"
-              aria-label={tp("Open gallery")}
-              title={tp("Open gallery")}
+              aria-label="Open gallery"
+              title="Open gallery"
             >
               <FileImage className="size-5" />
             </button>
@@ -1708,8 +1701,8 @@ function CameraCapture({
               type="button"
               onClick={capture}
               className="group flex size-20 items-center justify-center rounded-full border-4 border-white bg-black/30 shadow-2xl backdrop-blur-sm transition-transform active:scale-90"
-              aria-label={tp("Capture photo")}
-              title={tp("Capture photo")}
+              aria-label="Capture photo"
+              title="Capture photo"
             >
               <span className="size-14 rounded-full bg-primary ring-2 ring-white/50 transition-all group-hover:scale-105" />
             </button>
@@ -1725,8 +1718,8 @@ function CameraCapture({
                 onOpenPhoneCamera();
               }}
               className="flex size-12 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white shadow-lg backdrop-blur-sm transition-transform active:scale-90"
-              aria-label={tp("Open phone camera")}
-              title={tp("Open phone camera")}
+              aria-label="Open phone camera"
+              title="Open phone camera"
             >
               <Camera className="size-5" />
             </button>

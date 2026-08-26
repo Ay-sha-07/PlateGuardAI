@@ -1,38 +1,29 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, ScanLine, History, CreditCard, User } from "lucide-react";
+import { Home, ScanLine, History, IdCard, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
-import { usePhrases } from "@/hooks/use-ai-translate";
-import { COMMON_PHRASES } from "@/lib/ui-phrases";
 import { LanguageSelector } from "@/components/language-selector";
 
 const TABS = [
-  { to: "/home", label: "Home", Icon: Home },
+  { to: "/", label: "Home", Icon: Home },
   { to: "/scan", label: "Scan", Icon: ScanLine },
   { to: "/history", label: "History", Icon: History },
-  { to: "/card", label: "Card", Icon: CreditCard },
-  { to: "/profile", label: "Profile", Icon: User },
+  { to: "/card", label: "Card", Icon: IdCard },
+  { to: "/profile", label: "Profile", Icon: UserRound },
 ] as const;
 
 /**
- * Primary bottom navigation (Home, Scan, History, Card, Profile).
- * Static dictionary first; AI phrases fill in any language without a static pack.
+ * Fixed bottom tab bar shared by the main app screens (Home, Scan,
+ * History, Card, Profile). Renders inside a max-w-md shell to match the
+ * mobile-first layout the rest of the app uses.
+ *
+ * `stacked` renders it as a normal (non-fixed) bar instead — used on
+ * /profile, which already owns a fixed action bar for its step wizard;
+ * the two are composed together there instead of overlapping.
  */
 export function BottomNav({ stacked = false }: { stacked?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { t, language } = useLanguage();
-  const tp = usePhrases(COMMON_PHRASES);
-
-  function tabLabel(english: string): string {
-    try {
-      if (language === "en") return english;
-      const staticLabel = t(english);
-      if (staticLabel && staticLabel !== english) return staticLabel;
-      return tp(english);
-    } catch {
-      return english;
-    }
-  }
+  const { t } = useLanguage();
 
   return (
     <nav
@@ -51,6 +42,10 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
                 key={to}
                 to={to}
                 onClick={() => {
+                  // Clicking a tab you're already on doesn't trigger a route
+                  // change (same URL), so the router's scroll reset never
+                  // runs — do it manually so "Home" reliably jumps back to
+                  // the top of the page instead of appearing to do nothing.
                   if (active) window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={cn(
@@ -59,12 +54,15 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
                 )}
               >
                 <Icon className={cn("size-5", active && "fill-primary/15")} />
-                {tabLabel(label)}
+                {t(label)}
               </Link>
             );
           })}
         </div>
 
+        {/* Language switcher lives here — one consistent, uncrowded spot on
+            every screen — instead of floating over each page's own header
+            controls (theme toggle, menu, back button, etc.). */}
         <div className="flex w-11 shrink-0 items-center justify-center border-l border-border/60 pl-1">
           <LanguageSelector compact inline />
         </div>
