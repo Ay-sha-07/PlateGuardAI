@@ -45,6 +45,10 @@ function writeCache(key: string, values: string[]) {
   }
 }
 
+/** Share one in-flight server request across many usePhrases callers with the same pack. */
+const inflight = new Map<string, Promise<string[]>>();
+
+
 /**
  * Translates an ordered list of English UI strings into the active language
  * via the AI translation server function. Results are cached per language.
@@ -90,13 +94,29 @@ export function useAiTranslate(englishTexts: readonly string[]): {
         setTexts(src);
 
         try {
-          const translated = (await translate({
-            data: { language: languageName(lang), texts: src },
-          })) as string[];
+          let pending = inflight.get(key);
+          if (!pending) {
+            pending = (async () => {
+              try {
+                const result = (await translate({
+                  data: { language: languageName(lang), texts: src },
+                })) as string[];
+                if (Array.isArray(result) && result.length === src.length) {
+                  writeCache(key, result);
+                  return result;
+                }
+                return src;
+              } finally {
+                inflight.delete(key);
+              }
+            })();
+            inflight.set(key, pending);
+          }
+          const translated = await pending;
           if (id !== requestId.current) return;
           if (Array.isArray(translated) && translated.length === src.length) {
-            writeCache(key, translated);
             setTexts(translated);
+            setError(null);
           } else {
             setError("Incomplete translation");
             setTexts(src);
@@ -150,9 +170,11 @@ export function usePhrases(phrases: readonly string[]): (english: string) => str
     const out: string[] = [];
     try {
       for (const p of phrases ?? []) {
-        if (!p || seen.has(p)) continue;
-        seen.add(p);
-        out.push(p);
+        if (typeof p !== "string") continue;
+        const s = p.trim();
+        if (!s || seen.has(s)) continue;
+        seen.add(s);
+        out.push(s);
       }
     } catch {
       // ignore malformed packs

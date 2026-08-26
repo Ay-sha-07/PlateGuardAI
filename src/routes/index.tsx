@@ -201,6 +201,36 @@ function ThemeToggle() {
   );
 }
 
+function ThemeToggle() {
+  const [dark, setDark] = useState(true);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("plateguard-theme");
+    setDark(saved ? saved === "dark" : true);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !dark;
+    document.documentElement.classList.toggle("dark", nextDark);
+    window.localStorage.setItem("plateguard-theme", nextDark ? "dark" : "light");
+    setDark(nextDark);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${dark ? "light" : "dark"} mode`}
+      aria-pressed={dark}
+      title={`Switch to ${dark ? "light" : "dark"} mode`}
+      className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-xl transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      <span className="sr-only">{dark ? "Light" : "Dark"}</span>
+    </button>
+  );
+}
+
 function SiteNav() {
   const tp = usePhrases(HOME_PHRASES);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -221,6 +251,18 @@ function SiteNav() {
       language === "en" || staticLabel !== l.label ? staticLabel : (aiNavLabels[i] ?? l.label);
     return { ...l, label };
   });
+
+  /** Static dictionary first; fall back to AI phrase pack so every language gets a translation. */
+  function navT(key: string, englishFallback: string): string {
+    try {
+      if (language === "en") return englishFallback;
+      const staticLabel = t(key);
+      if (staticLabel && staticLabel !== key && staticLabel !== englishFallback) return staticLabel;
+      return tp(englishFallback);
+    } catch {
+      return englishFallback;
+    }
+  }
 
   useEffect(() => {
     if (!supabase) return;
@@ -273,7 +315,7 @@ function SiteNav() {
             to="/profile"
             className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
           >
-            {t("Profile")}
+            {navT("Profile", "Profile")}
           </Link>
 
           {loggedIn ? (
@@ -281,14 +323,14 @@ function SiteNav() {
               onClick={logout}
               className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
             >
-              {t("Logout")}
+              {navT("Logout", "Logout")}
             </button>
           ) : (
             <Link
               to="/login"
               className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
             >
-              {t("Login")}
+              {navT("Login", "Login")}
             </Link>
           )}
         </nav>
@@ -297,7 +339,7 @@ function SiteNav() {
           <div className="hidden md:block">
             <Button asChild size="sm" className="rounded-full px-5">
               <Link to="/scan">
-                {t("StartScanning")} <ChevronRight className="size-4" />
+                {navT("StartScanning", "Start scanning")} <ChevronRight className="size-4" />
               </Link>
             </Button>
           </div>
@@ -336,7 +378,7 @@ function SiteNav() {
               onClick={() => setMenuOpen(false)}
               className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
             >
-              {t("Profile")}
+              {navT("Profile", "Profile")}
             </Link>
 
             {loggedIn ? (
@@ -344,7 +386,7 @@ function SiteNav() {
                 onClick={logout}
                 className="rounded-lg px-2 py-2.5 text-left text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
-                {t("Logout")}
+                {navT("Logout", "Logout")}
               </button>
             ) : (
               <Link
@@ -352,14 +394,14 @@ function SiteNav() {
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
-                {t("Login")}
+                {navT("Login", "Login")}
               </Link>
             )}
           </nav>
 
           <Button asChild className="mt-3 w-full justify-center rounded-full">
             <Link to="/scan" onClick={() => setMenuOpen(false)}>
-              {t("StartScanning")}
+              {navT("StartScanning", "Start scanning")}
             </Link>
           </Button>
         </div>
@@ -1197,8 +1239,18 @@ function OneProfile() {
 /* --------------------------------- Footer --------------------------------- */
 
 function SiteFooter() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const tp = usePhrases(HOME_PHRASES);
+  function footerT(key: string, english: string): string {
+    try {
+      if (language === "en") return english;
+      const s = t(key);
+      if (s && s !== key && s !== english) return s;
+      return tp(english);
+    } catch {
+      return english;
+    }
+  }
   return (
     <footer className="relative overflow-hidden bg-brand-amber text-brand-amber-foreground">
       <p
@@ -1240,39 +1292,39 @@ function SiteFooter() {
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
             <div className="space-y-2.5 text-sm">
               <Link to="/" className="block font-semibold hover:underline">
-                {t("Home")}
+                {footerT("Home", "Home")}
               </Link>
               <Link to="/scan" className="block hover:underline">
-                {t("Scan")}
+                {footerT("Scan", "Scan")}
               </Link>
               <a href="#how-it-works" className="block hover:underline">
-                {t("HowItWorks")}
+                {footerT("HowItWorks", "How it works")}
               </a>
               <a href="#coverage" className="block hover:underline">
-                {t("WhatWeScan")}
+                {footerT("WhatWeScan", "What we scan")}
               </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
-              <p className="font-semibold">Account</p>
+              <p className="font-semibold">{tp("Account")}</p>
               <Link to="/profile" className="block hover:underline">
-                {t("Profile")}
+                {footerT("Profile", "Profile")}
               </Link>
               <Link to="/login" className="block hover:underline">
-                {t("Login")}
+                {footerT("Login", "Login")}
               </Link>
               <a href="#verdicts" className="block hover:underline">
-                {t("Verdicts")}
+                {footerT("Verdicts", "Verdicts")}
               </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
               <p className="font-semibold">{tp("Languages supported")}</p>
               <p className="flex items-center gap-1.5 text-brand-amber-foreground/80">
-                <Languages className="size-3.5" /> Auto-detected on scan
+                <Languages className="size-3.5" /> {tp("Auto-detected on scan")}
               </p>
               <p className="text-brand-amber-foreground/80">
-                PlateGuard assists, it doesn't replace the printed label or medical advice.
+                {tp("PlateGuard assists, it doesn't replace the printed label or medical advice.")}
               </p>
             </div>
           </div>

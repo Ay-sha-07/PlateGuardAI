@@ -199,7 +199,7 @@ function ProfilePageContent() {
 
   function handleAddProfile() {
     persistCurrent(activeId, profile);
-    const name = window.prompt("Name for the new profile (e.g. a family member's name)");
+    const name = window.prompt(tp("Name for the new profile (e.g. a family member)"));
     if (name === null) return;
     const store = addProfile(name);
     setProfiles(store.profiles);
@@ -211,7 +211,7 @@ function ProfilePageContent() {
   function handleDeleteProfile(id: string) {
     const target = profiles.find((p) => p.id === id);
     if (!target) return;
-    if (!window.confirm(`Delete the profile "${target.name}"? This can't be undone.`)) return;
+    if (!window.confirm(`${tp("Delete the profile")} "${target.name}"? ${tp("This can't be undone.")}`)) return;
     const store = deleteProfile(id);
     setProfiles(store.profiles);
     setActiveId(store.activeId);
@@ -225,7 +225,7 @@ function ProfilePageContent() {
       updateProfile(activeId, profile);
     }
     toast.success(
-      `${profile.name || "Profile"} saved — scans now weigh their full health picture.`,
+      `${profile.name || tp("Profile")} ${tp("saved — scans now weigh their full health picture.")}`,
     );
     void router.navigate({ to: "/scan" });
   }
@@ -284,7 +284,7 @@ function ProfilePageContent() {
               </div>
               <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-accent">
                 <ImagePlus className="size-3.5" />
-                {profile.avatarUrl ? "Change" : "Add"}
+                {profile.avatarUrl ? tp("Change") : tp("Add")}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
@@ -295,10 +295,10 @@ function ProfilePageContent() {
                     if (!file) return;
                     try {
                       patch({ avatarUrl: await resizeProfilePhoto(file) });
-                      toast.success("Profile photo updated.");
+                      toast.success(tp("Profile photo updated."));
                     } catch (error) {
                       toast.error(
-                        error instanceof Error ? error.message : "Could not upload the photo.",
+                        error instanceof Error ? error.message : tp("Could not upload the photo."),
                       );
                     }
                   }}
@@ -329,7 +329,7 @@ function ProfilePageContent() {
                 textSize="text-xs"
                 active={p.id === activeId}
               />
-              <span className="min-w-0 truncate">{p.name || "Unnamed"}</span>
+              <span className="min-w-0 truncate">{p.name || tp("Unnamed")}</span>
             </button>
             {profiles.length > 1 && (
               <button
@@ -349,7 +349,7 @@ function ProfilePageContent() {
           className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border px-3.5 py-2 text-sm font-medium text-primary transition-colors hover:bg-accent"
         >
           <Plus className="size-4" />
-          Add profile
+          {tp("Add profile")}
         </button>
       </div>
 
@@ -367,7 +367,7 @@ function ProfilePageContent() {
           ))}
         </div>
         <p className="mt-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Step {step + 1} of {STEPS.length} — {tp(STEPS[step]!)}
+          {tp("Step")} {step + 1} {tp("of")} {STEPS.length} — {tp(STEPS[step]!)}
         </p>
       </div>
 
@@ -386,7 +386,7 @@ function ProfilePageContent() {
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
         >
           <Trash2 className="size-4" />
-          Delete "{profile.name || "this"}" profile
+          {tp("Delete")} "{profile.name || tp("this")}" {tp("Profile").toLowerCase()}
         </button>
       )}
 
@@ -468,7 +468,7 @@ function StepAbout({ profile, patch }: StepProps) {
             <SelectContent>
               {AGE_GROUPS.map((g) => (
                 <SelectItem key={g.value} value={g.value}>
-                  {g.label}
+                  {tp(g.label)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -486,7 +486,7 @@ function StepAbout({ profile, patch }: StepProps) {
             <SelectContent>
               {BIOLOGICAL_SEXES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
-                  {s.label}
+                  {tp(s.label)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -508,7 +508,7 @@ function StepAbout({ profile, patch }: StepProps) {
           <SelectContent>
             {REPRODUCTIVE_STATUSES.map((s) => (
               <SelectItem key={s.value} value={s.value}>
-                {s.label}
+                {tp(s.label)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -545,7 +545,7 @@ function StepAbout({ profile, patch }: StepProps) {
           <SelectContent>
             {ACTIVITY_LEVELS.map((a) => (
               <SelectItem key={a.value} value={a.value}>
-                {a.label}
+                {tp(a.label)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -672,7 +672,10 @@ function StepAllergies({ profile, patch }: StepProps) {
           selected={profile.allergens}
           onChange={(v) => patch({ allergens: v })}
           placeholder={tp("Select allergens")}
-          searchPlaceholder="Search allergens…"
+          searchPlaceholder={tp("Search allergens…")}
+          getLabel={tp}
+          selectedCountLabel={tp("selected")}
+          nothingFoundLabel={tp("Nothing found.")}
         />
       </div>
 
@@ -689,7 +692,7 @@ function StepAllergies({ profile, patch }: StepProps) {
             <SelectContent>
               {ALLERGY_SEVERITIES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
-                  {s.label}
+                  {tp(s.label)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -709,7 +712,7 @@ function StepAllergies({ profile, patch }: StepProps) {
           <SelectContent>
             {GLUTEN_STATUSES.map((s) => (
               <SelectItem key={s.value} value={s.value}>
-                {s.label}
+                {tp(s.label)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -746,7 +749,7 @@ function StepConditions({ profile, patch }: StepProps) {
       {CONDITION_CATEGORIES.map((group) => (
         <div key={group.category} className="space-y-2.5">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            {group.category}
+            {tp(group.category)}
           </p>
           <div className="flex flex-wrap gap-2">
             {group.options.map((o) => {
@@ -762,7 +765,7 @@ function StepConditions({ profile, patch }: StepProps) {
                       : "bg-secondary/60 text-secondary-foreground hover:bg-muted"
                   }`}
                 >
-                  {o}
+                  {tp(o)}
                 </button>
               );
             })}
@@ -785,7 +788,7 @@ function StepConditions({ profile, patch }: StepProps) {
               <SelectContent>
                 {DIABETES_TYPES.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
-                    {t.label}
+                    {tp(t.label)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -805,7 +808,7 @@ function StepConditions({ profile, patch }: StepProps) {
               <SelectContent>
                 {DIABETES_TREATMENTS.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
-                    {t.label}
+                    {tp(t.label)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -829,7 +832,7 @@ function StepConditions({ profile, patch }: StepProps) {
             <SelectContent>
               {HYPERTENSION_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
-                  {s.label}
+                  {tp(s.label)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -850,7 +853,7 @@ function StepConditions({ profile, patch }: StepProps) {
             <SelectContent>
               {KIDNEY_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
-                  {s.label}
+                  {tp(s.label)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -887,7 +890,10 @@ function StepSensitivities({ profile, patch }: StepProps) {
           selected={profile.sensitivities}
           onChange={(v) => patch({ sensitivities: v })}
           placeholder={tp("Select any that apply")}
-          searchPlaceholder="Search…"
+          searchPlaceholder={tp("Search…")}
+          getLabel={tp}
+          selectedCountLabel={tp("selected")}
+          nothingFoundLabel={tp("Nothing found.")}
         />
       </div>
 
@@ -907,13 +913,13 @@ function StepSensitivities({ profile, patch }: StepProps) {
                     : "bg-secondary/60 text-secondary-foreground hover:bg-muted"
                 }`}
               >
-                {o}
+                {tp(o)}
               </button>
             );
           })}
         </div>
         <p className="text-xs text-muted-foreground">
-          Helps direct fiber and FODMAP-related notes in the right direction.
+          {tp("Helps direct fiber and FODMAP-related notes in the right direction.")}
         </p>
       </div>
     </div>
@@ -935,7 +941,10 @@ function StepLifestyle({ profile, patch }: StepProps) {
           selected={profile.dietaryPatterns}
           onChange={(v) => patch({ dietaryPatterns: v })}
           placeholder={tp("Select any that apply")}
-          searchPlaceholder="Search…"
+          searchPlaceholder={tp("Search…")}
+          getLabel={tp}
+          selectedCountLabel={tp("selected")}
+          nothingFoundLabel={tp("Nothing found.")}
         />
       </div>
 

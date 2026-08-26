@@ -22,3 +22,12 @@
 ## Important
 - An invalid Groq API key or an xAI team with no credits cannot be repaired by application code; those credentials/account settings must be fixed in the provider dashboard.
 - The scanner will automatically use the next configured provider after a provider-specific failure.
+
+## Profile + Card translation extension (2026-08-26)
+
+- Extended `PROFILE_PHRASES` / `CARD_PHRASES` with all option labels (age groups, allergens, conditions, severities, dietary patterns, etc.) and remaining UI copy.
+- Profile and Card screens now pass every display string through `tp()` — including SelectItem labels, MultiSelect options, condition chips, and card body text.
+- MultiSelect accepts `getLabel` so stored English values stay English while UI shows the active language.
+- Removed sparse-array holes in phrase packs that could produce empty translation items.
+- `usePhrases` now skips non-string / blank entries before calling the server.
+- Root error boundary only auto-retries known *transient* failures (chunk load / network / language race) so permanent errors no longer loop on “This page didn’t load”.

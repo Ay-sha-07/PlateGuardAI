@@ -61,13 +61,19 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     }
   }, [error]);
 
-  // One automatic soft retry for transient client errors (e.g. language switch race).
-  // Keyed by error message so a permanent failure does not loop forever.
+  // One automatic soft retry only for known transient client errors
+  // (language-switch races, chunk load failures). Permanent errors stay on this screen.
   useEffect(() => {
     if (retried.current) return;
+    const msg = String(error?.message || error?.name || "");
+    const transient =
+      /ChunkLoadError|Loading chunk|Failed to fetch dynamically|useServerFn|NetworkError|AbortError|language/i.test(
+        msg,
+      );
+    if (!transient) return;
     let already = false;
     try {
-      const key = `pg-err-retry:${(error?.message || "unknown").slice(0, 80)}`;
+      const key = `pg-err-retry:${msg.slice(0, 80)}`;
       already = sessionStorage.getItem(key) === "1";
       if (!already) sessionStorage.setItem(key, "1");
     } catch {
