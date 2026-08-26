@@ -39,6 +39,7 @@ import { signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 import { useLanguage } from "@/lib/i18n";
+import { useAiTranslate } from "@/hooks/use-ai-translate";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -65,13 +66,16 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+/** English source labels + i18n keys for the top / mobile menu.
+ *  Static keys cover ml/hi/ta/ar/es/fr; all other languages use AI translation
+ *  via useAiTranslate so the menu never stays stuck in English. */
 const NAV_LINKS = [
-  { label: "How it works", href: "#how-it-works" },
-  { label: "User guide", href: "#user-guide" },
-  { label: "What we scan", href: "#coverage" },
-  { label: "Verdicts", href: "#verdicts" },
-  { label: "Safety", href: "#safety" },
-];
+  { key: "HowItWorks", label: "How it works", href: "#how-it-works" },
+  { key: "UserGuide", label: "User guide", href: "#user-guide" },
+  { key: "WhatWeScan", label: "What we scan", href: "#coverage" },
+  { key: "Verdicts", label: "Verdicts", href: "#verdicts" },
+  { key: "Safety", label: "Safety", href: "#safety" },
+] as const;
 
 function HomePage() {
   const navigate = useNavigate();
@@ -178,7 +182,22 @@ function ThemeToggle() {
 function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  // English source strings for the menu. Static i18n covers ml/hi/ta/ar/es/fr;
+  // every other language is filled in by AI translation so the circled menu
+  // items never stay stuck in English.
+  const navEnglish = NAV_LINKS.map((l) => l.label);
+  const { texts: aiNavLabels } = useAiTranslate(navEnglish);
+
+  const navLinks = NAV_LINKS.map((l, i) => {
+    const staticLabel = t(l.key);
+    // Prefer static dictionary when it actually differs from English (or when
+    // language is English). Otherwise use the AI result.
+    const label =
+      language === "en" || staticLabel !== l.label ? staticLabel : (aiNavLabels[i] ?? l.label);
+    return { ...l, label };
+  });
 
   useEffect(() => {
     if (!supabase) return;
@@ -217,7 +236,7 @@ function SiteNav() {
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-7 md:flex">
-          {NAV_LINKS.map((l) => (
+          {navLinks.map((l) => (
             <a
               key={l.href}
               href={l.href}
@@ -278,7 +297,7 @@ function SiteNav() {
       {menuOpen && (
         <div className="animate-rise-in mx-auto mt-2 max-w-5xl rounded-3xl border border-white/10 bg-background/95 p-5 shadow-2xl backdrop-blur-xl md:hidden">
           <nav className="flex flex-col gap-1">
-            {NAV_LINKS.map((l) => (
+            {navLinks.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
@@ -718,6 +737,7 @@ const CATEGORIES = [
 ];
 
 function Coverage() {
+  const { t } = useLanguage();
   return (
     <section
       id="coverage"
@@ -732,7 +752,7 @@ function Coverage() {
 
       <div className="relative mx-auto max-w-6xl px-5 pt-24 md:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          What we scan
+          {t("WhatWeScan")}
         </p>
 
         <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight sm:text-4xl">
@@ -782,11 +802,12 @@ const STEPS = [
 ];
 
 function HowItWorks() {
+  const { t } = useLanguage();
   return (
     <section id="how-it-works" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
       <div className="max-w-xl">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          How it works
+          {t("HowItWorks")}
         </p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           Three steps between you and a safe snack
@@ -1139,6 +1160,7 @@ function OneProfile() {
 /* --------------------------------- Footer --------------------------------- */
 
 function SiteFooter() {
+  const { t } = useLanguage();
   return (
     <footer className="relative overflow-hidden bg-brand-amber text-brand-amber-foreground">
       <p
@@ -1180,29 +1202,29 @@ function SiteFooter() {
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
             <div className="space-y-2.5 text-sm">
               <Link to="/" className="block font-semibold hover:underline">
-                Home
+                {t("Home")}
               </Link>
               <Link to="/scan" className="block hover:underline">
-                Scanner
+                {t("Scan")}
               </Link>
               <a href="#how-it-works" className="block hover:underline">
-                How it works
+                {t("HowItWorks")}
               </a>
               <a href="#coverage" className="block hover:underline">
-                What we scan
+                {t("WhatWeScan")}
               </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
               <p className="font-semibold">Account</p>
               <Link to="/profile" className="block hover:underline">
-                Your profile
+                {t("Profile")}
               </Link>
               <Link to="/login" className="block hover:underline">
-                Login
+                {t("Login")}
               </Link>
               <a href="#verdicts" className="block hover:underline">
-                Recent verdicts
+                {t("Verdicts")}
               </a>
             </div>
 
