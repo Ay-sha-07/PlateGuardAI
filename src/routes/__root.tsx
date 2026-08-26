@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { LanguageProvider } from "@/lib/i18n";
-import { LanguageSelector } from "@/components/language-selector";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
@@ -216,9 +215,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
       <body>
         <LanguageProvider>
-          <div className="fixed right-3 top-3 z-[100] rounded-xl border border-border/70 bg-background/90 p-1 shadow-lg backdrop-blur" data-no-ai-translate>
-            <LanguageSelector compact />
-          </div>
           {children}
           <Scripts />
         </LanguageProvider>

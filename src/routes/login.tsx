@@ -5,6 +5,7 @@ import { LogIn, UserPlus, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requireSupabase } from "@/lib/supabase";
 import { setActiveScope } from "@/lib/account-scope";
+import { LanguageSelector } from "@/components/language-selector";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -49,6 +50,7 @@ function LoginPage() {
   }
   return <main className="flex min-h-[100dvh] w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
     <section className="relative box-border w-full min-w-0 max-w-md overflow-hidden rounded-3xl border bg-card p-6 shadow-xl sm:p-8">
+      <div className="absolute right-4 top-4"><LanguageSelector compact /></div>
       <div className="mb-7 text-center">
         <img
           src="/icons/logo.png"

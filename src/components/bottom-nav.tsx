@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, ScanLine, History, IdCard, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
+import { LanguageSelector } from "@/components/language-selector";
 
 const TABS = [
   { to: "/", label: "Home", Icon: Home },
@@ -32,7 +33,7 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
       )}
       aria-label="Primary"
     >
-      <div className="mx-auto flex w-full max-w-md items-stretch px-2 py-2">
+      <div className="mx-auto flex w-full max-w-md items-stretch gap-1 px-2 py-2">
         <div className="grid flex-1 grid-cols-5">
           {TABS.map(({ to, label, Icon }) => {
             const active = pathname === to || pathname.startsWith(`${to}/`);
@@ -59,6 +60,12 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
           })}
         </div>
 
+        {/* Language switcher lives here — one consistent, uncrowded spot on
+            every screen — instead of floating over each page's own header
+            controls (theme toggle, menu, back button, etc.). */}
+        <div className="flex w-11 shrink-0 items-center justify-center border-l border-border/60 pl-1">
+          <LanguageSelector compact inline />
+        </div>
       </div>
     </nav>
   );

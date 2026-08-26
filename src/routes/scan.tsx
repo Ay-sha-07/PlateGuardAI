@@ -174,7 +174,6 @@ function ScannerPage() {
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
   const [barcodeCameraOpen, setBarcodeCameraOpen] = useState(false);
   const [aiHealth, setAiHealth] = useState<ReturnType<typeof getAIHealth> | null>(null);
-  const [aiDetailsOpen, setAiDetailsOpen] = useState(false);
   const [ingredientText, setIngredientText] = useState("");
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -589,63 +588,28 @@ function ScannerPage() {
         </div>
 
         {aiHealth && (
-          <div className="animate-rise-in relative z-20 mt-2" style={{ animationDelay: "50ms" }}>
-            <button
-              type="button"
-              onClick={() => setAiDetailsOpen((v) => !v)}
-              aria-expanded={aiDetailsOpen}
-              aria-label={`AI capacity ${aiHealth.capacity}, ${aiHealth.ready} of ${aiHealth.total} providers ready. Tap for details.`}
-              className="flex w-full items-center justify-between rounded-xl border border-border/70 bg-card/50 px-3 py-2 transition-colors hover:bg-card/80"
-            >
-              <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                <Activity className="size-3.5" />
-                AI capacity:{" "}
-                <span
-                  className={
-                    aiHealth.capacity === "High"
-                      ? "text-safe"
-                      : aiHealth.capacity === "Medium"
-                        ? "text-caution"
-                        : "text-danger"
-                  }
-                >
-                  {aiHealth.capacity}
-                </span>
+          <div
+            className="mt-2 flex w-full items-center justify-between rounded-xl border border-border/70 bg-card/50 px-3 py-2"
+            aria-label={`AI capacity ${aiHealth.capacity}, ${aiHealth.ready} of ${aiHealth.total} providers ready`}
+          >
+            <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Activity className="size-3.5" />
+              AI capacity:{" "}
+              <span
+                className={
+                  aiHealth.capacity === "High"
+                    ? "text-safe"
+                    : aiHealth.capacity === "Medium"
+                      ? "text-caution"
+                      : "text-danger"
+                }
+              >
+                {aiHealth.capacity}
               </span>
-              <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                {aiHealth.ready}/{aiHealth.total} ready
-                <ChevronDown className={`size-3.5 transition-transform ${aiDetailsOpen ? "rotate-180" : ""}`} />
-              </span>
-            </button>
-
-            {aiDetailsOpen && (
-              <div className="animate-rise-in mt-1.5 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-                <p className="border-b border-border/60 px-3 py-2 text-[11px] font-medium text-muted-foreground">
-                  Each scan tries these AI providers in order until one responds
-                </p>
-                <ul className="divide-y divide-border/60">
-                  {aiHealth.providers.map((p) => (
-                    <li key={p.name} className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
-                      <span className="flex items-center gap-2 text-foreground">
-                        <span
-                          className={`size-2 shrink-0 rounded-full ${
-                            p.status === "ready" ? "bg-safe" : p.status === "cooldown" ? "bg-caution" : "bg-danger"
-                          }`}
-                        />
-                        {p.name}
-                      </span>
-                      <span
-                        className={`text-[11px] font-medium ${
-                          p.status === "ready" ? "text-safe" : p.status === "cooldown" ? "text-caution" : "text-danger"
-                        }`}
-                      >
-                        {p.status === "ready" ? "Ready" : p.status === "cooldown" ? "Cooling down" : "Unavailable"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {aiHealth.ready}/{aiHealth.total} ready
+            </span>
           </div>
         )}
 
