@@ -172,7 +172,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       /* PWA settings */
       {
         name: "theme-color",
-        content: "#e8f0e9",
+        content: "#000000",
       },
 
       {
@@ -187,7 +187,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         name: "apple-mobile-web-app-status-bar-style",
-        content: "black-translucent",
+        content: "black",
       },
 
       {
@@ -233,7 +233,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;700&family=Baloo+2:wght@600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap",
       },
     ],
   }),

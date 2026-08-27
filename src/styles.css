@@ -13,6 +13,8 @@ html {
   overflow-x: hidden;
   overscroll-behavior-x: none;
   touch-action: manipulation;
+  /* Status-bar / overscroll area stays black (only the top system chrome) */
+  background-color: #000000;
 }
 
 body {
@@ -122,9 +124,9 @@ textarea {
   --color-danger-foreground: var(--danger-foreground);
   --color-brand-amber: var(--brand-amber);
   --color-brand-amber-foreground: var(--brand-amber-foreground);
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mascot: "Baloo 2", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mascot: "Nunito", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
