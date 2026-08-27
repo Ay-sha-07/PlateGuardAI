@@ -435,15 +435,15 @@ function HeroVideo() {
 /* -------------------- Scroll: phone appears + package scan -------------------- */
 
 /**
- * Seamless scroll sequence after the hero:
- * 1. Phone frame scales / fades into view
- * 2. Package label fills the phone screen
- * 3. Scan line + progress driven by scroll
- * 4. Verdict chip appears → hand-off into the Snack wordmark section
+ * Scroll sequence after the hero:
+ * 1. Phone locks in the center of the viewport
+ * 2. Package is visible; green laser sweeps UP and DOWN while you keep scrolling
+ * 3. OCR % climbs; then SAFE verdict appears on the phone
+ * 4. Phone slides down and hands off into the Snack wordmark section — no blank gap
  */
 function PhoneScanReveal() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [progress, setProgress] = useState(0); // 0 → 1 across the sticky section
+  const [progress, setProgress] = useState(0);
   const tp = usePhrases(HOME_PHRASES);
 
   useEffect(() => {
@@ -451,173 +451,179 @@ function PhoneScanReveal() {
     if (!el) return;
 
     let raf = 0;
-    const onScroll = () => {
+    const measure = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const rect = el.getBoundingClientRect();
-        const total = el.offsetHeight - window.innerHeight;
-        if (total <= 0) {
-          setProgress(1);
-          return;
-        }
-        // When section top hits viewport top, progress starts; ends when bottom reaches viewport bottom
+        const total = Math.max(1, el.offsetHeight - window.innerHeight);
         const scrolled = Math.min(Math.max(-rect.top, 0), total);
         setProgress(scrolled / total);
       });
     };
 
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    measure();
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
     };
   }, []);
 
-  // Phase mapping (smooth hand-offs)
-  // 0.00–0.18  phone rises into view
-  // 0.18–0.35  package settles on screen
-  // 0.35–0.78  scanning (laser + OCR ticks)
-  // 0.78–1.00  verdict + fade into snack section
-  const phoneEnter = clamp01((progress - 0.02) / 0.16);
-  const packageIn = clamp01((progress - 0.16) / 0.18);
-  const scanProg = clamp01((progress - 0.34) / 0.42);
-  const verdictIn = clamp01((progress - 0.76) / 0.18);
-  const sectionFade = clamp01((progress - 0.9) / 0.1);
+  // ── Phase map (phone stays fully visible until the very end) ──────────────
+  // 0.00 – 0.12  phone enters (scale + rise)
+  // 0.10 – 0.68  scanning: laser ping-pongs, OCR 0→100
+  // 0.62 – 0.78  verdict fades in (laser stops)
+  // 0.78 – 1.00  phone slides down into Snack section
+  const enter = clamp01(progress / 0.12);
+  const scanT = clamp01((progress - 0.1) / 0.58); // 0→1 across scan window
+  const verdictIn = clamp01((progress - 0.62) / 0.16);
+  const exitT = clamp01((progress - 0.78) / 0.22);
 
-  const phoneY = (1 - phoneEnter) * 48;
-  const phoneScale = 0.86 + phoneEnter * 0.14;
-  const phoneOpacity = 0.15 + phoneEnter * 0.85;
+  // Laser: 2.5 full up-down cycles while scanning, then park at bottom
+  const laserCycles = 2.5;
+  const laserPhase = scanT * laserCycles * Math.PI; // radians
+  const laserY = 10 + (1 - Math.cos(laserPhase)) * 0.5 * 78; // 10% ↔ 88%
+  const laserOn = scanT > 0.02 && scanT < 0.98 && verdictIn < 0.85;
+  const ocrPct = Math.round(scanT * 100);
+
+  // Phone transform: enter from below, hold, then slide down on exit
+  const phoneY = (1 - enter) * 56 + exitT * 120;
+  const phoneScale = 0.9 + enter * 0.1 - exitT * 0.06;
+  const phoneOpacity = enter * (1 - exitT * 0.85);
+
+  // Account for bottom nav on mobile so sticky content sits in the real safe area
+  const stickyPadBottom = "calc(5.5rem + env(safe-area-inset-bottom, 0px))";
 
   return (
     <section
       ref={sectionRef}
       id="phone-scan"
       aria-label={tp("Watch a label get scanned")}
-      className="relative h-[280vh] bg-gradient-to-b from-background via-background to-primary/10"
+      className="relative h-[320vh] bg-gradient-to-b from-background via-background to-primary/15"
     >
-      <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden px-4">
-        {/* Soft radial glow behind the phone */}
+      <div
+        className="sticky top-0 flex h-[100dvh] items-center justify-center overflow-hidden px-4"
+        style={{ paddingBottom: stickyPadBottom, paddingTop: "4.5rem" }}
+      >
+        {/* Glow */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
-          style={{ opacity: phoneEnter * (1 - sectionFade * 0.6) }}
+          style={{ opacity: enter * (1 - exitT) * 0.9 }}
         >
-          <div className="size-[min(90vw,28rem)] rounded-full bg-primary/15 blur-3xl" />
+          <div className="size-[min(85vw,26rem)] rounded-full bg-primary/20 blur-3xl" />
         </div>
 
         <div
-          className="relative z-10 flex w-full max-w-[min(100%,22rem)] flex-col items-center"
+          className="relative z-10 flex w-full max-w-[min(92vw,19rem)] flex-col items-center"
           style={{
-            opacity: phoneOpacity * (1 - sectionFade),
-            transform: `translateY(${phoneY}px) scale(${phoneScale})`,
-            transition: "none",
+            opacity: phoneOpacity,
+            transform: `translate3d(0, ${phoneY}px, 0) scale(${phoneScale})`,
+            willChange: "transform, opacity",
           }}
         >
-          {/* Phone chrome */}
-          <div className="relative w-full overflow-hidden rounded-[2.6rem] border-[6px] border-foreground/90 bg-foreground shadow-[0_40px_80px_-20px_rgba(0,0,0,0.55)] dark:border-foreground/70">
+          {/* Phone frame — dark chrome so it reads on the light Leafora bg */}
+          <div className="relative w-full overflow-hidden rounded-[2.4rem] border-[5px] border-zinc-900 bg-zinc-900 shadow-[0_28px_60px_-12px_rgba(0,0,0,0.45)]">
             {/* Notch */}
-            <div className="absolute left-1/2 top-2 z-30 h-5 w-24 -translate-x-1/2 rounded-full bg-black/90" />
+            <div className="absolute left-1/2 top-1.5 z-30 h-4 w-20 -translate-x-1/2 rounded-full bg-black" />
 
-            {/* Screen */}
-            <div className="relative aspect-[9/19] w-full overflow-hidden bg-zinc-950">
-              {/* Package image */}
+            {/* Screen — slightly shorter than true 9/19 so it fits under nav */}
+            <div className="relative aspect-[9/17] w-full overflow-hidden bg-zinc-950">
               <img
                 src="/media/snack-package.jpg"
                 alt="Snack package nutrition and ingredients label"
                 className="absolute inset-0 size-full object-cover object-center"
                 style={{
-                  opacity: 0.25 + packageIn * 0.75,
-                  transform: `scale(${1.08 - packageIn * 0.08})`,
+                  opacity: 0.35 + enter * 0.65,
+                  transform: `scale(${1.06 - enter * 0.06})`,
                 }}
                 draggable={false}
               />
 
-              {/* Dark vignette so UI stays legible */}
               <div
                 aria-hidden
-                className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70"
-                style={{ opacity: 0.4 + packageIn * 0.5 }}
+                className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/65"
               />
 
-              {/* Scanning laser beam */}
+              {/* Green laser — sweeps up & down with scroll */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 z-20 h-[2px]"
+                className="pointer-events-none absolute inset-x-0 z-20"
                 style={{
-                  top: `${8 + scanProg * 84}%`,
-                  opacity: scanProg > 0 && scanProg < 0.98 ? 1 : 0,
+                  top: `${laserY}%`,
+                  opacity: laserOn ? 1 : 0,
+                  height: 3,
+                  background:
+                    "linear-gradient(90deg, transparent 0%, oklch(0.78 0.2 145) 20%, oklch(0.85 0.22 145) 50%, oklch(0.78 0.2 145) 80%, transparent 100%)",
                   boxShadow:
-                    "0 0 12px 2px oklch(0.72 0.19 145), 0 0 28px 6px oklch(0.72 0.19 145 / 0.55)",
-                  background:
-                    "linear-gradient(90deg, transparent, oklch(0.78 0.2 145), transparent)",
+                    "0 0 10px 2px oklch(0.72 0.19 145), 0 0 28px 8px oklch(0.72 0.19 145 / 0.5)",
                 }}
               />
-              {/* Soft scan wash trailing the laser */}
+              {/* Soft wash under the laser */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 z-10"
+                className="pointer-events-none absolute inset-x-3 z-10 rounded-sm"
                 style={{
-                  top: 0,
-                  height: `${8 + scanProg * 84}%`,
-                  opacity: scanProg > 0.02 ? 0.35 : 0,
+                  top: `calc(${laserY}% - 18px)`,
+                  height: 36,
+                  opacity: laserOn ? 0.4 : 0,
                   background:
-                    "linear-gradient(180deg, oklch(0.72 0.19 145 / 0.12), oklch(0.72 0.19 145 / 0.04))",
+                    "radial-gradient(ellipse at center, oklch(0.72 0.19 145 / 0.45), transparent 70%)",
                 }}
               />
 
-              {/* Corner brackets — camera frame */}
+              {/* Corner brackets */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-6 z-20"
-                style={{ opacity: packageIn * (1 - verdictIn * 0.4) }}
+                className="pointer-events-none absolute inset-5 z-20"
+                style={{ opacity: enter * (1 - verdictIn * 0.5) }}
               >
-                <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-primary" />
-                <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-primary" />
-                <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-primary" />
-                <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-primary" />
+                <span className="absolute left-0 top-0 h-7 w-7 border-l-2 border-t-2 border-primary" />
+                <span className="absolute right-0 top-0 h-7 w-7 border-r-2 border-t-2 border-primary" />
+                <span className="absolute bottom-0 left-0 h-7 w-7 border-b-2 border-l-2 border-primary" />
+                <span className="absolute bottom-0 right-0 h-7 w-7 border-b-2 border-r-2 border-primary" />
               </div>
 
-              {/* Top status pill */}
+              {/* Status pill */}
               <div
-                className="absolute left-1/2 top-10 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-[11px] font-medium tracking-wide text-white backdrop-blur-md"
-                style={{ opacity: packageIn }}
+                className="absolute left-1/2 top-8 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-md"
+                style={{ opacity: enter }}
               >
-                <ScanLine className="size-3.5 text-primary" />
-                {scanProg < 0.95 ? tp("Scanning label…") : tp("Scan complete")}
+                <ScanLine className="size-3 text-primary" />
+                {verdictIn > 0.5 ? tp("Scan complete") : tp("Scanning label…")}
               </div>
 
-              {/* Progress bar */}
+              {/* OCR progress */}
               <div
-                className="absolute bottom-24 left-6 right-6 z-30"
-                style={{ opacity: packageIn * (1 - verdictIn) }}
+                className="absolute bottom-20 left-5 right-5 z-30"
+                style={{ opacity: enter * (1 - verdictIn) }}
               >
-                <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-white/70">
+                <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-white/75">
                   <span>{tp("Ingredients OCR")}</span>
-                  <span>{Math.round(scanProg * 100)}%</span>
+                  <span>{ocrPct}%</span>
                 </div>
-                <div className="h-1 overflow-hidden rounded-full bg-white/15">
+                <div className="h-1 overflow-hidden rounded-full bg-white/20">
                   <div
-                    className="h-full rounded-full bg-primary transition-none"
-                    style={{ width: `${scanProg * 100}%` }}
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${ocrPct}%` }}
                   />
                 </div>
               </div>
 
-              {/* Verdict chip */}
+              {/* SAFE verdict */}
               <div
-                className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-safe px-5 py-3 shadow-xl"
+                className="absolute bottom-7 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-safe px-4 py-2.5 shadow-xl"
                 style={{
                   opacity: verdictIn,
-                  transform: `translate(-50%, ${(1 - verdictIn) * 16}px) scale(${0.9 + verdictIn * 0.1})`,
+                  transform: `translate(-50%, ${(1 - verdictIn) * 20}px) scale(${0.92 + verdictIn * 0.08})`,
                 }}
               >
-                <CheckCircle2 className="size-5 text-safe-foreground" />
+                <CheckCircle2 className="size-5 shrink-0 text-safe-foreground" />
                 <div className="text-left leading-tight">
                   <p className="text-sm font-bold text-safe-foreground">{tp("SAFE")}</p>
-                  <p className="text-[11px] text-safe-foreground/80">
+                  <p className="text-[11px] text-safe-foreground/85">
                     {tp("No allergens matched")}
                   </p>
                 </div>
@@ -625,16 +631,16 @@ function PhoneScanReveal() {
             </div>
           </div>
 
-          {/* Caption under phone */}
+          {/* Caption */}
           <p
-            className="mt-6 max-w-xs text-center text-sm text-muted-foreground"
-            style={{ opacity: phoneEnter * (1 - sectionFade) }}
+            className="mt-5 max-w-[16rem] text-center text-sm text-muted-foreground"
+            style={{ opacity: enter * (1 - exitT) }}
           >
-            {scanProg < 0.3
-              ? tp("Point at any packaged label")
-              : scanProg < 0.85
+            {verdictIn > 0.4
+              ? tp("Clear verdict in seconds")
+              : scanT > 0.2
                 ? tp("Reading every ingredient against your profile")
-                : tp("Clear verdict in seconds")}
+                : tp("Point at any packaged label")}
           </p>
         </div>
       </div>
