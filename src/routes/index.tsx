@@ -510,7 +510,7 @@ function PhoneScanReveal() {
         }}
       >
         <div
-          className="pointer-events-none absolute left-1/2 top-2 z-20 -translate-x-1/2 text-center"
+          className="pointer-events-none absolute left-1/2 -top-6 z-20 -translate-x-1/2 text-center"
           style={{ opacity: sceneOpacity }}
         >
           <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-primary">
