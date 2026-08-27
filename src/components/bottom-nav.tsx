@@ -7,7 +7,7 @@ import { COMMON_PHRASES } from "@/lib/ui-phrases";
 import { LanguageSelector } from "@/components/language-selector";
 
 const TABS = [
-  { to: "/", label: "Home", Icon: Home },
+  { to: "/home", label: "Home", Icon: Home },
   { to: "/scan", label: "Scan", Icon: ScanLine },
   { to: "/history", label: "History", Icon: History },
   { to: "/card", label: "Card", Icon: CreditCard },
@@ -45,24 +45,13 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
       <div className="mx-auto flex w-full max-w-md items-stretch gap-1 px-2 py-2">
         <div className="grid flex-1 grid-cols-5">
           {TABS.map(({ to, label, Icon }) => {
-            const active =
-              to === "/"
-                ? pathname === "/" || pathname === "/home"
-                : pathname === to || pathname.startsWith(`${to}/`);
+            const active = pathname === to || pathname.startsWith(`${to}/`);
             return (
               <Link
                 key={to}
                 to={to}
                 onClick={() => {
-                  // Always scroll to top of the home page when Home is pressed
-                  if (to === "/") {
-                    // Defer slightly so navigation/redirect can finish first when coming from another route
-                    requestAnimationFrame(() => {
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    });
-                  } else if (active) {
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }
+                  if (active) window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition-colors",
