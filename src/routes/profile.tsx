@@ -722,6 +722,21 @@ function StepAllergies({ profile, patch }: StepProps) {
           here.
         </p>
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="otherAllergies">{tp("Any other allergies (optional)")}</Label>
+        <Textarea
+          id="otherAllergies"
+          rows={2}
+          placeholder={tp("e.g. mango, chickpea flour, specific spice blends")}
+          value={profile.otherAllergies}
+          onChange={(e) => patch({ otherAllergies: e.target.value })}
+          className="rounded-xl"
+        />
+        <p className="text-xs text-muted-foreground">
+          {tp("List anything not covered above — treated with the same priority as selected allergens.")}
+        </p>
+      </div>
     </div>
   );
 }
@@ -863,6 +878,21 @@ function StepConditions({ profile, patch }: StepProps) {
           </p>
         </div>
       )}
+
+      <div className="space-y-2">
+        <Label htmlFor="otherConditions">{tp("Any other health conditions (optional)")}</Label>
+        <Textarea
+          id="otherConditions"
+          rows={2}
+          placeholder={tp("e.g. gout, history of kidney stones, recent surgery")}
+          value={profile.otherConditions}
+          onChange={(e) => patch({ otherConditions: e.target.value })}
+          className="rounded-xl"
+        />
+        <p className="text-xs text-muted-foreground">
+          {tp("Anything not listed above that should influence food advice.")}
+        </p>
+      </div>
     </div>
   );
 }
@@ -920,6 +950,21 @@ function StepSensitivities({ profile, patch }: StepProps) {
         </div>
         <p className="text-xs text-muted-foreground">
           {tp("Helps direct fiber and FODMAP-related notes in the right direction.")}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="otherSensitivities">{tp("Any other sensitivities (optional)")}</Label>
+        <Textarea
+          id="otherSensitivities"
+          rows={2}
+          placeholder={tp("e.g. high histamine foods, nightshades, artificial sweeteners")}
+          value={profile.otherSensitivities}
+          onChange={(e) => patch({ otherSensitivities: e.target.value })}
+          className="rounded-xl"
+        />
+        <p className="text-xs text-muted-foreground">
+          {tp("Not true allergies — only flagged when relevant to comfort or tolerance.")}
         </p>
       </div>
     </div>

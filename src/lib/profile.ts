@@ -31,14 +31,17 @@ export type SafetyProfile = {
   allergens: string[];
   allergySeverity: AllergySeverity | "";
   glutenStatus: "" | "celiac" | "non_celiac_sensitivity";
+  otherAllergies: string;
 
   conditions: string[];
   diabetes: DiabetesDetail;
   hypertension: HypertensionDetail;
   kidney: KidneyDetail;
+  otherConditions: string;
 
   sensitivities: string[];
   bowelHabits: string[];
+  otherSensitivities: string;
 
   dietaryPatterns: string[];
   medications: string;
@@ -207,14 +210,17 @@ export const EMPTY_PROFILE: SafetyProfile = {
   allergens: [],
   allergySeverity: "",
   glutenStatus: "",
+  otherAllergies: "",
 
   conditions: [],
   diabetes: { type: "", treatment: "" },
   hypertension: { status: "" },
   kidney: { status: "" },
+  otherConditions: "",
 
   sensitivities: [],
   bowelHabits: [],
+  otherSensitivities: "",
 
   dietaryPatterns: [],
   medications: "",
@@ -229,7 +235,10 @@ export function profileIsSet(profile: SafetyProfile | null): profile is SafetyPr
     profile.dietaryPatterns.length > 0 ||
     profile.sensitivities.length > 0 ||
     profile.medications.trim().length > 0 ||
-    profile.notes.trim().length > 0
+    profile.notes.trim().length > 0 ||
+    profile.otherAllergies.trim().length > 0 ||
+    profile.otherConditions.trim().length > 0 ||
+    profile.otherSensitivities.trim().length > 0
   );
 }
 
@@ -284,13 +293,27 @@ function migrateLegacyProfile(): StoredProfile | null {
   }
 }
 
+function normalizeProfile(p: Partial<StoredProfile> & { id: string }): StoredProfile {
+  return {
+    ...EMPTY_PROFILE,
+    ...p,
+    id: p.id,
+    createdAt: typeof p.createdAt === "number" ? p.createdAt : Date.now(),
+    otherAllergies: typeof p.otherAllergies === "string" ? p.otherAllergies : "",
+    otherConditions: typeof p.otherConditions === "string" ? p.otherConditions : "",
+    otherSensitivities: typeof p.otherSensitivities === "string" ? p.otherSensitivities : "",
+  };
+}
+
 export function loadProfileStore(): ProfileStore {
   if (typeof window === "undefined") return { profiles: [], activeId: "" };
   try {
     const raw = window.localStorage.getItem(scopedKey(STORE_KEY_BASE));
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ProfileStore>;
-      const profiles = Array.isArray(parsed.profiles) ? parsed.profiles : [];
+      const profiles = (Array.isArray(parsed.profiles) ? parsed.profiles : [])
+        .filter((p): p is Partial<StoredProfile> & { id: string } => !!p && typeof p.id === "string")
+        .map(normalizeProfile);
       if (profiles.length > 0) {
         const activeId =
           parsed.activeId && profiles.some((p) => p.id === parsed.activeId)

@@ -34,14 +34,17 @@ export const ScanInputSchema = z
   allergens: z.array(z.string()).default([]),
   allergySeverity: z.string().default(""),
   glutenStatus: z.string().default(""),
+  otherAllergies: z.string().default(""),
 
   conditions: z.array(z.string()).default([]),
   diabetes: DiabetesDetailSchema.default({ type: "", treatment: "" }),
   hypertension: HypertensionDetailSchema.default({ status: "" }),
   kidney: KidneyDetailSchema.default({ status: "" }),
+  otherConditions: z.string().default(""),
 
   sensitivities: z.array(z.string()).default([]),
   bowelHabits: z.array(z.string()).default([]),
+  otherSensitivities: z.string().default(""),
 
   dietaryPatterns: z.array(z.string()).default([]),
   medications: z.string().default(""),
@@ -283,6 +286,7 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
       ? `Allergy severity: ${data.allergySeverity.replaceAll("_", " ")}`
       : "",
     data.glutenStatus ? `Gluten status: ${data.glutenStatus.replaceAll("_", " ")}` : "",
+    data.otherAllergies.trim() ? `Other allergies: ${data.otherAllergies.trim()}` : "",
     `Health conditions: ${data.conditions.length ? data.conditions.join(", ") : "none declared"}`,
     data.diabetes.type
       ? `Diabetes detail: type=${data.diabetes.type}, treatment=${data.diabetes.treatment || "unspecified"}`
@@ -291,8 +295,12 @@ export async function analyzeLabel(data: z.infer<typeof ScanInputSchema>): Promi
       ? `Hypertension/cardiovascular detail: ${data.hypertension.status}`
       : "",
     data.kidney.status ? `Kidney detail: ${data.kidney.status}` : "",
+    data.otherConditions.trim() ? `Other health conditions: ${data.otherConditions.trim()}` : "",
     data.sensitivities.length ? `Specific sensitivities: ${data.sensitivities.join(", ")}` : "",
     data.bowelHabits.length ? `Digestive symptom pattern: ${data.bowelHabits.join(", ")}` : "",
+    data.otherSensitivities.trim()
+      ? `Other sensitivities: ${data.otherSensitivities.trim()}`
+      : "",
     data.dietaryPatterns.length
       ? `Dietary / religious pattern: ${data.dietaryPatterns.join(", ")}`
       : "",

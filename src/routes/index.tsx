@@ -646,7 +646,7 @@ function UserGuideVideo() {
           See it in action
         </p>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          A 5-minute walkthrough of the whole app
+          A 4-minute walkthrough of the whole app
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
           From setting up your profile to reading a verdict — watch at your own pace, pause

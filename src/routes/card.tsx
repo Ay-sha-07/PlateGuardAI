@@ -87,13 +87,17 @@ function CardPageContent() {
       `${tp("EMERGENCY HEALTH CARD —")} ${p.name || tp("Unnamed profile")}`,
       "",
     ];
-    if (p.allergens.length) {
+    if (p.allergens.length || p.otherAllergies.trim()) {
       const sev = p.allergySeverity
         ? tl(labelFor(ALLERGY_SEVERITIES, p.allergySeverity))
         : tp("severity not set");
+      const allergenParts = [
+        ...p.allergens.map((a) => tl(a)),
+        ...(p.otherAllergies.trim() ? [p.otherAllergies.trim()] : []),
+      ];
       lines.push(
         `${tp("ALLERGIES")} (${sev}):`,
-        p.allergens.map((a) => tl(a)).join(", "),
+        allergenParts.join(", "),
         "",
       );
     }
@@ -103,12 +107,12 @@ function CardPageContent() {
         "",
       );
     }
-    if (p.conditions.length) {
-      lines.push(
-        tp("CONDITIONS:"),
-        p.conditions.map((c) => tl(c)).join(", "),
-        "",
-      );
+    if (p.conditions.length || p.otherConditions.trim()) {
+      const conditionParts = [
+        ...p.conditions.map((c) => tl(c)),
+        ...(p.otherConditions.trim() ? [p.otherConditions.trim()] : []),
+      ];
+      lines.push(tp("CONDITIONS:"), conditionParts.join(", "), "");
     }
     if (p.hypertension.status) {
       lines.push(
@@ -121,6 +125,13 @@ function CardPageContent() {
         `${tp("KIDNEY:")} ${tl(labelFor(KIDNEY_STATUSES, p.kidney.status))}`,
         "",
       );
+    }
+    if (p.sensitivities.length || p.otherSensitivities.trim()) {
+      const sensitivityParts = [
+        ...p.sensitivities.map((s) => tl(s)),
+        ...(p.otherSensitivities.trim() ? [p.otherSensitivities.trim()] : []),
+      ];
+      lines.push(tp("SENSITIVITIES:"), sensitivityParts.join(", "), "");
     }
     if (p.medications.trim()) {
       lines.push(tp("CURRENT MEDICATIONS:"), p.medications.trim(), "");
