@@ -470,66 +470,89 @@ function PhoneScanReveal() {
     };
   }, []);
 
-  // Phases — phone is always fully on-screen; only UI inside changes
-  // 0.00–0.08  enter (scale up)
-  // 0.08–0.72  scan (laser up/down, OCR 0→100)
-  // 0.68–0.88  verdict
-  // 0.88–1.00  hold verdict until sticky releases into Snack
-  const enter = clamp01(progress / 0.08);
-  const scanT = clamp01((progress - 0.08) / 0.64);
-  const verdictIn = clamp01((progress - 0.68) / 0.16);
+  // Keep the phone in the flow: reveal it on entry, hold it during the scan, and fade it before the next section.
+  const enter = ease(clamp01(progress / 0.12));
+  const exit = ease(clamp01((progress - 0.9) / 0.1));
+  const sceneOpacity = enter * (1 - exit);
+  const scanT = ease(clamp01((progress - 0.16) / 0.52));
+  const verdictIn = ease(clamp01((progress - 0.72) / 0.12));
+  const introOut = ease(clamp01((progress - 0.08) / 0.12));
+  const scanOut = ease(clamp01((progress - 0.64) / 0.1));
+  const introOpacity = 1 - introOut;
+  const scannerOpacity = introOut * (1 - scanOut);
+  const resultOpacity = scanOut;
+  const resultLift = (1 - verdictIn) * 8;
 
-  // Laser ping-pongs 3 full cycles (up→down→up…) while scanning
-  const cycles = 3;
-  const phase = scanT * cycles * Math.PI; // cos goes 1→-1→1 each π
-  const laserY = 12 + ((1 - Math.cos(phase)) / 2) * 72; // 12% ↔ 84%
-  const scanning = scanT > 0.01 && scanT < 0.99 && verdictIn < 0.6;
+  // The scanner makes repeated passes while the phone remains pinned in the stage.
+  const cycles = 4;
+  const phase = scanT * cycles * Math.PI;
+  const laserY = 12 + ((1 - Math.cos(phase)) / 2) * 72;
   const ocrPct = Math.min(100, Math.round(scanT * 100));
-
-  // Tiny enter only — NEVER translate off-screen, NEVER fade to blank
-  const phoneScale = 0.92 + enter * 0.08;
-  const phoneOpacity = 0.35 + enter * 0.65; // always at least partly visible once section hits
+  const phoneScale = 0.94 + enter * 0.06;
+  const phoneOpacity = sceneOpacity;
 
   return (
     <section
       ref={sectionRef}
       id="phone-scan"
       aria-label={tp("Watch a label get scanned")}
-      className="relative h-[240vh] bg-gradient-to-b from-background via-background to-primary/12"
+      className="relative h-[360vh] bg-gradient-to-b from-background via-background via-primary/8 to-primary/14"
     >
       {/*
         Sticky stage sits UNDER the fixed top nav and ABOVE the bottom nav.
         Phone is sized with max-height so the whole device is always visible.
       */}
       <div
-        className="sticky z-10 flex items-center justify-center overflow-hidden px-4"
+        className={`${progress > 0 && progress < 1 ? "fixed inset-x-0" : "sticky"} z-10 flex items-center justify-center overflow-visible px-4`}
         style={{
-          top: "4.75rem", // clear fixed SiteNav
-          height: "calc(100dvh - 4.75rem - 5.25rem)", // clear bottom nav
+          top: "4.75rem",
+          height: "calc(100dvh - 4.75rem - 5.25rem)",
         }}
       >
+        <div
+          className="pointer-events-none absolute left-1/2 top-2 z-20 -translate-x-1/2 text-center"
+          style={{ opacity: sceneOpacity }}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-primary">
+            {tp("Live label scan")}
+          </p>
+          <div className="relative mt-1 h-4 min-w-[12rem] text-xs text-muted-foreground">
+            <span className="absolute inset-x-0" style={{ opacity: introOpacity }}>
+              {tp("Align the label")}
+            </span>
+            <span className="absolute inset-x-0" style={{ opacity: scannerOpacity }}>
+              {tp("Reading ingredients")}
+            </span>
+            <span className="absolute inset-x-0" style={{ opacity: resultOpacity }}>
+              {tp("Result ready")}
+            </span>
+          </div>
+        </div>
         {/* Soft glow */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
-          style={{ opacity: enter * 0.85 }}
+          style={{ opacity: sceneOpacity * (0.45 + scannerOpacity * 0.55) }}
         >
-          <div className="size-[min(80vw,22rem)] rounded-full bg-primary/25 blur-3xl" />
+          <div
+            className="size-[min(92vw,31rem)] rounded-full bg-primary/30 blur-3xl"
+            style={{ transform: `scale(${0.8 + scannerOpacity * 0.32})` }}
+          />
         </div>
 
         <div
           className="relative z-10 flex w-full flex-col items-center"
           style={{
-            maxWidth: "min(86vw, 17.5rem)",
+            maxWidth: "min(82vw, 16rem)",
             opacity: phoneOpacity,
-            transform: `scale(${phoneScale})`,
+            transform: `translateY(1rem) scale(${phoneScale})`,
             willChange: "transform, opacity",
           }}
         >
           {/* Phone chrome */}
           <div
             className="relative w-full overflow-hidden rounded-[2.15rem] border-[5px] border-zinc-900 bg-zinc-900 shadow-[0_24px_50px_-10px_rgba(0,0,0,0.5)]"
-            style={{ maxHeight: "min(58dvh, 26rem)" }}
+            style={{ maxHeight: "min(67dvh, 34rem)" }}
           >
             {/* Notch */}
             <div className="absolute left-1/2 top-1.5 z-30 h-3.5 w-[4.5rem] -translate-x-1/2 rounded-full bg-black" />
@@ -538,16 +561,24 @@ function PhoneScanReveal() {
             <div
               className="relative w-full overflow-hidden bg-zinc-950"
               style={{
-                aspectRatio: "9 / 16",
-                maxHeight: "min(58dvh, 26rem)",
+                aspectRatio: "9 / 19.5",
+                maxHeight: "min(67dvh, 34rem)",
               }}
             >
               <img
                 src="/media/snack-package.jpg"
                 alt="Snack package nutrition and ingredients label"
                 className="absolute inset-0 size-full object-cover object-center"
-                style={{ opacity: 0.55 + enter * 0.45 }}
+                style={{
+                  opacity: 0.52 + enter * 0.48,
+                  transform: `scale(${1.04 - verdictIn * 0.04})`,
+                }}
                 draggable={false}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 z-[1] bg-emerald-400/20 mix-blend-screen"
+                style={{ opacity: scannerOpacity * 0.55 }}
               />
 
               {/* Light vignette only — keep label readable */}
@@ -562,7 +593,7 @@ function PhoneScanReveal() {
                 className="pointer-events-none absolute inset-x-0 z-20"
                 style={{
                   top: `${laserY}%`,
-                  opacity: scanning ? 1 : 0,
+                  opacity: scannerOpacity,
                   height: 4,
                   background:
                     "linear-gradient(90deg, transparent 5%, #4ade80 25%, #bbf7d0 50%, #4ade80 75%, transparent 95%)",
@@ -576,7 +607,7 @@ function PhoneScanReveal() {
                 style={{
                   top: `calc(${laserY}% - 22px)`,
                   height: 44,
-                  opacity: scanning ? 0.55 : 0,
+                  opacity: scannerOpacity * 0.55,
                   background:
                     "radial-gradient(ellipse at center, rgba(74,222,128,0.5), transparent 70%)",
                 }}
@@ -586,7 +617,7 @@ function PhoneScanReveal() {
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-4 z-20"
-                style={{ opacity: enter * (1 - verdictIn * 0.45) }}
+                style={{ opacity: sceneOpacity * (1 - resultOpacity) }}
               >
                 <span className="absolute left-0 top-0 h-6 w-6 border-l-[2.5px] border-t-[2.5px] border-primary" />
                 <span className="absolute right-0 top-0 h-6 w-6 border-r-[2.5px] border-t-[2.5px] border-primary" />
@@ -597,16 +628,23 @@ function PhoneScanReveal() {
               {/* Status */}
               <div
                 className="absolute left-1/2 top-7 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/70 px-3 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-md"
-                style={{ opacity: enter }}
+                style={{ opacity: sceneOpacity }}
               >
-                <ScanLine className="size-3 text-primary" />
-                {verdictIn > 0.45 ? tp("Scan complete") : tp("Scanning label…")}
+                <ScanLine className="size-3 shrink-0 text-primary" />
+                <span className="relative h-4 min-w-[7.25rem] whitespace-nowrap leading-4">
+                  <span className="absolute inset-x-0" style={{ opacity: 1 - resultOpacity }}>
+                    {tp("Scanning label…")}
+                  </span>
+                  <span className="absolute inset-x-0" style={{ opacity: resultOpacity }}>
+                    {tp("Analysis complete")}
+                  </span>
+                </span>
               </div>
 
               {/* OCR bar */}
               <div
                 className="absolute bottom-[4.25rem] left-4 right-4 z-30"
-                style={{ opacity: enter * (1 - verdictIn) }}
+                style={{ opacity: sceneOpacity * (1 - resultOpacity) }}
               >
                 <div className="mb-1 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-white/80">
                   <span>{tp("Ingredients OCR")}</span>
@@ -620,35 +658,46 @@ function PhoneScanReveal() {
                 </div>
               </div>
 
-              {/* SAFE verdict */}
               <div
-                className="absolute bottom-5 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-safe px-4 py-2.5 shadow-xl"
+                className="absolute inset-x-3 bottom-3 z-30 overflow-hidden rounded-2xl bg-card/95 p-3 shadow-2xl backdrop-blur-xl"
                 style={{
                   opacity: verdictIn,
-                  transform: `translate(-50%, ${(1 - verdictIn) * 14}px) scale(${0.94 + verdictIn * 0.06})`,
+                  transform: `translateY(${resultLift}px) scale(${0.985 + verdictIn * 0.015})`,
                 }}
               >
-                <CheckCircle2 className="size-5 shrink-0 text-safe-foreground" />
-                <div className="text-left leading-tight">
-                  <p className="text-sm font-bold text-safe-foreground">{tp("SAFE")}</p>
-                  <p className="text-[11px] text-safe-foreground/90">
-                    {tp("No allergens matched")}
-                  </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-safe">
+                    <CheckCircle2 className="size-4 text-safe-foreground" />
+                  </div>
+                  <div className="min-w-0 text-left leading-tight">
+                    <p className="text-sm font-bold text-foreground">{tp("SAFE TO EAT")}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {tp("No allergens matched your profile")}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2.5 flex items-center justify-between border-t border-border/70 pt-2 text-[10px] font-medium">
+                  <span className="text-muted-foreground">{tp("Ingredient check")}</span>
+                  <span className="text-primary">{tp("All clear")}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <p
-            className="mt-3 max-w-[15rem] text-center text-xs text-muted-foreground sm:text-sm"
+          <div
+            className="relative mx-auto mt-3 h-10 w-full max-w-[12rem] text-center text-xs leading-5 text-muted-foreground sm:text-sm"
             style={{ opacity: enter }}
           >
-            {verdictIn > 0.4
-              ? tp("Clear verdict in seconds")
-              : scanT > 0.15
-                ? tp("Reading every ingredient against your profile")
-                : tp("Point at any packaged label")}
-          </p>
+            <span className="absolute inset-x-0" style={{ opacity: introOpacity }}>
+              {tp("Bring the label into view")}
+            </span>
+            <span className="absolute inset-x-0" style={{ opacity: scannerOpacity }}>
+              {tp("Hold steady — checking every ingredient")}
+            </span>
+            <span className="absolute inset-x-0" style={{ opacity: resultOpacity }}>
+              {tp("Your clear answer, ready when you are")}
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -657,6 +706,10 @@ function PhoneScanReveal() {
 
 function clamp01(n: number) {
   return Math.min(1, Math.max(0, n));
+}
+
+function ease(n: number) {
+  return n * n * (3 - 2 * n);
 }
 
 /* --------------------------- Hero: giant wordmark scene --------------------------- */
