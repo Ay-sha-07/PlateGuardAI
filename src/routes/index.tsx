@@ -151,6 +151,7 @@ function HomePage() {
     <div className="min-h-screen bg-background pb-20 text-foreground">
       <SiteNav />
       <HeroVideo />
+      <PhoneScanReveal />
       <HeroWordmark />
       <UserGuideVideo />
       <Coverage />
@@ -420,7 +421,7 @@ function HeroVideo() {
       </div>
 
       <a
-        href="#wordmark"
+        href="#phone-scan"
         aria-label={tp("Scroll to learn more")}
         className="absolute bottom-7 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-foreground/50"
       >
@@ -429,6 +430,220 @@ function HeroVideo() {
       </a>
     </section>
   );
+}
+
+/* -------------------- Scroll: phone appears + package scan -------------------- */
+
+/**
+ * Seamless scroll sequence after the hero:
+ * 1. Phone frame scales / fades into view
+ * 2. Package label fills the phone screen
+ * 3. Scan line + progress driven by scroll
+ * 4. Verdict chip appears → hand-off into the Snack wordmark section
+ */
+function PhoneScanReveal() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [progress, setProgress] = useState(0); // 0 → 1 across the sticky section
+  const tp = usePhrases(HOME_PHRASES);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const total = el.offsetHeight - window.innerHeight;
+        if (total <= 0) {
+          setProgress(1);
+          return;
+        }
+        // When section top hits viewport top, progress starts; ends when bottom reaches viewport bottom
+        const scrolled = Math.min(Math.max(-rect.top, 0), total);
+        setProgress(scrolled / total);
+      });
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
+  // Phase mapping (smooth hand-offs)
+  // 0.00–0.18  phone rises into view
+  // 0.18–0.35  package settles on screen
+  // 0.35–0.78  scanning (laser + OCR ticks)
+  // 0.78–1.00  verdict + fade into snack section
+  const phoneEnter = clamp01((progress - 0.02) / 0.16);
+  const packageIn = clamp01((progress - 0.16) / 0.18);
+  const scanProg = clamp01((progress - 0.34) / 0.42);
+  const verdictIn = clamp01((progress - 0.76) / 0.18);
+  const sectionFade = clamp01((progress - 0.9) / 0.1);
+
+  const phoneY = (1 - phoneEnter) * 48;
+  const phoneScale = 0.86 + phoneEnter * 0.14;
+  const phoneOpacity = 0.15 + phoneEnter * 0.85;
+
+  return (
+    <section
+      ref={sectionRef}
+      id="phone-scan"
+      aria-label={tp("Watch a label get scanned")}
+      className="relative h-[280vh] bg-gradient-to-b from-background via-background to-primary/10"
+    >
+      <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden px-4">
+        {/* Soft radial glow behind the phone */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          style={{ opacity: phoneEnter * (1 - sectionFade * 0.6) }}
+        >
+          <div className="size-[min(90vw,28rem)] rounded-full bg-primary/15 blur-3xl" />
+        </div>
+
+        <div
+          className="relative z-10 flex w-full max-w-[min(100%,22rem)] flex-col items-center"
+          style={{
+            opacity: phoneOpacity * (1 - sectionFade),
+            transform: `translateY(${phoneY}px) scale(${phoneScale})`,
+            transition: "none",
+          }}
+        >
+          {/* Phone chrome */}
+          <div className="relative w-full overflow-hidden rounded-[2.6rem] border-[6px] border-foreground/90 bg-foreground shadow-[0_40px_80px_-20px_rgba(0,0,0,0.55)] dark:border-foreground/70">
+            {/* Notch */}
+            <div className="absolute left-1/2 top-2 z-30 h-5 w-24 -translate-x-1/2 rounded-full bg-black/90" />
+
+            {/* Screen */}
+            <div className="relative aspect-[9/19] w-full overflow-hidden bg-zinc-950">
+              {/* Package image */}
+              <img
+                src="/media/snack-package.jpg"
+                alt="Snack package nutrition and ingredients label"
+                className="absolute inset-0 size-full object-cover object-center"
+                style={{
+                  opacity: 0.25 + packageIn * 0.75,
+                  transform: `scale(${1.08 - packageIn * 0.08})`,
+                }}
+                draggable={false}
+              />
+
+              {/* Dark vignette so UI stays legible */}
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70"
+                style={{ opacity: 0.4 + packageIn * 0.5 }}
+              />
+
+              {/* Scanning laser beam */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 z-20 h-[2px]"
+                style={{
+                  top: `${8 + scanProg * 84}%`,
+                  opacity: scanProg > 0 && scanProg < 0.98 ? 1 : 0,
+                  boxShadow:
+                    "0 0 12px 2px oklch(0.72 0.19 145), 0 0 28px 6px oklch(0.72 0.19 145 / 0.55)",
+                  background:
+                    "linear-gradient(90deg, transparent, oklch(0.78 0.2 145), transparent)",
+                }}
+              />
+              {/* Soft scan wash trailing the laser */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 z-10"
+                style={{
+                  top: 0,
+                  height: `${8 + scanProg * 84}%`,
+                  opacity: scanProg > 0.02 ? 0.35 : 0,
+                  background:
+                    "linear-gradient(180deg, oklch(0.72 0.19 145 / 0.12), oklch(0.72 0.19 145 / 0.04))",
+                }}
+              />
+
+              {/* Corner brackets — camera frame */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-6 z-20"
+                style={{ opacity: packageIn * (1 - verdictIn * 0.4) }}
+              >
+                <span className="absolute left-0 top-0 h-8 w-8 border-l-2 border-t-2 border-primary" />
+                <span className="absolute right-0 top-0 h-8 w-8 border-r-2 border-t-2 border-primary" />
+                <span className="absolute bottom-0 left-0 h-8 w-8 border-b-2 border-l-2 border-primary" />
+                <span className="absolute bottom-0 right-0 h-8 w-8 border-b-2 border-r-2 border-primary" />
+              </div>
+
+              {/* Top status pill */}
+              <div
+                className="absolute left-1/2 top-10 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-[11px] font-medium tracking-wide text-white backdrop-blur-md"
+                style={{ opacity: packageIn }}
+              >
+                <ScanLine className="size-3.5 text-primary" />
+                {scanProg < 0.95 ? tp("Scanning label…") : tp("Scan complete")}
+              </div>
+
+              {/* Progress bar */}
+              <div
+                className="absolute bottom-24 left-6 right-6 z-30"
+                style={{ opacity: packageIn * (1 - verdictIn) }}
+              >
+                <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-white/70">
+                  <span>{tp("Ingredients OCR")}</span>
+                  <span>{Math.round(scanProg * 100)}%</span>
+                </div>
+                <div className="h-1 overflow-hidden rounded-full bg-white/15">
+                  <div
+                    className="h-full rounded-full bg-primary transition-none"
+                    style={{ width: `${scanProg * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Verdict chip */}
+              <div
+                className="absolute bottom-8 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-2xl bg-safe px-5 py-3 shadow-xl"
+                style={{
+                  opacity: verdictIn,
+                  transform: `translate(-50%, ${(1 - verdictIn) * 16}px) scale(${0.9 + verdictIn * 0.1})`,
+                }}
+              >
+                <CheckCircle2 className="size-5 text-safe-foreground" />
+                <div className="text-left leading-tight">
+                  <p className="text-sm font-bold text-safe-foreground">{tp("SAFE")}</p>
+                  <p className="text-[11px] text-safe-foreground/80">
+                    {tp("No allergens matched")}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Caption under phone */}
+          <p
+            className="mt-6 max-w-xs text-center text-sm text-muted-foreground"
+            style={{ opacity: phoneEnter * (1 - sectionFade) }}
+          >
+            {scanProg < 0.3
+              ? tp("Point at any packaged label")
+              : scanProg < 0.85
+                ? tp("Reading every ingredient against your profile")
+                : tp("Clear verdict in seconds")}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function clamp01(n: number) {
+  return Math.min(1, Math.max(0, n));
 }
 
 /* --------------------------- Hero: giant wordmark scene --------------------------- */
@@ -475,9 +690,9 @@ function HeroWordmark() {
         >
           <div className="animate-float-soft absolute inset-0 overflow-hidden rounded-[3rem] border-4 border-background shadow-2xl">
             <img
-              src="/media/hero-poster.jpg"
-              alt="A bowl of scanned snacks"
-              className="size-full object-cover"
+              src="/media/snack-package.jpg"
+              alt="Scanned snack package label"
+              className="size-full object-cover object-center"
             />
           </div>
 

@@ -610,6 +610,15 @@ export const HOME_PHRASES = [
   "Bottled cold brew",
   "Gummy fruit candy",
   "Try your own scan",
+  "Watch a label get scanned",
+  "Scanning label…",
+  "Scan complete",
+  "Ingredients OCR",
+  "SAFE",
+  "No allergens matched",
+  "Point at any packaged label",
+  "Reading every ingredient against your profile",
+  "Clear verdict in seconds",
 ,
   "PlateGuard assists, it doesn't replace the printed label or medical advice."
 ] as const;
