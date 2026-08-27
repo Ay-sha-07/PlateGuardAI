@@ -172,11 +172,11 @@ function HomePage() {
 /* ---------------------------------- Nav ---------------------------------- */
 
 function ThemeToggle() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false); // default light
 
   useEffect(() => {
     const saved = window.localStorage.getItem("plateguard-theme");
-    setDark(saved ? saved === "dark" : true);
+    setDark(saved ? saved === "dark" : false);
   }, []);
 
   const toggleTheme = () => {

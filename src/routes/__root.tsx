@@ -172,7 +172,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       /* PWA settings */
       {
         name: "theme-color",
-        content: "#000000",
+        content: "#e8f0e9",
       },
 
       {
@@ -341,7 +341,7 @@ function ThemeSync() {
     });
 
     const saved = window.localStorage.getItem("plateguard-theme");
-    const nextDark = saved ? saved === "dark" : true;
+    const nextDark = saved ? saved === "dark" : false; // default: light mode (Leafora vibe)
     document.documentElement.classList.toggle("dark", nextDark);
 
     return () => {
