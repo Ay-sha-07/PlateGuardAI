@@ -95,7 +95,6 @@ const NAV_LINKS = [
   { key: "UserGuide", label: "User guide", href: "#user-guide" },
   { key: "WhatWeScan", label: "What we scan", href: "#coverage" },
   { key: "Verdicts", label: "Verdicts", href: "#verdicts" },
-  { key: "Safety", label: "Safety", href: "#safety" },
 ] as const;
 
 function HomePage() {
@@ -157,8 +156,6 @@ function HomePage() {
       <Coverage />
       <HowItWorks />
       <RecentVerdicts />
-      <SnackCarousel />
-      <SafetyProcess />
       <OneProfile />
       <SiteFooter />
       <div className="md:hidden" style={{ paddingBottom: BOTTOM_NAV_HEIGHT }} />
@@ -972,169 +969,6 @@ function RecentVerdicts() {
           </Button>
         </div>
       </div>
-    </section>
-  );
-}
-
-/* ------------------------------ Snack carousel ------------------------------ */
-
-const SNACKS = [
-  { label: "Peanut butter granola", Icon: Cookie },
-  { label: "Salted potato chips", Icon: Popcorn },
-  { label: "Sesame breadsticks", Icon: Croissant },
-  { label: "Flavoured yoghurt cup", Icon: Milk },
-  { label: "Bottled cold brew", Icon: Coffee },
-  { label: "Gummy fruit candy", Icon: Candy },
-];
-
-function SnackCarousel() {
-  const tp = usePhrases(HOME_PHRASES);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [index, setIndex] = useState(0);
-
-  function goTo(next: number) {
-    const wrapped = (next + SNACKS.length) % SNACKS.length;
-    setIndex(wrapped);
-
-    cardRefs.current[wrapped]?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }
-
-  return (
-    <section className="bg-gradient-to-b from-safe/10 via-safe/15 to-safe/10 py-24">
-      <div className="mx-auto max-w-6xl px-5 text-center md:px-8">
-        <h2 className="font-mascot text-3xl font-bold tracking-tight sm:text-4xl">
-          {tp("Snacks we catch")} <span className="text-primary">{tp("every day")}</span>
-        </h2>
-
-        <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-          {tp("A rotating look at the everyday packaged foods people scan most.")}
-        </p>
-      </div>
-
-      <div className="mt-10 flex snap-x snap-mandatory justify-start gap-5 overflow-x-auto px-5 pb-4 md:justify-center md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {SNACKS.map((s, i) => (
-          <div
-            key={s.label}
-            ref={(el) => {
-              cardRefs.current[i] = el;
-            }}
-            className={`flex w-40 shrink-0 snap-center flex-col items-center gap-3 rounded-3xl border p-6 text-center shadow-sm transition-colors ${
-              i === index ? "border-primary bg-card" : "border-border bg-card/70"
-            }`}
-          >
-            <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-              <s.Icon className="size-7" />
-            </span>
-            <p className="text-sm font-semibold leading-snug">{tp(s.label)}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 flex justify-center gap-3">
-        <button
-          onClick={() => goTo(index - 1)}
-          aria-label={tp("Scroll left")}
-          className="flex size-10 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent active:scale-95"
-        >
-          <ChevronLeft className="size-4" />
-        </button>
-
-        <button
-          onClick={() => goTo(index + 1)}
-          aria-label={tp("Scroll right")}
-          className="flex size-10 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent active:scale-95"
-        >
-          <ChevronRight className="size-4" />
-        </button>
-      </div>
-    </section>
-  );
-}
-
-/* ------------------------------ Safety process ------------------------------ */
-
-const PROCESS_TABS = [
-  {
-    n: "01",
-    label: "Label scan",
-    title: "Every ingredient, read in place",
-    body: "Vision AI reads the printed ingredients panel exactly as it's written.",
-  },
-  {
-    n: "02",
-    label: "Cross-check",
-    title: "Matched against your profile",
-    body: "Every ingredient is checked against your saved allergens and conditions.",
-  },
-  {
-    n: "03",
-    label: "Clear verdict",
-    title: "One plain answer, one reason",
-    body: "Safe, caution, or do-not-eat — paired with the specific ingredient responsible.",
-  },
-];
-
-function SafetyProcess() {
-  const tp = usePhrases(HOME_PHRASES);
-  const [active, setActive] = useState(0);
-  const tab = PROCESS_TABS[active] ?? PROCESS_TABS[0]!;
-
-  return (
-    <section id="safety" className="relative overflow-hidden">
-      <svg
-        aria-hidden
-        viewBox="0 0 1440 100"
-        className="block w-full text-safe/15"
-        preserveAspectRatio="none"
-      >
-        <path fill="currentColor" d="M0,40 C360,100 1080,0 1440,60 L1440,100 L0,100 Z" />
-      </svg>
-
-      <div className="bg-gradient-to-b from-safe/15 via-primary/10 to-brand-amber/10 py-20">
-        <div className="mx-auto max-w-6xl px-5 md:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-            Built for trust
-          </p>
-
-          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            How a scan becomes a verdict
-          </h2>
-
-          <div className="mt-10 flex flex-wrap gap-2">
-            {PROCESS_TABS.map((t, i) => (
-              <button
-                key={t.n}
-                onClick={() => setActive(i)}
-                className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
-                  active === i
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background/60 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t.n} · {tp(t.label)}
-              </button>
-            ))}
-          </div>
-
-          <div className="animate-rise-in mt-8 max-w-2xl" key={tab.n}>
-            <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">{tp(tab.title)}</h3>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground">{tp(tab.body)}</p>
-          </div>
-        </div>
-      </div>
-
-      <svg
-        aria-hidden
-        viewBox="0 0 1440 100"
-        className="block w-full text-background"
-        preserveAspectRatio="none"
-      >
-        <path fill="currentColor" d="M0,60 C360,0 1080,100 1440,40 L1440,100 L0,100 Z" />
-      </svg>
     </section>
   );
 }

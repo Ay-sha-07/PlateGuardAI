@@ -124,29 +124,29 @@ textarea {
   --color-danger-foreground: var(--danger-foreground);
   --color-brand-amber: var(--brand-amber);
   --color-brand-amber-foreground: var(--brand-amber-foreground);
-  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mascot: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", ui-serif, Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mascot: "Playfair Display", ui-serif, Georgia, "Times New Roman", serif;
 }
 
 :root {
   /* Leafora-inspired botanical light theme — soft cream, sage greens, forest accents */
   --radius: 1.15rem;
-  --background: oklch(0.975 0.012 145);
-  --foreground: oklch(0.22 0.035 155);
-  --card: oklch(0.995 0.004 145);
-  --card-foreground: oklch(0.22 0.035 155);
-  --popover: oklch(0.995 0.004 145);
-  --popover-foreground: oklch(0.22 0.035 155);
+  --background: oklch(0.978 0.014 95);
+  --foreground: oklch(0.32 0.03 155);
+  --card: oklch(0.995 0.006 95);
+  --card-foreground: oklch(0.32 0.03 155);
+  --popover: oklch(0.995 0.006 95);
+  --popover-foreground: oklch(0.32 0.03 155);
   /* Deep forest green primary (matches Leafora CTAs) */
   --primary: oklch(0.38 0.08 155);
   --primary-foreground: oklch(0.98 0.01 145);
   --secondary: oklch(0.94 0.025 145);
-  --secondary-foreground: oklch(0.28 0.04 155);
+  --secondary-foreground: oklch(0.36 0.03 155);
   --muted: oklch(0.945 0.02 145);
-  --muted-foreground: oklch(0.50 0.03 155);
+  --muted-foreground: oklch(0.52 0.025 155);
   --accent: oklch(0.93 0.04 150);
-  --accent-foreground: oklch(0.28 0.05 155);
+  --accent-foreground: oklch(0.36 0.04 155);
   --destructive: oklch(0.55 0.20 25);
   --destructive-foreground: oklch(0.99 0.01 25);
   --border: oklch(0.88 0.025 145);
@@ -169,12 +169,12 @@ textarea {
   --chart-3: oklch(0.55 0.20 25);
   --chart-4: oklch(0.70 0.10 100);
   --chart-5: oklch(0.65 0.08 180);
-  --sidebar: oklch(0.97 0.015 145);
-  --sidebar-foreground: oklch(0.22 0.035 155);
+  --sidebar: oklch(0.97 0.014 95);
+  --sidebar-foreground: oklch(0.32 0.03 155);
   --sidebar-primary: oklch(0.38 0.08 155);
   --sidebar-primary-foreground: oklch(0.98 0.01 145);
   --sidebar-accent: oklch(0.94 0.025 145);
-  --sidebar-accent-foreground: oklch(0.28 0.04 155);
+  --sidebar-accent-foreground: oklch(0.36 0.03 155);
   --sidebar-border: oklch(0.88 0.025 145);
   --sidebar-ring: oklch(0.55 0.10 155);
 }
