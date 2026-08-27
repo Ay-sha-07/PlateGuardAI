@@ -1,3 +1,4 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -66,16 +67,18 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
+/** English source labels + i18n keys for the top / mobile menu.
+ *  Static keys cover ml/hi/ta/ar/es/fr; all other languages use AI translation
+ *  via useAiTranslate so the menu never stays stuck in English. */
+
+/** Landing-page copy — English source of truth; translated via AI when language ≠ en. */
 function useHomeCopy() {
   const tp = usePhrases(HOME_PHRASES);
-
   return {
     tasteOfCertainty: tp("The taste of certainty"),
     readingEveryLabel: tp("Reading every label"),
     protectingEveryBite: tp("Protecting every bite"),
-    smarterScans: tp(
-      "Smarter scans. Safer bites. Every label decoded in plain English, for every aisle in the store.",
-    ),
+    smarterScans: tp("Smarter scans. Safer bites. Every label decoded in plain English, for every aisle in the store."),
     startScanning: tp("Start scanning"),
     setYourProfile: tp("Set your profile"),
     scroll: tp("Scroll"),
@@ -83,9 +86,7 @@ function useHomeCopy() {
     allergensTracked: tp("Allergens tracked by default"),
     healthConditions: tp("Health conditions supported"),
     ingredientsGuesswork: tp("Ingredients left to guesswork"),
-    connectingCopy: tp(
-      "Connecting a photo, an ingredient list, and your medical profile through one careful check — making every trip down the snack aisle faster, calmer, and genuinely informed.",
-    ),
+    connectingCopy: tp("Connecting a photo, an ingredient list, and your medical profile through one careful check — making every trip down the snack aisle faster, calmer, and genuinely informed."),
   };
 }
 
@@ -109,17 +110,14 @@ function HomePage() {
     }
 
     let mounted = true;
-
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
-
       setLoggedIn(!!data.session?.user);
       setAuthReady(true);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-
       setLoggedIn(!!session?.user);
       setAuthReady(true);
     });
@@ -130,6 +128,8 @@ function HomePage() {
     };
   }, []);
 
+  // Single canonical sign-in surface: send anyone not logged in straight to
+  // /login instead of duplicating a second login screen here.
   useEffect(() => {
     if (authReady && !loggedIn) {
       void navigate({ to: "/login" });
@@ -159,9 +159,7 @@ function HomePage() {
       <RecentVerdicts />
       <OneProfile />
       <SiteFooter />
-
       <div className="md:hidden" style={{ paddingBottom: BOTTOM_NAV_HEIGHT }} />
-
       <div className="md:hidden">
         <BottomNav />
       </div>
@@ -169,8 +167,10 @@ function HomePage() {
   );
 }
 
+/* ---------------------------------- Nav ---------------------------------- */
+
 function ThemeToggle() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(false); // default light
 
   useEffect(() => {
     const saved = window.localStorage.getItem("plateguard-theme");
@@ -179,7 +179,6 @@ function ThemeToggle() {
 
   const toggleTheme = () => {
     const nextDark = !dark;
-
     document.documentElement.classList.toggle("dark", nextDark);
     window.localStorage.setItem("plateguard-theme", nextDark ? "dark" : "light");
     setDark(nextDark);
@@ -206,33 +205,27 @@ function SiteNav() {
   const [loggedIn, setLoggedIn] = useState(false);
   const { t, language } = useLanguage();
 
-  const navEnglish = NAV_LINKS.map((link) => link.label);
+  // English source strings for the menu. Static i18n covers ml/hi/ta/ar/es/fr;
+  // every other language is filled in by AI translation so the circled menu
+  // items never stay stuck in English.
+  const navEnglish = NAV_LINKS.map((l) => l.label);
   const { texts: aiNavLabels } = useAiTranslate(navEnglish);
 
-  const navLinks = NAV_LINKS.map((link, index) => {
-    const staticLabel = t(link.key);
-
+  const navLinks = NAV_LINKS.map((l, i) => {
+    const staticLabel = t(l.key);
+    // Prefer static dictionary when it actually differs from English (or when
+    // language is English). Otherwise use the AI result.
     const label =
-      language === "en" || staticLabel !== link.label
-        ? staticLabel
-        : (aiNavLabels[index] ?? link.label);
-
-    return {
-      ...link,
-      label,
-    };
+      language === "en" || staticLabel !== l.label ? staticLabel : (aiNavLabels[i] ?? l.label);
+    return { ...l, label };
   });
 
+  /** Static dictionary first; fall back to AI phrase pack so every language gets a translation. */
   function navT(key: string, englishFallback: string): string {
     try {
       if (language === "en") return englishFallback;
-
       const staticLabel = t(key);
-
-      if (staticLabel && staticLabel !== key && staticLabel !== englishFallback) {
-        return staticLabel;
-      }
-
+      if (staticLabel && staticLabel !== key && staticLabel !== englishFallback) return staticLabel;
       return tp(englishFallback);
     } catch {
       return englishFallback;
@@ -241,7 +234,6 @@ function SiteNav() {
 
   useEffect(() => {
     if (!supabase) return;
-
     supabase.auth.getUser().then(({ data }) => {
       setLoggedIn(!!data.user);
     });
@@ -270,20 +262,20 @@ function SiteNav() {
             alt="PlateGuard AI"
             className="size-8 rounded-full object-contain"
           />
-
           <span className="font-display text-base font-bold tracking-tight sm:text-lg">
             PlateGuard <span className="text-muted-foreground sm:inline">AI</span>
           </span>
         </a>
 
+        {/* Desktop Navigation */}
         <nav className="hidden items-center gap-7 md:flex">
-          {navLinks.map((link) => (
+          {navLinks.map((l) => (
             <a
-              key={link.href}
-              href={link.href}
+              key={l.href}
+              href={l.href}
               className="text-sm font-medium text-foreground/75 transition-colors hover:text-foreground"
             >
-              {link.label}
+              {l.label}
             </a>
           ))}
 
@@ -315,17 +307,18 @@ function SiteNav() {
           <div className="hidden md:block">
             <Button asChild size="sm" className="rounded-full px-5">
               <Link to="/scan">
-                {navT("StartScanning", "Start scanning")}
-                <ChevronRight className="size-4" />
+                {navT("StartScanning", "Start scanning")} <ChevronRight className="size-4" />
               </Link>
             </Button>
           </div>
 
+          {/* Theme toggle is intentionally available only on the index page. */}
           <ThemeToggle />
 
+          {/* Mobile Menu Button */}
           <button
             className="flex size-9 items-center justify-center rounded-full text-foreground md:hidden"
-            onClick={() => setMenuOpen((previous) => !previous)}
+            onClick={() => setMenuOpen((prev) => !prev)}
             aria-label={tp("Toggle menu")}
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -333,17 +326,18 @@ function SiteNav() {
         </div>
       </header>
 
+      {/* Mobile Navigation */}
       {menuOpen && (
         <div className="animate-rise-in mx-auto mt-2 max-w-5xl rounded-3xl border border-white/10 bg-background/95 p-5 shadow-2xl backdrop-blur-xl md:hidden">
           <nav className="flex flex-col gap-1">
-            {navLinks.map((link) => (
+            {navLinks.map((l) => (
               <a
-                key={link.href}
-                href={link.href}
+                key={l.href}
+                href={l.href}
                 onClick={() => setMenuOpen(false)}
                 className="rounded-lg px-2 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:bg-accent"
               >
-                {link.label}
+                {l.label}
               </a>
             ))}
 
@@ -384,6 +378,8 @@ function SiteNav() {
   );
 }
 
+/* ------------------------------ Hero: video scene ------------------------------ */
+
 function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const copy = useHomeCopy();
@@ -406,7 +402,6 @@ function HeroVideo() {
           loop
           playsInline
         />
-
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-background/10" />
       </div>
 
@@ -437,60 +432,61 @@ function HeroVideo() {
   );
 }
 
+/* -------------------- Scroll: phone appears + package scan -------------------- */
+
+/**
+ * Phone stays LOCKED in the safe zone between the fixed top nav and bottom nav.
+ * Scroll only drives the scan laser / OCR / verdict — the phone does not drift
+ * off-screen or fade to blank. When the sticky section ends, the next section
+ * (Snack) naturally takes over.
+ */
 function PhoneScanReveal() {
   const sectionRef = useRef<HTMLElement>(null);
   const [progress, setProgress] = useState(0);
   const tp = usePhrases(HOME_PHRASES);
 
   useEffect(() => {
-    const element = sectionRef.current;
-    if (!element) return;
+    const el = sectionRef.current;
+    if (!el) return;
 
-    let frame = 0;
-
-    const updateProgress = () => {
-      cancelAnimationFrame(frame);
-
-      frame = requestAnimationFrame(() => {
-        const rect = element.getBoundingClientRect();
-        const total = Math.max(1, element.offsetHeight - window.innerHeight);
-        const distance = Math.min(Math.max(-rect.top, 0), total);
-
-        setProgress(distance / total);
+    let raf = 0;
+    const measure = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const total = Math.max(1, el.offsetHeight - window.innerHeight);
+        const scrolled = Math.min(Math.max(-rect.top, 0), total);
+        setProgress(scrolled / total);
       });
     };
 
-    updateProgress();
-
-    window.addEventListener("scroll", updateProgress, { passive: true });
-    window.addEventListener("resize", updateProgress, { passive: true });
-
+    measure();
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure, { passive: true });
     return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", updateProgress);
-      window.removeEventListener("resize", updateProgress);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
     };
   }, []);
 
+  // Keep the phone in the flow: reveal it on entry, hold it during the scan, and fade it before the next section.
   const enter = ease(clamp01(progress / 0.12));
   const exit = ease(clamp01((progress - 0.9) / 0.1));
   const sceneOpacity = enter * (1 - exit);
-
   const scanT = ease(clamp01((progress - 0.16) / 0.52));
   const verdictIn = ease(clamp01((progress - 0.72) / 0.12));
-
   const introOut = ease(clamp01((progress - 0.08) / 0.12));
   const scanOut = ease(clamp01((progress - 0.64) / 0.1));
-
   const introOpacity = 1 - introOut;
   const scannerOpacity = introOut * (1 - scanOut);
   const resultOpacity = scanOut;
   const resultLift = (1 - verdictIn) * 8;
 
+  // The scanner makes repeated passes while the phone remains pinned in the stage.
   const cycles = 4;
   const phase = scanT * cycles * Math.PI;
   const laserY = 12 + ((1 - Math.cos(phase)) / 2) * 72;
-
   const ocrPct = Math.min(100, Math.round(scanT * 100));
   const phoneScale = 0.94 + enter * 0.06;
   const phoneOpacity = sceneOpacity;
@@ -502,10 +498,12 @@ function PhoneScanReveal() {
       aria-label={tp("Watch a label get scanned")}
       className="relative h-[360vh] bg-gradient-to-b from-background via-background via-primary/8 to-primary/14"
     >
+      {/*
+        Sticky stage sits UNDER the fixed top nav and ABOVE the bottom nav.
+        Phone is sized with max-height so the whole device is always visible.
+      */}
       <div
-        className={`${
-          progress > 0 && progress < 1 ? "fixed inset-x-0" : "sticky"
-        } z-10 flex items-center justify-center overflow-visible px-4`}
+        className={`${progress > 0 && progress < 1 ? "fixed inset-x-0" : "sticky"} z-10 flex items-center justify-center overflow-visible px-4`}
         style={{
           top: "4.75rem",
           height: "calc(100dvh - 4.75rem - 5.25rem)",
@@ -518,34 +516,27 @@ function PhoneScanReveal() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-primary">
             {tp("Live label scan")}
           </p>
-
           <div className="relative mt-1 h-4 min-w-[12rem] text-xs text-muted-foreground">
             <span className="absolute inset-x-0" style={{ opacity: introOpacity }}>
               {tp("Align the label")}
             </span>
-
             <span className="absolute inset-x-0" style={{ opacity: scannerOpacity }}>
               {tp("Reading ingredients")}
             </span>
-
             <span className="absolute inset-x-0" style={{ opacity: resultOpacity }}>
               {tp("Result ready")}
             </span>
           </div>
         </div>
-
+        {/* Soft glow */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
-          style={{
-            opacity: sceneOpacity * (0.45 + scannerOpacity * 0.55),
-          }}
+          style={{ opacity: sceneOpacity * (0.45 + scannerOpacity * 0.55) }}
         >
           <div
             className="size-[min(92vw,31rem)] rounded-full bg-primary/30 blur-3xl"
-            style={{
-              transform: `scale(${0.8 + scannerOpacity * 0.32})`,
-            }}
+            style={{ transform: `scale(${0.8 + scannerOpacity * 0.32})` }}
           />
         </div>
 
@@ -554,13 +545,19 @@ function PhoneScanReveal() {
           style={{
             maxWidth: "min(82vw, 16rem)",
             opacity: phoneOpacity,
-            transform: `translateY(2.5rem) scale(${phoneScale})`,
+            transform: `translateY(1rem) scale(${phoneScale})`,
             willChange: "transform, opacity",
           }}
         >
-          <div className="relative w-full overflow-hidden rounded-[2.15rem] border-[5px] border-zinc-900 bg-zinc-900 shadow-[0_24px_50px_-10px_rgba(0,0,0,0.5)]">
+          {/* Phone chrome */}
+          <div
+            className="relative w-full overflow-hidden rounded-[2.15rem] border-[5px] border-zinc-900 bg-zinc-900 shadow-[0_24px_50px_-10px_rgba(0,0,0,0.5)]"
+            style={{ maxHeight: "min(67dvh, 34rem)" }}
+          >
+            {/* Notch */}
             <div className="absolute left-1/2 top-1.5 z-30 h-3.5 w-[4.5rem] -translate-x-1/2 rounded-full bg-black" />
 
+            {/* Screen — fill phone; height capped by parent maxHeight */}
             <div
               className="relative w-full overflow-hidden bg-zinc-950"
               style={{
@@ -578,18 +575,19 @@ function PhoneScanReveal() {
                 }}
                 draggable={false}
               />
-
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 z-[1] bg-emerald-400/20 mix-blend-screen"
                 style={{ opacity: scannerOpacity * 0.55 }}
               />
 
+              {/* Light vignette only — keep label readable */}
               <div
                 aria-hidden
                 className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50"
               />
 
+              {/* Bright green laser */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 z-20"
@@ -603,7 +601,6 @@ function PhoneScanReveal() {
                     "0 0 8px 2px rgba(74,222,128,0.95), 0 0 24px 10px rgba(74,222,128,0.55), 0 0 48px 16px rgba(74,222,128,0.25)",
                 }}
               />
-
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-4 z-10"
@@ -616,12 +613,11 @@ function PhoneScanReveal() {
                 }}
               />
 
+              {/* Corner brackets */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-4 z-20"
-                style={{
-                  opacity: sceneOpacity * (1 - resultOpacity),
-                }}
+                style={{ opacity: sceneOpacity * (1 - resultOpacity) }}
               >
                 <span className="absolute left-0 top-0 h-6 w-6 border-l-[2.5px] border-t-[2.5px] border-primary" />
                 <span className="absolute right-0 top-0 h-6 w-6 border-r-[2.5px] border-t-[2.5px] border-primary" />
@@ -629,36 +625,36 @@ function PhoneScanReveal() {
                 <span className="absolute bottom-0 right-0 h-6 w-6 border-b-[2.5px] border-r-[2.5px] border-primary" />
               </div>
 
+              {/* Status */}
               <div
-                className="absolute left-1/2 top-7 z-30 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-black/70 px-3 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-md"
+                className="absolute left-1/2 top-7 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/70 px-3 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur-md"
                 style={{ opacity: sceneOpacity }}
               >
                 <ScanLine className="size-3 shrink-0 text-primary" />
-
-                <span className="relative h-4 min-w-[7.25rem] leading-4">
+                <span className="relative h-4 min-w-[7.25rem] whitespace-nowrap leading-4">
                   <span className="absolute inset-x-0" style={{ opacity: 1 - resultOpacity }}>
                     {tp("Scanning label…")}
                   </span>
-
                   <span className="absolute inset-x-0" style={{ opacity: resultOpacity }}>
                     {tp("Analysis complete")}
                   </span>
                 </span>
               </div>
 
+              {/* OCR bar */}
               <div
                 className="absolute bottom-[4.25rem] left-4 right-4 z-30"
-                style={{
-                  opacity: sceneOpacity * (1 - resultOpacity),
-                }}
+                style={{ opacity: sceneOpacity * (1 - resultOpacity) }}
               >
                 <div className="mb-1 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-white/80">
                   <span>{tp("Ingredients OCR")}</span>
                   <span>{ocrPct}%</span>
                 </div>
-
                 <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${ocrPct}%` }} />
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${ocrPct}%` }}
+                  />
                 </div>
               </div>
 
@@ -673,19 +669,15 @@ function PhoneScanReveal() {
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-safe">
                     <CheckCircle2 className="size-4 text-safe-foreground" />
                   </div>
-
                   <div className="min-w-0 text-left leading-tight">
                     <p className="text-sm font-bold text-foreground">{tp("SAFE TO EAT")}</p>
-
                     <p className="text-[10px] text-muted-foreground">
                       {tp("No allergens matched your profile")}
                     </p>
                   </div>
                 </div>
-
                 <div className="mt-2.5 flex items-center justify-between border-t border-border/70 pt-2 text-[10px] font-medium">
                   <span className="text-muted-foreground">{tp("Ingredient check")}</span>
-
                   <span className="text-primary">{tp("All clear")}</span>
                 </div>
               </div>
@@ -699,11 +691,9 @@ function PhoneScanReveal() {
             <span className="absolute inset-x-0" style={{ opacity: introOpacity }}>
               {tp("Bring the label into view")}
             </span>
-
             <span className="absolute inset-x-0" style={{ opacity: scannerOpacity }}>
               {tp("Hold steady — checking every ingredient")}
             </span>
-
             <span className="absolute inset-x-0" style={{ opacity: resultOpacity }}>
               {tp("Your clear answer, ready when you are")}
             </span>
@@ -714,17 +704,18 @@ function PhoneScanReveal() {
   );
 }
 
-function clamp01(value: number) {
-  return Math.min(1, Math.max(0, value));
+function clamp01(n: number) {
+  return Math.min(1, Math.max(0, n));
 }
 
-function ease(value: number) {
-  return value * value * (3 - 2 * value);
+function ease(n: number) {
+  return n * n * (3 - 2 * n);
 }
+
+/* --------------------------- Hero: giant wordmark scene --------------------------- */
 
 function HeroWordmark() {
   const copy = useHomeCopy();
-
   return (
     <section
       id="wordmark"
@@ -779,6 +770,7 @@ function HeroWordmark() {
       </div>
 
       <ConnectingCopy />
+
       <StatsStrip />
     </section>
   );
@@ -786,7 +778,6 @@ function HeroWordmark() {
 
 function ConnectingCopy() {
   const copy = useHomeCopy();
-
   return (
     <p className="mx-auto max-w-3xl px-5 pb-16 text-center text-sm text-muted-foreground sm:text-base md:px-8">
       {copy.connectingCopy}
@@ -796,26 +787,23 @@ function ConnectingCopy() {
 
 function StatsStrip() {
   const copy = useHomeCopy();
-
   const stats = [
     { value: "15–30s", label: copy.typicalTime },
     { value: "10", label: copy.allergensTracked },
     { value: "8", label: copy.healthConditions },
     { value: "0", label: copy.ingredientsGuesswork },
   ];
-
   return (
     <div className="border-t border-border/60 bg-card/40">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 py-10 md:grid-cols-4 md:px-8">
-        {stats.map((stat, index) => (
+        {stats.map((s, i) => (
           <div
-            key={stat.label}
+            key={s.label}
             className="animate-rise-in text-center md:text-left"
-            style={{ animationDelay: `${index * 70}ms` }}
+            style={{ animationDelay: `${i * 70}ms` }}
           >
-            <p className="font-display text-3xl font-bold text-primary sm:text-4xl">{stat.value}</p>
-
-            <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
+            <p className="font-display text-3xl font-bold text-primary sm:text-4xl">{s.value}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
           </div>
         ))}
       </div>
@@ -823,17 +811,15 @@ function StatsStrip() {
   );
 }
 
+/* ------------------------------ User guide video ------------------------------ */
+
 const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) {
-    return "0:00";
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function UserGuideVideo() {
@@ -843,17 +829,15 @@ function UserGuideVideo() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(0); // 0-100
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [scrubbing, setScrubbing] = useState(false);
   const wasPlayingBeforeScrub = useRef(false);
-  const lastRatio = useRef(0);
 
   function togglePlay() {
     const video = videoRef.current;
     if (!video) return;
-
     if (video.paused) {
       void video.play();
     } else {
@@ -863,28 +847,30 @@ function UserGuideVideo() {
 
   function setPlaybackSpeed(rate: number) {
     const video = videoRef.current;
-
-    if (video) {
-      video.playbackRate = rate;
-    }
-
+    if (video) video.playbackRate = rate;
     setSpeed(rate);
     setSpeedMenuOpen(false);
   }
 
   function ratioFromPointer(clientX: number): number {
-    const element = scrubberRef.current;
-    if (!element) return 0;
-
-    const rect = element.getBoundingClientRect();
-
+    const el = scrubberRef.current;
+    if (!el) return 0;
+    const rect = el.getBoundingClientRect();
     return Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
   }
+
+  // While dragging we only move the visual bar/time label — we do NOT touch
+  // video.currentTime on every pointermove. Setting currentTime dozens of
+  // times a second (once per drag frame) is what was causing the seek to
+  // snap back to 0:00: rapid repeated seeks on a not-fully-buffered video
+  // race each other, and the browser can end up resolving to an earlier
+  // (sometimes the very first, i.e. 0:00) pending seek. Only committing the
+  // seek once, on release, avoids that entirely.
+  const lastRatio = useRef(0);
 
   function previewTo(ratio: number) {
     const video = videoRef.current;
     if (!video || !video.duration) return;
-
     lastRatio.current = ratio;
     setProgress(ratio * 100);
     setCurrentTime(ratio * video.duration);
@@ -893,44 +879,35 @@ function UserGuideVideo() {
   function commitSeek() {
     const video = videoRef.current;
     if (!video || !video.duration) return;
-
     video.currentTime = lastRatio.current * video.duration;
   }
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     const video = videoRef.current;
     if (!video) return;
-
     wasPlayingBeforeScrub.current = !video.paused;
     video.pause();
     setScrubbing(true);
-
     scrubberRef.current?.setPointerCapture(e.pointerId);
     previewTo(ratioFromPointer(e.clientX));
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!scrubbing) return;
-
     previewTo(ratioFromPointer(e.clientX));
   }
 
   function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
     if (!scrubbing) return;
-
     setScrubbing(false);
     scrubberRef.current?.releasePointerCapture(e.pointerId);
     commitSeek();
-
-    if (wasPlayingBeforeScrub.current) {
-      void videoRef.current?.play();
-    }
+    if (wasPlayingBeforeScrub.current) void videoRef.current?.play();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     const video = videoRef.current;
     if (!video || !video.duration) return;
-
     if (e.key === "ArrowRight") {
       video.currentTime = Math.min(video.duration, video.currentTime + 5);
       e.preventDefault();
@@ -946,11 +923,9 @@ function UserGuideVideo() {
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
           See it in action
         </p>
-
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           A 4-minute walkthrough of the whole app
         </h2>
-
         <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
           From setting up your profile to reading a verdict — watch at your own pace, pause
           anywhere, or speed through the parts you already know.
@@ -967,20 +942,16 @@ function UserGuideVideo() {
             onPlay={() => setPlaying(true)}
             onPause={() => setPlaying(false)}
             onClick={togglePlay}
-            onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
-            onTimeUpdate={(event) => {
-              if (scrubbing) return;
-
-              const video = event.currentTarget;
-
-              setCurrentTime(video.currentTime);
-
-              if (video.duration) {
-                setProgress((video.currentTime / video.duration) * 100);
-              }
+            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+            onTimeUpdate={(e) => {
+              if (scrubbing) return; // avoid fighting the drag position
+              const v = e.currentTarget;
+              setCurrentTime(v.currentTime);
+              if (v.duration) setProgress((v.currentTime / v.duration) * 100);
             }}
           />
 
+          {/* Center play button — shown when paused, tap anywhere on the video also toggles */}
           {!playing && (
             <button
               type="button"
@@ -994,6 +965,7 @@ function UserGuideVideo() {
             </button>
           )}
 
+          {/* Controls bar */}
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2.5 pt-8">
             <div
               ref={scrubberRef}
@@ -1013,7 +985,6 @@ function UserGuideVideo() {
               <div className="h-1.5 w-full rounded-full bg-white/25">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
               </div>
-
               <div
                 className={`absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow transition-transform ${
                   scrubbing ? "scale-125" : "scale-100 group-hover/scrub:scale-110"
@@ -1036,7 +1007,6 @@ function UserGuideVideo() {
                     <Play className="size-4 translate-x-0.5" fill="currentColor" />
                   )}
                 </button>
-
                 <span className="font-mono text-[11px] tabular-nums text-white/80">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
@@ -1045,26 +1015,25 @@ function UserGuideVideo() {
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setSpeedMenuOpen((value) => !value)}
+                  onClick={() => setSpeedMenuOpen((v) => !v)}
                   className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/15"
                   aria-label={tp("Playback speed")}
                 >
                   <Gauge className="size-3.5" />
                   {speed}×
                 </button>
-
                 {speedMenuOpen && (
                   <div className="absolute bottom-full right-0 mb-2 overflow-hidden rounded-xl border border-white/10 bg-black/90 py-1 shadow-lg backdrop-blur">
-                    {PLAYBACK_SPEEDS.map((value) => (
+                    {PLAYBACK_SPEEDS.map((s) => (
                       <button
-                        key={value}
+                        key={s}
                         type="button"
-                        onClick={() => setPlaybackSpeed(value)}
+                        onClick={() => setPlaybackSpeed(s)}
                         className={`block w-full whitespace-nowrap px-4 py-1.5 text-left text-xs font-medium transition-colors hover:bg-white/10 ${
-                          value === speed ? "text-primary" : "text-white"
+                          s === speed ? "text-primary" : "text-white"
                         }`}
                       >
-                        {value}× {value === 1 ? "(normal)" : ""}
+                        {s}× {s === 1 ? "(normal)" : ""}
                       </button>
                     ))}
                   </div>
@@ -1078,6 +1047,8 @@ function UserGuideVideo() {
   );
 }
 
+/* -------------------------------- Coverage -------------------------------- */
+
 const CATEGORIES = [
   { label: "Chips & crisps", Icon: Popcorn },
   { label: "Cookies & biscuits", Icon: Cookie },
@@ -1090,7 +1061,6 @@ const CATEGORIES = [
 function Coverage() {
   const { t } = useLanguage();
   const tp = usePhrases(HOME_PHRASES);
-
   return (
     <section
       id="coverage"
@@ -1113,17 +1083,16 @@ function Coverage() {
         </h2>
 
         <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {CATEGORIES.map((category, index) => (
+          {CATEGORIES.map((c, i) => (
             <div
-              key={category.label}
+              key={c.label}
               className="animate-rise-in group rounded-3xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-primary/50 hover:bg-white/10"
-              style={{ animationDelay: `${index * 60}ms` }}
+              style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <category.Icon className="size-6" />
+                <c.Icon className="size-6" />
               </div>
-
-              <p className="mt-4 text-sm font-semibold sm:text-base">{tp(category.label)}</p>
+              <p className="mt-4 text-sm font-semibold sm:text-base">{tp(c.label)}</p>
             </div>
           ))}
         </div>
@@ -1131,6 +1100,8 @@ function Coverage() {
     </section>
   );
 }
+
+/* ------------------------------ How it works ------------------------------ */
 
 const STEPS = [
   {
@@ -1156,43 +1127,38 @@ const STEPS = [
 function HowItWorks() {
   const { t } = useLanguage();
   const tp = usePhrases(HOME_PHRASES);
-
   return (
     <section id="how-it-works" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
       <div className="max-w-xl">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
           {t("HowItWorks")}
         </p>
-
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           {tp("Three steps between you and a safe snack")}
         </h2>
       </div>
 
       <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-        {STEPS.map((step, index) => (
+        {STEPS.map((s, i) => (
           <div
-            key={step.n}
+            key={s.n}
             className="animate-rise-in group relative rounded-3xl border border-border bg-card/60 p-7 transition-colors hover:border-primary/40"
-            style={{ animationDelay: `${index * 100}ms` }}
+            style={{ animationDelay: `${i * 100}ms` }}
           >
-            <span className="font-display text-sm font-bold text-muted-foreground/50">
-              {step.n}
-            </span>
-
+            <span className="font-display text-sm font-bold text-muted-foreground/50">{s.n}</span>
             <div className="mt-4 flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary">
-              <step.Icon className="size-5" />
+              <s.Icon className="size-5" />
             </div>
-
-            <h3 className="mt-5 text-lg font-semibold">{tp(step.title)}</h3>
-
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{tp(step.body)}</p>
+            <h3 className="mt-5 text-lg font-semibold">{tp(s.title)}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{tp(s.body)}</p>
           </div>
         ))}
       </div>
     </section>
   );
 }
+
+/* ------------------------------ Recent verdicts ------------------------------ */
 
 const VERDICTS = [
   {
@@ -1220,39 +1186,36 @@ const VERDICTS = [
 
 function RecentVerdicts() {
   const tp = usePhrases(HOME_PHRASES);
-
   return (
     <section id="verdicts" className="bg-card/40 py-24">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          {tp("Real scans")}
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">{tp("Real scans")}</p>
 
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
           What a verdict actually looks like
         </h2>
 
         <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {VERDICTS.map((verdict, index) => (
+          {VERDICTS.map((v, i) => (
             <div
-              key={verdict.title}
+              key={v.title}
               className="animate-rise-in flex flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-sm"
-              style={{ animationDelay: `${index * 90}ms` }}
+              style={{ animationDelay: `${i * 90}ms` }}
             >
               <div
                 className={`flex h-32 items-center justify-center ${
-                  verdict.tone === "safe"
+                  v.tone === "safe"
                     ? "bg-safe/15"
-                    : verdict.tone === "caution"
+                    : v.tone === "caution"
                       ? "bg-caution/15"
                       : "bg-danger/15"
                 }`}
               >
-                <verdict.Icon
+                <v.Icon
                   className={`size-10 ${
-                    verdict.tone === "safe"
+                    v.tone === "safe"
                       ? "text-safe"
-                      : verdict.tone === "caution"
+                      : v.tone === "caution"
                         ? "text-caution"
                         : "text-danger"
                   }`}
@@ -1262,19 +1225,18 @@ function RecentVerdicts() {
               <div className="flex flex-1 flex-col p-6">
                 <span
                   className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
-                    verdict.tone === "safe"
+                    v.tone === "safe"
                       ? "bg-safe/15 text-safe"
-                      : verdict.tone === "caution"
+                      : v.tone === "caution"
                         ? "bg-caution/15 text-caution"
                         : "bg-danger/15 text-danger"
                   }`}
                 >
-                  {tp(verdict.tag)}
+                  {tp(v.tag)}
                 </span>
 
-                <h3 className="mt-3 text-base font-semibold leading-snug">{tp(verdict.title)}</h3>
-
-                <p className="mt-2 flex-1 text-sm text-muted-foreground">{tp(verdict.detail)}</p>
+                <h3 className="mt-3 text-base font-semibold leading-snug">{tp(v.title)}</h3>
+                <p className="mt-2 flex-1 text-sm text-muted-foreground">{tp(v.detail)}</p>
               </div>
             </div>
           ))}
@@ -1283,8 +1245,7 @@ function RecentVerdicts() {
         <div className="mt-10 text-center">
           <Button asChild size="lg" className="rounded-full px-7">
             <Link to="/scan">
-              {tp("Try your own scan")}
-              <ChevronRight className="size-4" />
+              {tp("Try your own scan")} <ChevronRight className="size-4" />
             </Link>
           </Button>
         </div>
@@ -1293,37 +1254,15 @@ function RecentVerdicts() {
   );
 }
 
+/* ------------------------------ One profile ------------------------------ */
+
 const PROFILE_FEATURES = [
-  {
-    label: "Allergy match",
-    body: "Checked against your exact list",
-    Icon: ShieldCheck,
-  },
-  {
-    label: "Condition check",
-    body: "Sodium, sugar, gluten and more",
-    Icon: ListChecks,
-  },
-  {
-    label: "Multi-label OCR",
-    body: "Reads dense, small-print panels",
-    Icon: ScanLine,
-  },
-  {
-    label: "Clear verdict",
-    body: "Green, caution, or red — typically ready in 15–30 seconds",
-    Icon: Sparkles,
-  },
-  {
-    label: "Private by design",
-    body: "Your profile stays protected",
-    Icon: Lock,
-  },
-  {
-    label: "Scan memory",
-    body: "Revisit what you've already checked",
-    Icon: History,
-  },
+  { label: "Allergy match", body: "Checked against your exact list", Icon: ShieldCheck },
+  { label: "Condition check", body: "Sodium, sugar, gluten and more", Icon: ListChecks },
+  { label: "Multi-label OCR", body: "Reads dense, small-print panels", Icon: ScanLine },
+  { label: "Clear verdict", body: "Green, caution, or red — typically ready in 15–30 seconds", Icon: Sparkles },
+  { label: "Private by design", body: "Your profile stays protected", Icon: Lock },
+  { label: "Scan memory", body: "Revisit what you've already checked", Icon: History },
 ];
 
 function OneProfile() {
@@ -1350,10 +1289,8 @@ function OneProfile() {
                 loop
                 playsInline
               />
-
               <div className="animate-scanline pointer-events-none absolute inset-x-0 h-0.5 bg-primary/80 shadow-[0_0_20px_3px_var(--primary)]" />
             </div>
-
             <div className="absolute left-1/2 top-0 h-4 w-24 -translate-x-1/2 rounded-b-2xl bg-black" />
           </div>
         </div>
@@ -1366,22 +1303,15 @@ function OneProfile() {
           </h2>
 
           <p className="mt-4 max-w-lg text-white/70">
-            {tp(
-              "Your allergies and conditions are saved to your account and checked automatically on every scan.",
-            )}
+            {tp("Your allergies and conditions are saved to your account and checked automatically on every scan.")}
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {PROFILE_FEATURES.map((feature) => (
-              <div
-                key={feature.label}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4"
-              >
-                <feature.Icon className="size-5 text-primary" />
-
-                <p className="mt-3 text-sm font-semibold">{tp(feature.label)}</p>
-
-                <p className="mt-1 text-xs text-white/60">{tp(feature.body)}</p>
+            {PROFILE_FEATURES.map((f) => (
+              <div key={f.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <f.Icon className="size-5 text-primary" />
+                <p className="mt-3 text-sm font-semibold">{tp(f.label)}</p>
+                <p className="mt-1 text-xs text-white/60">{tp(f.body)}</p>
               </div>
             ))}
           </div>
@@ -1391,26 +1321,21 @@ function OneProfile() {
   );
 }
 
+/* --------------------------------- Footer --------------------------------- */
+
 function SiteFooter() {
   const { t, language } = useLanguage();
   const tp = usePhrases(HOME_PHRASES);
-
   function footerT(key: string, english: string): string {
     try {
       if (language === "en") return english;
-
-      const translated = t(key);
-
-      if (translated && translated !== key && translated !== english) {
-        return translated;
-      }
-
+      const s = t(key);
+      if (s && s !== key && s !== english) return s;
       return tp(english);
     } catch {
       return english;
     }
   }
-
   return (
     <footer className="relative overflow-hidden bg-brand-amber text-brand-amber-foreground">
       <p
@@ -1429,7 +1354,6 @@ function SiteFooter() {
                 alt="PlateGuard AI"
                 className="size-7 rounded-full object-contain"
               />
-
               <span className="font-display text-lg font-bold">PlateGuard AI</span>
             </div>
 
@@ -1439,9 +1363,9 @@ function SiteFooter() {
             </p>
 
             <div className="mt-5 flex gap-3">
-              {[Facebook, Instagram, Twitter, Linkedin].map((Icon, index) => (
+              {[Facebook, Instagram, Twitter, Linkedin].map((Icon, i) => (
                 <span
-                  key={index}
+                  key={i}
                   className="flex size-9 items-center justify-center rounded-full bg-brand-amber-foreground/10"
                 >
                   <Icon className="size-4" />
@@ -1455,15 +1379,12 @@ function SiteFooter() {
               <Link to="/" className="block font-semibold hover:underline">
                 {footerT("Home", "Home")}
               </Link>
-
               <Link to="/scan" className="block hover:underline">
                 {footerT("Scan", "Scan")}
               </Link>
-
               <a href="#how-it-works" className="block hover:underline">
                 {footerT("HowItWorks", "How it works")}
               </a>
-
               <a href="#coverage" className="block hover:underline">
                 {footerT("WhatWeScan", "What we scan")}
               </a>
@@ -1471,15 +1392,12 @@ function SiteFooter() {
 
             <div className="space-y-2.5 text-sm">
               <p className="font-semibold">{tp("Account")}</p>
-
               <Link to="/profile" className="block hover:underline">
                 {footerT("Profile", "Profile")}
               </Link>
-
               <Link to="/login" className="block hover:underline">
                 {footerT("Login", "Login")}
               </Link>
-
               <a href="#verdicts" className="block hover:underline">
                 {footerT("Verdicts", "Verdicts")}
               </a>
@@ -1487,12 +1405,9 @@ function SiteFooter() {
 
             <div className="space-y-2.5 text-sm">
               <p className="font-semibold">{tp("Languages supported")}</p>
-
               <p className="flex items-center gap-1.5 text-brand-amber-foreground/80">
-                <Languages className="size-3.5" />
-                {tp("Auto-detected on scan")}
+                <Languages className="size-3.5" /> {tp("Auto-detected on scan")}
               </p>
-
               <p className="text-brand-amber-foreground/80">
                 {tp("PlateGuard assists, it doesn't replace the printed label or medical advice.")}
               </p>
@@ -1502,7 +1417,6 @@ function SiteFooter() {
 
         <div className="mt-12 flex flex-col gap-2 border-t border-brand-amber-foreground/15 pt-6 text-xs text-brand-amber-foreground/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} PlateGuard AI. Not a substitute for medical advice.</p>
-
           <p>{tp("When in doubt, don't eat it.")}</p>
         </div>
       </div>
