@@ -1176,10 +1176,11 @@ function SiteFooter() {
     }
   }
   return (
-    <footer className="relative overflow-hidden bg-secondary text-secondary-foreground">
+    <footer className="relative overflow-hidden bg-secondary font-sans text-secondary-foreground">
       <p
         aria-hidden
         className="wordmark-outline pointer-events-none -mb-6 select-none whitespace-nowrap px-5 pt-10 text-center font-display text-[15vw] font-bold uppercase leading-none tracking-tight sm:text-[8rem] md:px-8"
+        style={{ fontFamily: "var(--font-display)" }}
       >
         PlateGuard
       </p>
@@ -1193,10 +1194,15 @@ function SiteFooter() {
                 alt="PlateGuard AI"
                 className="size-7 rounded-full object-contain"
               />
-              <span className="font-display text-lg font-bold tracking-tight">PlateGuard AI</span>
+              <span
+                className="font-display text-lg font-bold tracking-tight"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                PlateGuard AI
+              </span>
             </div>
 
-            <p className="mt-4 max-w-xs font-sans text-sm leading-relaxed text-secondary-foreground/80">
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-secondary-foreground/80">
               A camera, a profile, and a plain answer — built for the ten seconds before you decide
               to eat something.
             </p>
@@ -1214,7 +1220,7 @@ function SiteFooter() {
           </div>
 
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
-            <div className="space-y-2.5 font-sans text-sm">
+            <div className="space-y-2.5 text-sm leading-relaxed">
               <Link to="/" className="block font-semibold hover:underline">
                 {footerT("Home", "Home")}
               </Link>
@@ -1226,7 +1232,7 @@ function SiteFooter() {
               </a>
             </div>
 
-            <div className="space-y-2.5 font-sans text-sm">
+            <div className="space-y-2.5 text-sm leading-relaxed">
               <p className="font-semibold">{tp("Account")}</p>
               <Link to="/profile" className="block hover:underline">
                 {footerT("Profile", "Profile")}
@@ -1236,7 +1242,7 @@ function SiteFooter() {
               </Link>
             </div>
 
-            <div className="space-y-2.5 font-sans text-sm">
+            <div className="space-y-2.5 text-sm leading-relaxed">
               <p className="font-semibold">{tp("Languages supported")}</p>
               <p className="flex items-center gap-1.5 text-secondary-foreground/80">
                 <Languages className="size-3.5" /> {tp("Auto-detected on scan")}
@@ -1248,7 +1254,7 @@ function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-2 border-t border-secondary-foreground/15 pt-6 font-sans text-xs text-secondary-foreground/70 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-2 border-t border-secondary-foreground/15 pt-6 text-xs leading-relaxed text-secondary-foreground/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} PlateGuard AI. Not a substitute for medical advice.</p>
           <p>{tp("When in doubt, don't eat it.")}</p>
         </div>

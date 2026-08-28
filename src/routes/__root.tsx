@@ -216,7 +216,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       /* PWA manifest */
       {
         rel: "manifest",
-        href: "/manifest.webmanifest?v=4",
+        href: "/manifest.webmanifest?v=5",
       },
 
       /* iPhone / iPad app icon */
@@ -238,7 +238,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;600;700&display=swap",
       },
     ],
   }),

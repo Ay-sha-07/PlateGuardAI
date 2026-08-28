@@ -65,9 +65,10 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
                   }
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-xl py-1.5 font-sans text-[11px] font-medium transition-colors",
+                  "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium leading-none transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
+                style={{ fontFamily: "var(--font-sans)" }}
               >
                 <Icon className={cn("size-5", active && "fill-primary/15")} />
                 {tabLabel(label)}

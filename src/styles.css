@@ -124,9 +124,11 @@ textarea {
   --color-danger-foreground: var(--danger-foreground);
   --color-brand-amber: var(--brand-amber);
   --color-brand-amber-foreground: var(--brand-amber-foreground);
-  --font-display: "Courier New", "Lucida Console", ui-monospace, monospace;
-  --font-sans: "Trebuchet MS", ui-sans-serif, system-ui, sans-serif;
-  --font-mascot: "Courier New", "Lucida Console", ui-monospace, monospace;
+  /* Web fonts so mobile and desktop render the same (system Courier/Trebuchet
+     are missing on many Android devices and cause the footer mismatch). */
+  --font-display: "Courier Prime", "Courier New", "Lucida Console", ui-monospace, monospace;
+  --font-sans: Inter, "Trebuchet MS", ui-sans-serif, system-ui, sans-serif;
+  --font-mascot: "Courier Prime", "Courier New", "Lucida Console", ui-monospace, monospace;
 }
 
 :root {
@@ -349,21 +351,22 @@ textarea {
 }
 
 @utility wordmark-outline {
+  font-family: var(--font-display);
+  font-weight: 700;
   color: currentColor;
+  /* Outline lettering that stays consistent on Android WebView / Chrome */
   -webkit-text-fill-color: transparent;
   text-fill-color: transparent;
-  -webkit-text-stroke: 1.5px currentColor;
-  text-stroke: 1.5px currentColor;
+  -webkit-text-stroke: 0.045em currentColor;
+  text-stroke: 0.045em currentColor;
   paint-order: stroke fill;
-  /* Keep outline readable on large mobile vw sizes where a thin stroke
-     can collapse or fill inconsistently across WebKit/Android browsers. */
-  font-family: var(--font-display);
 }
 
 @media (max-width: 639px) {
   .wordmark-outline {
-    -webkit-text-stroke-width: 1.25px;
-    text-stroke-width: 1.25px;
+    /* em-based stroke scales with 15vw so mobile matches desktop outline weight */
+    -webkit-text-stroke-width: 0.04em;
+    text-stroke-width: 0.04em;
   }
 }
 
