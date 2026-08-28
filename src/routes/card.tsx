@@ -162,7 +162,7 @@ function CardPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/72">
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-24 pt-6 print:px-0 print:pb-0 print:pt-0">
         <header className="flex items-center gap-2 print:hidden">
           <Button asChild variant="ghost" size="icon" className="rounded-full">

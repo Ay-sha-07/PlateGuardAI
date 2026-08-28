@@ -51,7 +51,7 @@ function LoginPage() {
       await nav({to:"/"});
     } catch(err:any) { setError(err?.message ?? "Unable to continue."); } finally { setBusy(false); }
   }
-  return <main className="flex min-h-[100dvh] w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-background px-4 py-6 text-foreground sm:px-5 sm:py-10">
+  return <main className="flex min-h-[100dvh] w-full min-w-0 max-w-full items-center justify-center overflow-x-hidden bg-background/72 px-4 py-6 text-foreground sm:px-5 sm:py-10">
     <section className="relative box-border w-full min-w-0 max-w-md overflow-hidden rounded-3xl border bg-card p-6 shadow-xl sm:p-8">
       <div className="absolute right-4 top-4"><LanguageSelector compact /></div>
       <div className="mb-7 text-center">

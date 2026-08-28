@@ -32,7 +32,7 @@ export const Route = createFileRoute("/safety")({
 function SafetyPage() {
   const tp = usePhrases(SAFETY_PHRASES);
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/72">
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-24 pt-6">
         <header className="flex items-center gap-2">
           <Button asChild variant="ghost" size="icon" className="rounded-full">

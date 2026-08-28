@@ -481,7 +481,7 @@ function ScannerPage() {
   const scanTargetLabel = mode === "medicine" ? "medicine label" : "food label";
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="relative min-h-screen overflow-hidden bg-background/72">
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div className="animate-aurora absolute -left-24 -top-24 size-[22rem] rounded-full bg-primary/25 blur-[90px]" />
         <div

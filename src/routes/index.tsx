@@ -3,12 +3,7 @@ import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
   Camera,
-  Candy,
-  ChevronLeft,
   ChevronRight,
-  Coffee,
-  Cookie,
-  Croissant,
   Facebook,
   History,
   Instagram,
@@ -16,8 +11,6 @@ import {
   Linkedin,
   ListChecks,
   Lock,
-  Milk,
-  Popcorn,
   ScanLine,
   ShieldCheck,
   SlidersHorizontal,
@@ -26,8 +19,6 @@ import {
   Twitter,
   X,
   CheckCircle2,
-  AlertTriangle,
-  ShieldAlert,
   Moon,
   Sun,
   Play,
@@ -93,8 +84,6 @@ function useHomeCopy() {
 const NAV_LINKS = [
   { key: "HowItWorks", label: "How it works", href: "#how-it-works" },
   { key: "UserGuide", label: "User guide", href: "#user-guide" },
-  { key: "WhatWeScan", label: "What we scan", href: "#coverage" },
-  { key: "Verdicts", label: "Verdicts", href: "#verdicts" },
 ] as const;
 
 function HomePage() {
@@ -148,15 +137,13 @@ function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 text-foreground">
+    <div className="min-h-screen bg-transparent pb-20 text-foreground">
       <SiteNav />
       <HeroVideo />
       <PhoneScanReveal />
       <HeroWordmark />
       <UserGuideVideo />
-      <Coverage />
       <HowItWorks />
-      <RecentVerdicts />
       <OneProfile />
       <SiteFooter />
       <div className="md:hidden" style={{ paddingBottom: BOTTOM_NAV_HEIGHT }} />
@@ -496,7 +483,7 @@ function PhoneScanReveal() {
       ref={sectionRef}
       id="phone-scan"
       aria-label={tp("Watch a label get scanned")}
-      className="relative h-[360vh] bg-gradient-to-b from-background via-background via-primary/8 to-primary/14"
+      className="relative h-[360vh] bg-background/58"
     >
       {/*
         Sticky stage sits UNDER the fixed top nav and ABOVE the bottom nav.
@@ -510,7 +497,7 @@ function PhoneScanReveal() {
         }}
       >
         <div
-          className="pointer-events-none absolute left-1/2 -top-2.5 z-20 -translate-x-1/2 text-center"
+          className="pointer-events-none absolute left-1/2 top-2 z-20 -translate-x-1/2 text-center"
           style={{ opacity: sceneOpacity }}
         >
           <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-primary">
@@ -719,7 +706,7 @@ function HeroWordmark() {
   return (
     <section
       id="wordmark"
-      className="relative overflow-hidden bg-gradient-to-b from-primary/15 via-primary/5 to-background"
+      className="relative overflow-hidden bg-background/58"
     >
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-16 pt-20 md:grid-cols-[1.15fr_0.85fr] md:px-8 md:pt-28">
         <div className="animate-rise-in">
@@ -918,7 +905,7 @@ function UserGuideVideo() {
   }
 
   return (
-    <section id="user-guide" className="bg-background py-24">
+    <section id="user-guide" className="bg-background/68 py-24">
       <div className="mx-auto max-w-4xl px-5 text-center md:px-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
           See it in action
@@ -1047,60 +1034,6 @@ function UserGuideVideo() {
   );
 }
 
-/* -------------------------------- Coverage -------------------------------- */
-
-const CATEGORIES = [
-  { label: "Chips & crisps", Icon: Popcorn },
-  { label: "Cookies & biscuits", Icon: Cookie },
-  { label: "Bakery & pastries", Icon: Croissant },
-  { label: "Dairy & yoghurt", Icon: Milk },
-  { label: "Drinks & coffee", Icon: Coffee },
-  { label: "Candy & sweets", Icon: Candy },
-];
-
-function Coverage() {
-  const { t } = useLanguage();
-  const tp = usePhrases(HOME_PHRASES);
-  return (
-    <section
-      id="coverage"
-      className="relative overflow-hidden bg-[oklch(0.12_0.02_255)] py-24 text-white"
-    >
-      <p
-        aria-hidden
-        className="wordmark-outline pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 select-none whitespace-nowrap font-display text-[16vw] font-bold uppercase leading-none text-white/20 sm:text-[9rem]"
-      >
-        Every Aisle
-      </p>
-
-      <div className="relative mx-auto max-w-6xl px-5 pt-24 md:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          {t("WhatWeScan")}
-        </p>
-
-        <h2 className="mt-3 max-w-lg font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          One camera, every packaged category
-        </h2>
-
-        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {CATEGORIES.map((c, i) => (
-            <div
-              key={c.label}
-              className="animate-rise-in group rounded-3xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-primary/50 hover:bg-white/10"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <c.Icon className="size-6" />
-              </div>
-              <p className="mt-4 text-sm font-semibold sm:text-base">{tp(c.label)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ------------------------------ How it works ------------------------------ */
 
 const STEPS = [
@@ -1158,102 +1091,6 @@ function HowItWorks() {
   );
 }
 
-/* ------------------------------ Recent verdicts ------------------------------ */
-
-const VERDICTS = [
-  {
-    tag: "Danger",
-    tone: "danger" as const,
-    title: "Choco wafer bar flagged for hidden peanut oil",
-    detail: 'Listed as "groundnut oil" — a peanut derivative most labels don\'t spell out.',
-    Icon: ShieldAlert,
-  },
-  {
-    tag: "Caution",
-    tone: "caution" as const,
-    title: "Instant noodles came back at 42% daily sodium",
-    detail: "Within range for most people — flagged for anyone managing hypertension.",
-    Icon: AlertTriangle,
-  },
-  {
-    tag: "Safe",
-    tone: "safe" as const,
-    title: "Rice crackers cleared with no listed allergens",
-    detail: "Matched cleanly against a peanut and gluten profile in about 15–30 seconds.",
-    Icon: CheckCircle2,
-  },
-];
-
-function RecentVerdicts() {
-  const tp = usePhrases(HOME_PHRASES);
-  return (
-    <section id="verdicts" className="bg-card/40 py-24">
-      <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">{tp("Real scans")}</p>
-
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          What a verdict actually looks like
-        </h2>
-
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {VERDICTS.map((v, i) => (
-            <div
-              key={v.title}
-              className="animate-rise-in flex flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-sm"
-              style={{ animationDelay: `${i * 90}ms` }}
-            >
-              <div
-                className={`flex h-32 items-center justify-center ${
-                  v.tone === "safe"
-                    ? "bg-safe/15"
-                    : v.tone === "caution"
-                      ? "bg-caution/15"
-                      : "bg-danger/15"
-                }`}
-              >
-                <v.Icon
-                  className={`size-10 ${
-                    v.tone === "safe"
-                      ? "text-safe"
-                      : v.tone === "caution"
-                        ? "text-caution"
-                        : "text-danger"
-                  }`}
-                />
-              </div>
-
-              <div className="flex flex-1 flex-col p-6">
-                <span
-                  className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
-                    v.tone === "safe"
-                      ? "bg-safe/15 text-safe"
-                      : v.tone === "caution"
-                        ? "bg-caution/15 text-caution"
-                        : "bg-danger/15 text-danger"
-                  }`}
-                >
-                  {tp(v.tag)}
-                </span>
-
-                <h3 className="mt-3 text-base font-semibold leading-snug">{tp(v.title)}</h3>
-                <p className="mt-2 flex-1 text-sm text-muted-foreground">{tp(v.detail)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 text-center">
-          <Button asChild size="lg" className="rounded-full px-7">
-            <Link to="/scan">
-              {tp("Try your own scan")} <ChevronRight className="size-4" />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ------------------------------ One profile ------------------------------ */
 
 const PROFILE_FEATURES = [
@@ -1274,7 +1111,7 @@ function OneProfile() {
   }, []);
 
   return (
-    <section className="bg-[oklch(0.12_0.02_255)] py-24 text-white">
+    <section className="bg-[oklch(0.10_0.03_150)] py-24 text-white">
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
         <div className="animate-rise-in relative mx-auto w-full max-w-[240px]">
           <div className="animate-float-soft relative overflow-hidden rounded-[2.25rem] border-[6px] border-white/10 bg-black shadow-2xl">
@@ -1385,9 +1222,6 @@ function SiteFooter() {
               <a href="#how-it-works" className="block hover:underline">
                 {footerT("HowItWorks", "How it works")}
               </a>
-              <a href="#coverage" className="block hover:underline">
-                {footerT("WhatWeScan", "What we scan")}
-              </a>
             </div>
 
             <div className="space-y-2.5 text-sm">
@@ -1398,9 +1232,6 @@ function SiteFooter() {
               <Link to="/login" className="block hover:underline">
                 {footerT("Login", "Login")}
               </Link>
-              <a href="#verdicts" className="block hover:underline">
-                {footerT("Verdicts", "Verdicts")}
-              </a>
             </div>
 
             <div className="space-y-2.5 text-sm">

@@ -172,7 +172,7 @@ function HistoryPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/72">
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-24 pt-6">
         <header className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -333,7 +333,7 @@ function CompareView({
 }) {
   const tp = usePhrases(HISTORY_PHRASES);
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/72">
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 pb-24 pt-6">
         <header className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
@@ -466,7 +466,7 @@ function HistoryDetail({
   const result = entry.aiResult;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/72">
       <main className="mx-auto min-h-screen w-full max-w-md px-5 pb-24 pt-6">
         <header className="flex items-center justify-between gap-3">
           <Button

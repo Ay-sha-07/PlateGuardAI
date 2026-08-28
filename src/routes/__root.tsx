@@ -22,7 +22,7 @@ import { supabase } from "../lib/supabase";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background/72 px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
 
@@ -93,7 +93,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error, router, reset]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background/72 px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
           This page didn't load
@@ -409,9 +409,23 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeSync />
-      <Outlet />
-      <Toaster position="top-center" />
+      <div className="relative isolate min-h-screen bg-transparent text-foreground">
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "url('https://cdn.builder.io/api/v1/image/assets%2F1ca2bca50f224495a7c3d73527d7ae0b%2F8ce028537f8645afa9ddb1eb8ffa699e?format=webp&width=800&height=1200')",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10 bg-background/45 dark:bg-background/60"
+        />
+        <ThemeSync />
+        <Outlet />
+        <Toaster position="top-center" />
+      </div>
     </QueryClientProvider>
   );
 }

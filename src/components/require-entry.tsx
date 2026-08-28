@@ -35,7 +35,7 @@ export function RequireEntry({ children }: { children: ReactNode }) {
 
   if (!checked || !allowed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background/72">
         <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     );

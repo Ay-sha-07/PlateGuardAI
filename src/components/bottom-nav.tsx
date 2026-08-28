@@ -37,7 +37,7 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
   return (
     <nav
       className={cn(
-        "inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur",
+        "inset-x-0 z-40 border-t border-border bg-background/88 backdrop-blur",
         stacked ? "relative" : "fixed bottom-0",
       )}
       aria-label="Primary"
