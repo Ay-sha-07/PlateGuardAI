@@ -1,11 +1,12 @@
-const CACHE_NAME = "plateguard-ai-v2";
+const CACHE_NAME = "plateguard-ai-v3";
 
 const STATIC_ASSETS = [
   "/",
   "/manifest.webmanifest",
   "/icons/logo.png",
   "/icons/icon-192.png",
-  "/icons/icon-512.png"
+  "/icons/icon-512.png",
+  "/icons/icon-maskable-512.png"
 ];
 
 self.addEventListener("install", (event) => {

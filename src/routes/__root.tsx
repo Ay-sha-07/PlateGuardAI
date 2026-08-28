@@ -209,20 +209,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         rel: "icon",
-        href: "/favicon.ico?v=3",
+        href: "/favicon.ico?v=6",
         type: "image/x-icon",
       },
 
       /* PWA manifest */
       {
         rel: "manifest",
-        href: "/manifest.webmanifest?v=5",
+        href: "/manifest.webmanifest?v=6",
       },
 
       /* iPhone / iPad app icon */
       {
         rel: "apple-touch-icon",
-        href: "/icons/icon-192.png?v=3",
+        href: "/icons/icon-192.png?v=6",
       },
 
       {
