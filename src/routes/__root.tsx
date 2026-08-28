@@ -61,24 +61,25 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     }
   }, [error]);
 
-  // One automatic soft retry only for known transient client errors
-  // (language-switch races, chunk load failures). Permanent errors stay on this screen.
+  // Soft-retry transient client failures (chunk load, network, language race).
+  // Also one generic retry for any first-time error so a flaky hydrate doesn't
+  // leave users stuck on "This page didn't load".
   useEffect(() => {
     if (retried.current) return;
-    const msg = String(error?.message || error?.name || "");
+    const msg = String(error?.message || error?.name || error || "");
     const transient =
-      /ChunkLoadError|Loading chunk|Failed to fetch dynamically|useServerFn|NetworkError|AbortError|language/i.test(
+      /ChunkLoadError|Loading chunk|Failed to fetch dynamically|useServerFn|NetworkError|AbortError|language|Hydration|Minified React error|Unexpected token|Importing a module script failed|Load failed|fetch/i.test(
         msg,
       );
-    if (!transient) return;
     let already = false;
     try {
-      const key = `pg-err-retry:${msg.slice(0, 80)}`;
+      const key = `pg-err-retry:${(transient ? msg : "generic").slice(0, 80)}`;
       already = sessionStorage.getItem(key) === "1";
       if (!already) sessionStorage.setItem(key, "1");
     } catch {
       already = false;
     }
+    // One automatic recovery attempt per session for a given error key.
     if (already) return;
     retried.current = true;
     const t = window.setTimeout(() => {
@@ -86,9 +87,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         router.invalidate();
         reset();
       } catch {
-        // ignore
+        try {
+          window.location.reload();
+        } catch {
+          // ignore
+        }
       }
-    }, 350);
+    }, transient ? 350 : 600);
     return () => window.clearTimeout(t);
   }, [error, router, reset]);
 
@@ -169,10 +174,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "summary_large_image",
       },
 
-      /* PWA settings */
+      /* PWA settings — match app background (olive paper) */
       {
         name: "theme-color",
-        content: "#000000",
+        content: "#908e6b",
       },
 
       {
@@ -187,7 +192,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
       {
         name: "apple-mobile-web-app-status-bar-style",
-        content: "black",
+        content: "default",
       },
 
       {
@@ -211,7 +216,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       /* PWA manifest */
       {
         rel: "manifest",
-        href: "/manifest.webmanifest?v=3",
+        href: "/manifest.webmanifest?v=4",
       },
 
       /* iPhone / iPad app icon */

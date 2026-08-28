@@ -13,8 +13,8 @@ html {
   overflow-x: hidden;
   overscroll-behavior-x: none;
   touch-action: manipulation;
-  /* Status-bar / overscroll area stays black (only the top system chrome) */
-  background-color: #000000;
+  /* Match PWA splash / overscroll to the app light background (olive paper) */
+  background-color: #908e6b;
 }
 
 body {
@@ -349,9 +349,22 @@ textarea {
 }
 
 @utility wordmark-outline {
+  color: currentColor;
   -webkit-text-fill-color: transparent;
+  text-fill-color: transparent;
   -webkit-text-stroke: 1.5px currentColor;
+  text-stroke: 1.5px currentColor;
   paint-order: stroke fill;
+  /* Keep outline readable on large mobile vw sizes where a thin stroke
+     can collapse or fill inconsistently across WebKit/Android browsers. */
+  font-family: var(--font-display);
+}
+
+@media (max-width: 639px) {
+  .wordmark-outline {
+    -webkit-text-stroke-width: 1.25px;
+    text-stroke-width: 1.25px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

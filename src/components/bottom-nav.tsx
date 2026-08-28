@@ -37,7 +37,7 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
   return (
     <nav
       className={cn(
-        "inset-x-0 z-40 border-t border-border bg-background/88 backdrop-blur",
+        "inset-x-0 z-40 border-t border-border bg-secondary/95 text-secondary-foreground backdrop-blur",
         stacked ? "relative" : "fixed bottom-0",
       )}
       aria-label="Primary"
@@ -65,7 +65,7 @@ export function BottomNav({ stacked = false }: { stacked?: boolean }) {
                   }
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-medium transition-colors",
+                  "flex flex-col items-center gap-1 rounded-xl py-1.5 font-sans text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >

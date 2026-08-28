@@ -1061,31 +1061,33 @@ function HowItWorks() {
   const { t } = useLanguage();
   const tp = usePhrases(HOME_PHRASES);
   return (
-    <section id="how-it-works" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
-      <div className="max-w-xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-          {t("HowItWorks")}
-        </p>
-        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          {tp("Three steps between you and a safe snack")}
-        </h2>
-      </div>
+    <section id="how-it-works" className="border-t border-border/60 bg-card/40 py-24">
+      <div className="mx-auto max-w-6xl px-5 md:px-8">
+        <div className="max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
+            {t("HowItWorks")}
+          </p>
+          <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            {tp("Three steps between you and a safe snack")}
+          </h2>
+        </div>
 
-      <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-        {STEPS.map((s, i) => (
-          <div
-            key={s.n}
-            className="animate-rise-in group relative rounded-3xl border border-border bg-card/60 p-7 transition-colors hover:border-primary/40"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <span className="font-display text-sm font-bold text-muted-foreground/50">{s.n}</span>
-            <div className="mt-4 flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary">
-              <s.Icon className="size-5" />
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <div
+              key={s.n}
+              className="animate-rise-in group relative rounded-3xl border border-border bg-card/60 p-7 transition-colors hover:border-primary/40"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              <span className="font-display text-sm font-bold text-muted-foreground/50">{s.n}</span>
+              <div className="mt-4 flex size-11 items-center justify-center rounded-xl bg-primary/12 text-primary">
+                <s.Icon className="size-5" />
+              </div>
+              <h3 className="mt-5 text-lg font-semibold">{tp(s.title)}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{tp(s.body)}</p>
             </div>
-            <h3 className="mt-5 text-lg font-semibold">{tp(s.title)}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{tp(s.body)}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -1111,10 +1113,10 @@ function OneProfile() {
   }, []);
 
   return (
-    <section className="bg-[oklch(0.10_0.03_150)] py-24 text-white">
+    <section className="bg-background/68 py-24 text-foreground">
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-5 md:grid-cols-[0.8fr_1.2fr] md:px-8">
         <div className="animate-rise-in relative mx-auto w-full max-w-[240px]">
-          <div className="animate-float-soft relative overflow-hidden rounded-[2.25rem] border-[6px] border-white/10 bg-black shadow-2xl">
+          <div className="animate-float-soft relative overflow-hidden rounded-[2.25rem] border-[6px] border-border bg-black shadow-2xl">
             <div className="relative aspect-[9/19.5] w-full overflow-hidden">
               <video
                 ref={videoRef}
@@ -1139,16 +1141,16 @@ function OneProfile() {
             <span className="text-primary">{tp("Every aisle, covered.")}</span>
           </h2>
 
-          <p className="mt-4 max-w-lg text-white/70">
+          <p className="mt-4 max-w-lg text-muted-foreground">
             {tp("Your allergies and conditions are saved to your account and checked automatically on every scan.")}
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {PROFILE_FEATURES.map((f) => (
-              <div key={f.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div key={f.label} className="rounded-2xl border border-border bg-card/60 p-4">
                 <f.Icon className="size-5 text-primary" />
                 <p className="mt-3 text-sm font-semibold">{tp(f.label)}</p>
-                <p className="mt-1 text-xs text-white/60">{tp(f.body)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{tp(f.body)}</p>
               </div>
             ))}
           </div>
@@ -1174,10 +1176,10 @@ function SiteFooter() {
     }
   }
   return (
-    <footer className="relative overflow-hidden bg-brand-amber text-brand-amber-foreground">
+    <footer className="relative overflow-hidden bg-secondary text-secondary-foreground">
       <p
         aria-hidden
-        className="wordmark-outline pointer-events-none -mb-6 select-none whitespace-nowrap px-5 pt-10 text-center font-display text-[15vw] font-bold uppercase leading-none sm:text-[8rem] md:px-8"
+        className="wordmark-outline pointer-events-none -mb-6 select-none whitespace-nowrap px-5 pt-10 text-center font-display text-[15vw] font-bold uppercase leading-none tracking-tight sm:text-[8rem] md:px-8"
       >
         PlateGuard
       </p>
@@ -1191,10 +1193,10 @@ function SiteFooter() {
                 alt="PlateGuard AI"
                 className="size-7 rounded-full object-contain"
               />
-              <span className="font-display text-lg font-bold">PlateGuard AI</span>
+              <span className="font-display text-lg font-bold tracking-tight">PlateGuard AI</span>
             </div>
 
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-brand-amber-foreground/80">
+            <p className="mt-4 max-w-xs font-sans text-sm leading-relaxed text-secondary-foreground/80">
               A camera, a profile, and a plain answer — built for the ten seconds before you decide
               to eat something.
             </p>
@@ -1203,7 +1205,7 @@ function SiteFooter() {
               {[Facebook, Instagram, Twitter, Linkedin].map((Icon, i) => (
                 <span
                   key={i}
-                  className="flex size-9 items-center justify-center rounded-full bg-brand-amber-foreground/10"
+                  className="flex size-9 items-center justify-center rounded-full bg-secondary-foreground/10"
                 >
                   <Icon className="size-4" />
                 </span>
@@ -1212,7 +1214,7 @@ function SiteFooter() {
           </div>
 
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
-            <div className="space-y-2.5 text-sm">
+            <div className="space-y-2.5 font-sans text-sm">
               <Link to="/" className="block font-semibold hover:underline">
                 {footerT("Home", "Home")}
               </Link>
@@ -1224,7 +1226,7 @@ function SiteFooter() {
               </a>
             </div>
 
-            <div className="space-y-2.5 text-sm">
+            <div className="space-y-2.5 font-sans text-sm">
               <p className="font-semibold">{tp("Account")}</p>
               <Link to="/profile" className="block hover:underline">
                 {footerT("Profile", "Profile")}
@@ -1234,19 +1236,19 @@ function SiteFooter() {
               </Link>
             </div>
 
-            <div className="space-y-2.5 text-sm">
+            <div className="space-y-2.5 font-sans text-sm">
               <p className="font-semibold">{tp("Languages supported")}</p>
-              <p className="flex items-center gap-1.5 text-brand-amber-foreground/80">
+              <p className="flex items-center gap-1.5 text-secondary-foreground/80">
                 <Languages className="size-3.5" /> {tp("Auto-detected on scan")}
               </p>
-              <p className="text-brand-amber-foreground/80">
+              <p className="text-secondary-foreground/80">
                 {tp("PlateGuard assists, it doesn't replace the printed label or medical advice.")}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-2 border-t border-brand-amber-foreground/15 pt-6 text-xs text-brand-amber-foreground/70 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-2 border-t border-secondary-foreground/15 pt-6 font-sans text-xs text-secondary-foreground/70 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} PlateGuard AI. Not a substitute for medical advice.</p>
           <p>{tp("When in doubt, don't eat it.")}</p>
         </div>
