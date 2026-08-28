@@ -310,9 +310,12 @@ export function loadProfileStore(): ProfileStore {
   try {
     const raw = window.localStorage.getItem(scopedKey(STORE_KEY_BASE));
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<ProfileStore>;
+      const parsed = JSON.parse(raw) as { profiles?: unknown[]; activeId?: string };
       const profiles = (Array.isArray(parsed.profiles) ? parsed.profiles : [])
-        .filter((p): p is Partial<StoredProfile> & { id: string } => !!p && typeof p.id === "string")
+        .filter(
+          (p): p is Partial<StoredProfile> & { id: string } =>
+            !!p && typeof p === "object" && typeof (p as { id?: unknown }).id === "string",
+        )
         .map(normalizeProfile);
       if (profiles.length > 0) {
         const activeId =

@@ -44,7 +44,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/multi-select";
-import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav"
+import { BottomNav, BOTTOM_NAV_HEIGHT } from "@/components/bottom-nav";
 import { usePhrases } from "@/hooks/use-ai-translate";
 import { PROFILE_PHRASES } from "@/lib/ui-phrases";
 import {
@@ -211,7 +211,12 @@ function ProfilePageContent() {
   function handleDeleteProfile(id: string) {
     const target = profiles.find((p) => p.id === id);
     if (!target) return;
-    if (!window.confirm(`${tp("Delete the profile")} "${target.name}"? ${tp("This can't be undone.")}`)) return;
+    if (
+      !window.confirm(
+        `${tp("Delete the profile")} "${target.name}"? ${tp("This can't be undone.")}`,
+      )
+    )
+      return;
     const store = deleteProfile(id);
     setProfiles(store.profiles);
     setActiveId(store.activeId);
@@ -233,201 +238,207 @@ function ProfilePageContent() {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <main className="mx-auto w-full max-w-md px-5 pb-44 pt-6">
-      <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="icon" className="rounded-full">
-          <Link to="/">
-            <ArrowLeft className="size-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">{tp("Health profile")}</h1>
-          <p className="text-xs text-muted-foreground">
-            {tp("Every field feeds one rating — nothing here is judged in isolation.")}
-          </p>
-        </div>
-      </div>
-
-      <section className="mt-5 rounded-2xl border border-border bg-card/60 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={`${profile.name || "Profile"} photo`}
-                className="size-14 rounded-full border border-border object-cover"
-              />
-            ) : (
-              <div
-                className="flex size-14 items-center justify-center rounded-full border border-border bg-primary/10 text-lg font-bold text-primary"
-                aria-label={`Initial for ${profile.name || "profile"}`}
-              >
-                {(profile.name || "?").slice(0, 1).toUpperCase()}
-              </div>
-            )}
-            {profile.avatarUrl && (
-              <button
-                type="button"
-                onClick={() => patch({ avatarUrl: "" })}
-                className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-accent"
-                aria-label={tp("Remove profile photo")}
-              >
-                <X className="size-3" />
-              </button>
-            )}
+    <div className="min-h-screen bg-background/72">
+      <main className="mx-auto w-full max-w-md px-5 pb-44 pt-6">
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="icon" className="rounded-full">
+            <Link to="/">
+              <ArrowLeft className="size-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">{tp("Health profile")}</h1>
+            <p className="text-xs text-muted-foreground">
+              {tp("Every field feeds one rating — nothing here is judged in isolation.")}
+            </p>
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-foreground">{tp("Profile photo")}</h2>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{tp("Optional • helps identify profiles")}</p>
-              </div>
-              <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-accent">
-                <ImagePlus className="size-3.5" />
-                {profile.avatarUrl ? tp("Change") : tp("Add")}
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  className="sr-only"
-                  onChange={async (event) => {
-                    const file = event.target.files?.[0];
-                    event.currentTarget.value = "";
-                    if (!file) return;
-                    try {
-                      patch({ avatarUrl: await resizeProfilePhoto(file) });
-                      toast.success(tp("Profile photo updated."));
-                    } catch (error) {
-                      toast.error(
-                        error instanceof Error ? error.message : tp("Could not upload the photo."),
-                      );
-                    }
-                  }}
+        </div>
+
+        <section className="mt-5 rounded-2xl border border-border bg-card/60 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="relative shrink-0">
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={`${profile.name || "Profile"} photo`}
+                  className="size-14 rounded-full border border-border object-cover"
                 />
-              </label>
+              ) : (
+                <div
+                  className="flex size-14 items-center justify-center rounded-full border border-border bg-primary/10 text-lg font-bold text-primary"
+                  aria-label={`Initial for ${profile.name || "profile"}`}
+                >
+                  {(profile.name || "?").slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              {profile.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => patch({ avatarUrl: "" })}
+                  className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full border border-border bg-background shadow-sm hover:bg-accent"
+                  aria-label={tp("Remove profile photo")}
+                >
+                  <X className="size-3" />
+                </button>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold text-foreground">{tp("Profile photo")}</h2>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                    {tp("Optional • helps identify profiles")}
+                  </p>
+                </div>
+                <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-semibold transition-colors hover:bg-accent">
+                  <ImagePlus className="size-3.5" />
+                  {profile.avatarUrl ? tp("Change") : tp("Add")}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      event.currentTarget.value = "";
+                      if (!file) return;
+                      try {
+                        patch({ avatarUrl: await resizeProfilePhoto(file) });
+                        toast.success(tp("Profile photo updated."));
+                      } catch (error) {
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : tp("Could not upload the photo."),
+                        );
+                      }
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* profile switcher — one card per family member */}
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-        {profiles.map((p) => (
-          <div key={p.id} className="group relative shrink-0">
-            <button
-              type="button"
-              onClick={() => selectProfile(p.id)}
-              className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
-                p.id === activeId
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card/70 text-foreground hover:bg-accent"
-              }`}
-            >
-              <ProfileAvatar
-                name={p.name}
-                avatarUrl={p.avatarUrl}
-                size="size-7"
-                textSize="text-xs"
-                active={p.id === activeId}
-              />
-              <span className="min-w-0 truncate">{p.name || tp("Unnamed")}</span>
-            </button>
-            {profiles.length > 1 && (
+        {/* profile switcher — one card per family member */}
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          {profiles.map((p) => (
+            <div key={p.id} className="group relative shrink-0">
               <button
                 type="button"
-                onClick={() => handleDeleteProfile(p.id)}
-                aria-label={`Delete ${p.name}`}
-                className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-danger focus-visible:opacity-100"
+                onClick={() => selectProfile(p.id)}
+                className={`flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors ${
+                  p.id === activeId
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card/70 text-foreground hover:bg-accent"
+                }`}
               >
-                <Trash2 className="size-3" />
+                <ProfileAvatar
+                  name={p.name}
+                  avatarUrl={p.avatarUrl}
+                  size="size-7"
+                  textSize="text-xs"
+                  active={p.id === activeId}
+                />
+                <span className="min-w-0 truncate">{p.name || tp("Unnamed")}</span>
               </button>
+              {profiles.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProfile(p.id)}
+                  aria-label={`Delete ${p.name}`}
+                  className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-danger focus-visible:opacity-100"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={handleAddProfile}
+            className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border px-3.5 py-2 text-sm font-medium text-primary transition-colors hover:bg-accent"
+          >
+            <Plus className="size-4" />
+            {tp("Add profile")}
+          </button>
+        </div>
+
+        {/* progress */}
+        <div className="mt-6">
+          <div className="flex items-center gap-1.5">
+            {STEPS.map((label, i) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setStep(i)}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-secondary"}`}
+                aria-label={`Go to step ${i + 1}: ${tp(label)}`}
+              />
+            ))}
+          </div>
+          <p className="mt-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            {tp("Step")} {step + 1} {tp("of")} {STEPS.length} — {tp(STEPS[step]!)}
+          </p>
+        </div>
+
+        <div className="animate-rise-in mt-6" key={step}>
+          {step === 0 && <StepAbout profile={profile} patch={patch} />}
+          {step === 1 && <StepAllergies profile={profile} patch={patch} />}
+          {step === 2 && <StepConditions profile={profile} patch={patch} />}
+          {step === 3 && <StepSensitivities profile={profile} patch={patch} />}
+          {step === 4 && <StepLifestyle profile={profile} patch={patch} />}
+        </div>
+
+        {profiles.length > 1 && (
+          <button
+            type="button"
+            onClick={() => handleDeleteProfile(activeId)}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
+          >
+            <Trash2 className="size-4" />
+            {tp("Delete")} "{profile.name || tp("this")}" {tp("Profile").toLowerCase()}
+          </button>
+        )}
+
+        <div
+          className="fixed inset-x-0 z-30 mx-auto max-w-md border-t border-border bg-background/95 px-5 py-4 backdrop-blur"
+          style={{ bottom: BOTTOM_NAV_HEIGHT }}
+        >
+          <div className="flex gap-2">
+            {step > 0 && (
+              <Button
+                size="lg"
+                variant="secondary"
+                className="h-14 rounded-2xl px-5"
+                onClick={() => setStep((s) => s - 1)}
+              >
+                <ArrowLeft className="size-5" />
+              </Button>
+            )}
+            {isLast ? (
+              <Button
+                size="lg"
+                className="h-14 flex-1 rounded-2xl text-base font-semibold"
+                onClick={submit}
+              >
+                <Check className="size-5" />
+                {tp("Save profile")}
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="h-14 flex-1 rounded-2xl text-base font-semibold"
+                onClick={() => setStep((s) => s + 1)}
+              >
+                {tp("Continue")}
+                <ArrowRight className="size-5" />
+              </Button>
             )}
           </div>
-        ))}
-        <button
-          type="button"
-          onClick={handleAddProfile}
-          className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border px-3.5 py-2 text-sm font-medium text-primary transition-colors hover:bg-accent"
-        >
-          <Plus className="size-4" />
-          {tp("Add profile")}
-        </button>
-      </div>
-
-      {/* progress */}
-      <div className="mt-6">
-        <div className="flex items-center gap-1.5">
-          {STEPS.map((label, i) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => setStep(i)}
-              className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-secondary"}`}
-              aria-label={`Go to step ${i + 1}: ${tp(label)}`}
-            />
-          ))}
         </div>
-        <p className="mt-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          {tp("Step")} {step + 1} {tp("of")} {STEPS.length} — {tp(STEPS[step]!)}
-        </p>
-      </div>
-
-      <div className="animate-rise-in mt-6" key={step}>
-        {step === 0 && <StepAbout profile={profile} patch={patch} />}
-        {step === 1 && <StepAllergies profile={profile} patch={patch} />}
-        {step === 2 && <StepConditions profile={profile} patch={patch} />}
-        {step === 3 && <StepSensitivities profile={profile} patch={patch} />}
-        {step === 4 && <StepLifestyle profile={profile} patch={patch} />}
-      </div>
-
-      {profiles.length > 1 && (
-        <button
-          type="button"
-          onClick={() => handleDeleteProfile(activeId)}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
-        >
-          <Trash2 className="size-4" />
-          {tp("Delete")} "{profile.name || tp("this")}" {tp("Profile").toLowerCase()}
-        </button>
-      )}
-
-      <div
-        className="fixed inset-x-0 z-30 mx-auto max-w-md border-t border-border bg-background/95 px-5 py-4 backdrop-blur"
-        style={{ bottom: BOTTOM_NAV_HEIGHT }}
-      >
-        <div className="flex gap-2">
-          {step > 0 && (
-            <Button
-              size="lg"
-              variant="secondary"
-              className="h-14 rounded-2xl px-5"
-              onClick={() => setStep((s) => s - 1)}
-            >
-              <ArrowLeft className="size-5" />
-            </Button>
-          )}
-          {isLast ? (
-            <Button
-              size="lg"
-              className="h-14 flex-1 rounded-2xl text-base font-semibold"
-              onClick={submit}
-            >
-              <Check className="size-5" />
-              {tp("Save profile")}
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              className="h-14 flex-1 rounded-2xl text-base font-semibold"
-              onClick={() => setStep((s) => s + 1)}
-            >
-              {tp("Continue")}
-              <ArrowRight className="size-5" />
-            </Button>
-          )}
-        </div>
-      </div>
+      </main>
       <BottomNav />
-    </main>
+    </div>
   );
 }
 
@@ -442,7 +453,9 @@ function StepAbout({ profile, patch }: StepProps) {
     <div className="space-y-6">
       <FieldIntro
         title={tp("Who is this for?")}
-        body={tp("Age, sex, and body baseline change what's actually risky in a food — not just what's flagged.")}
+        body={tp(
+          "Age, sex, and body baseline change what's actually risky in a food — not just what's flagged.",
+        )}
       />
       <div className="space-y-2">
         <Label htmlFor="name">{tp("Name (optional)")}</Label>
@@ -663,7 +676,9 @@ function StepAllergies({ profile, patch }: StepProps) {
     <div className="space-y-6">
       <FieldIntro
         title={tp("Allergies")}
-        body={tp("Treated as life-critical — any direct ingredient or hidden derivative triggers the highest-risk rating.")}
+        body={tp(
+          "Treated as life-critical — any direct ingredient or hidden derivative triggers the highest-risk rating.",
+        )}
       />
       <div className="space-y-2">
         <Label>{tp("Select every allergen that applies")}</Label>
@@ -734,7 +749,9 @@ function StepAllergies({ profile, patch }: StepProps) {
           className="rounded-xl"
         />
         <p className="text-xs text-muted-foreground">
-          {tp("List anything not covered above — treated with the same priority as selected allergens.")}
+          {tp(
+            "List anything not covered above — treated with the same priority as selected allergens.",
+          )}
         </p>
       </div>
     </div>
@@ -759,7 +776,9 @@ function StepConditions({ profile, patch }: StepProps) {
     <div className="space-y-6">
       <FieldIntro
         title={tp("Health conditions")}
-        body={tp("Select everything that applies, not just the most urgent one — conditions are weighed together, since combinations can even reverse each other's dietary advice.")}
+        body={tp(
+          "Select everything that applies, not just the most urgent one — conditions are weighed together, since combinations can even reverse each other's dietary advice.",
+        )}
       />
       {CONDITION_CATEGORIES.map((group) => (
         <div key={group.category} className="space-y-2.5">
@@ -911,7 +930,9 @@ function StepSensitivities({ profile, patch }: StepProps) {
     <div className="space-y-6">
       <FieldIntro
         title={tp("Specific sensitivities")}
-        body={tp("Not allergies, but things that still change what's comfortable to eat — only flagged if you select them.")}
+        body={tp(
+          "Not allergies, but things that still change what's comfortable to eat — only flagged if you select them.",
+        )}
       />
       <div className="space-y-2">
         <Label>{tp("Chemical / additive sensitivities (optional)")}</Label>
@@ -977,7 +998,9 @@ function StepLifestyle({ profile, patch }: StepProps) {
     <div className="space-y-6">
       <FieldIntro
         title={tp("Lifestyle, medications & anything else")}
-        body={tp("Dietary and religious patterns add a separate layer of checks; medications matter only for well-established food-drug interactions.")}
+        body={tp(
+          "Dietary and religious patterns add a separate layer of checks; medications matter only for well-established food-drug interactions.",
+        )}
       />
       <div className="space-y-2">
         <Label>{tp("Dietary / religious pattern (optional)")}</Label>

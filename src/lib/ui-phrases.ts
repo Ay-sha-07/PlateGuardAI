@@ -106,7 +106,7 @@ export const SCAN_PHRASES = [
   "e.g. Harvest Oat Granola",
   "e.g. 8908010046488",
   "Camera access was blocked",
-  "Scan history"
+  "Scan history",
 ] as const;
 
 export const PROFILE_PHRASES = [
@@ -342,7 +342,7 @@ export const HISTORY_PHRASES = [
   "Flagged",
   "Profile impact",
   "Saved before detailed AI results were enabled — only the summary verdict is available.",
-  "How it affected the profile"
+  "How it affected the profile",
 ] as const;
 
 export const CARD_PHRASES = [
@@ -380,7 +380,7 @@ export const CARD_PHRASES = [
   "Print",
   "Copied",
   "Copy as text",
-  "\"Copy as text\" is the fastest way to paste this into a message to a caregiver, school, or restaurant staff.",
+  '"Copy as text" is the fastest way to paste this into a message to a caregiver, school, or restaurant staff.',
   "severity not set",
   "EMERGENCY HEALTH CARD —",
   "ALLERGIES",
@@ -479,7 +479,7 @@ export const LOGIN_PHRASES = [
   "Your profiles and scan history are saved securely to your account.",
   "Email address",
   "you@example.com",
-  "Continue with Google"
+  "Continue with Google",
 ] as const;
 
 export const SAFETY_PHRASES = [
@@ -589,11 +589,10 @@ export const HOME_PHRASES = [
   "When in doubt, don't eat it.",
   "Three steps between you and a safe snack",
   "One profile.",
-  "Your allergies and conditions are saved to your account and checked automatically on every scan."
-,
+  "Your allergies and conditions are saved to your account and checked automatically on every scan.",
   "What a verdict actually looks like",
   "Choco wafer bar flagged for hidden peanut oil",
-  "Listed as \"groundnut oil\" — a peanut derivative most labels don't spell out.",
+  'Listed as "groundnut oil" — a peanut derivative most labels don\'t spell out.',
   "Instant noodles came back at 42% daily sodium",
   "Within range for most people — flagged for anyone managing hypertension.",
   "Rice crackers cleared with no listed allergens",
@@ -619,6 +618,5 @@ export const HOME_PHRASES = [
   "Point at any packaged label",
   "Reading every ingredient against your profile",
   "Clear verdict in seconds",
-,
-  "PlateGuard assists, it doesn't replace the printed label or medical advice."
+  "PlateGuard assists, it doesn't replace the printed label or medical advice.",
 ] as const;
